@@ -1,0 +1,20 @@
+apiVersion: ar.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: demo-tools
+  version: "1.0.0"
+spec:
+  description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
+  transport: stdio
+  command: "python3 server.py"
+  source:
+    repository:
+      url: "https://github.com/AdminTurnedDevOps/agentic-demo-repo"
+      subfolder: "agentregistry-enterprise/demo-mcp"
+  tools:
+    - name: get_time
+      description: "Get the current UTC time"
+    - name: random_number
+      description: "Generate a random number between min and max"
+    - name: reverse_string
+      description: "Reverse a string"

@@ -1,0 +1,19 @@
+{
+  "name": "demochatbot",
+  "description": "A deterministic demo chatbot deployed to AWS AgentCore through AgentRegistry Enterprise.",
+  "url": "http://localhost:9000",
+  "version": "1.0.4",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "chat",
+      "name": "General Chat",
+      "description": "Returns a simple deterministic response for validating AgentCore chat.",
+      "tags": ["chat", "demo"]
+    }
+  ]
+}
