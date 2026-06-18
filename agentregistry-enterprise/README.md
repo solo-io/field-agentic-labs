@@ -1,6 +1,6 @@
-# AgentRegistry Enterprise Workshop
+# Agentregistry Enterprise Workshop
 
-A hands-on lab series for **Solo.io AgentRegistry Enterprise** (`arctl` + `ar.dev/v1alpha1` CRDs). The labs cover installing the registry on Kubernetes, wiring it to an OIDC identity provider (Microsoft Entra ID or Keycloak), registering AWS Bedrock AgentCore and kagent runtimes, deploying agents and MCP servers, applying AccessPolicy-based RBAC, and surfacing telemetry in the AgentRegistry UI.
+A hands-on lab series for **Solo.io Agentregistry Enterprise** (`arctl` + `ar.dev/v1alpha1` CRDs). The labs cover installing the registry on Kubernetes, wiring it to an OIDC identity provider (Microsoft Entra ID or Keycloak), registering AWS Bedrock AgentCore and kagent runtimes, deploying agents and MCP servers, applying AccessPolicy-based RBAC, and surfacing telemetry in the AgentRegistry UI.
 
 All manifests, agent code, Terraform, and ConfigMap patches referenced by the labs live under [`assets/`](assets/) in this repo, mirrored from the upstream demo repo.
 
