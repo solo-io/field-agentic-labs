@@ -1,0 +1,24 @@
+# Remote streamable-HTTP MCP catalog entry for GitHub Copilot.
+#
+# Set GITHUB_COPILOT_MCP_TOKEN and apply with envsubst:
+#
+#   export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
+#   envsubst < assets/mcp/agentgateway/github-copilot-remote-mcp.yaml | arctl apply -f -
+#
+# For demos, rendering the token directly into the catalog entry is fine.
+# For production, use the secret mechanism supported by your AgentRegistry
+# deployment instead of literal values.
+apiVersion: ar.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github-copilot-remote-mcp
+  tag: latest
+spec:
+  title: GitHub Copilot Remote MCP
+  description: GitHub Copilot MCP exposed through Agentgateway
+  remote:
+    type: streamable-http
+    url: https://api.githubcopilot.com/mcp
+    headers:
+      - name: Authorization
+        value: "Bearer ${GITHUB_COPILOT_MCP_TOKEN}"

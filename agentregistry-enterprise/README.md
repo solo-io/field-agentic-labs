@@ -79,6 +79,7 @@ A **Runtime** (sometimes called a Provider) is where AgentRegistry actually depl
 - [070 — Register a Local stdio MCP Server (`demo-tools`)](070-register-local-mcp.md)
 - [071 — Register a Remote Streamable-HTTP MCP Server (GitHub Copilot)](071-register-github-copilot-mcp.md)
 - [072 — Wire an MCP Server to an Agent](072-wire-mcp-to-agent.md)
+- [073 — Expose a Remote MCP Server Through Agentgateway (`Virtual` runtime)](073-remote-mcp-through-agentgateway.md)
 
 ---
 
@@ -161,6 +162,7 @@ agentregistry-enterprise/
 ├── 070-register-local-mcp.md
 ├── 071-register-github-copilot-mcp.md
 ├── 072-wire-mcp-to-agent.md
+├── 073-remote-mcp-through-agentgateway.md
 ├── 075-prompt-quickstart.md
 ├── 080-access-policies.md
 ├── 081-approval-workflows.md
