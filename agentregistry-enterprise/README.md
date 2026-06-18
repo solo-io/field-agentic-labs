@@ -23,6 +23,7 @@ Before starting this workshop, you will need:
 - [Runtimes (Providers)](#runtimes-providers)
 - [Agents](#agents)
 - [MCP Servers](#mcp-servers)
+- [Prompts](#prompts)
 - [AccessPolicy / RBAC](#accesspolicy--rbac)
 - [Observability](#observability)
 - [GitOps / CI-CD](#gitops--ci-cd)
@@ -78,6 +79,12 @@ A **Runtime** (sometimes called a Provider) is where AgentRegistry actually depl
 - [070 — Register a Local stdio MCP Server (`demo-tools`)](070-register-local-mcp.md)
 - [071 — Register a Remote Streamable-HTTP MCP Server (GitHub Copilot)](071-register-github-copilot-mcp.md)
 - [072 — Wire an MCP Server to an Agent](072-wire-mcp-to-agent.md)
+
+---
+
+## Prompts
+
+- [075 — Prompt Quickstart (catalog asset CRUD)](075-prompt-quickstart.md)
 
 ---
 
@@ -154,6 +161,7 @@ agentregistry-enterprise/
 ├── 070-register-local-mcp.md
 ├── 071-register-github-copilot-mcp.md
 ├── 072-wire-mcp-to-agent.md
+├── 075-prompt-quickstart.md
 ├── 080-access-policies.md
 ├── 081-approval-workflows.md
 ├── 090-observability-tracing.md
@@ -171,5 +179,6 @@ agentregistry-enterprise/
     ├── mcp/
     ├── observability/
     ├── private-eks/              # Terraform for a private EKS cluster (no tfstate committed)
+    ├── prompts/                  # Prompt catalog asset examples
     └── providers/kagent/
 ```
