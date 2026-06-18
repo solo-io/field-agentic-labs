@@ -85,18 +85,20 @@ arctl get accesspolicy writers-group-catalog-write -o yaml
 
 ## 4. Submit a Catalog Asset as the Non-Admin User
 
-### Via the UI
+Pick **either** the UI flow or the CLI flow below. The result is the same — a pending Administrative Request — and the rest of the lab works regardless of which submission path you took.
+
+### UI submission
 
 1. Log into the UI as a member of the group you just granted.
 2. Go to **Catalog** > **+ Create > Agent**.
 3. Fill in any test agent (name, description, source, model — anything works for the approval test).
 4. Click **Create**.
 
-Instead of landing in the catalog, your new asset appears as an **Administrative Request** on the same Catalog view.
+Instead of landing in the catalog, your new asset appears as an **Administrative Request** on the same Catalog view. Jump to [Step 6 — UI approval](#ui-approval).
 
-### Via `arctl`
+### CLI submission (`arctl`)
 
-The CLI flow exercises the same gate. The HTTP approval API works for catalog assets — `Agent`, `MCPServer`, `Skill`, `Prompt` — but not for `Deployment`.
+The CLI flow exercises the same gate. Approval gating works for catalog assets — `Agent`, `MCPServer`, `Skill`, `Prompt` — but not for `Deployment`.
 
 ```bash
 # Make sure you're logged in as the NON-admin user
@@ -136,9 +138,11 @@ arctl get agent approval-test-agent --tag 1.0.0
 
 Expected: `not found` (or equivalent) — the asset is in the approval queue.
 
-## 5. List Pending Approval Requests
+## 5. List Pending Approval Requests (CLI)
 
-There is no `arctl approve` command (yet). Use the `/v0/approve` HTTP API with the bearer token from your CLI login.
+> If you submitted via the UI in step 4, you can skip straight to [Step 6 — UI approval](#ui-approval). Steps 5 and "[Step 6 — HTTP API approval](#http-api-approval)" walk through the CLI-only path because there is no `arctl approve` subcommand yet.
+
+Use the `/v0/approve` HTTP API with the bearer token from your CLI login.
 
 ```bash
 export ARCTL_API_TOKEN=$(arctl user info --show-tokens | jq -r .access_token)
@@ -161,15 +165,17 @@ If `metadata.namespace` was omitted from the submitted YAML, the namespace defau
 
 ## 6. Approve the Request
 
-### Via the UI
+Two paths — pick whichever matches how you submitted in step 4. The admin user needs to be in `oidc.superuserRole` for either.
+
+### UI approval
 
 1. Log into the UI as an **administrator** account (a member of `oidc.superuserRole`).
 2. Go to **Catalog**.
 3. The Administrative Request is listed. Click **Approve** (or **Reject**).
 
-The approved asset moves from the request queue into the production catalog immediately.
+The approved asset moves from the request queue into the production catalog immediately. Jump to [Step 7](#7-verify-the-asset-is-in-the-catalog).
 
-### Via the HTTP API
+### HTTP API approval
 
 Re-authenticate as the admin and refresh the token:
 
