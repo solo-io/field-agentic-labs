@@ -1,0 +1,32 @@
+# Grants registry write actions to a non-admin group so members can stage
+# new catalog assets for admin approval (used by 081-approval-workflows.md).
+#
+# Set GROUP_GUID to the OIDC principal you want to grant write access to:
+#
+#   export GROUP_GUID="<your-entra-group-object-id>"
+#   envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
+#
+# The `registry:publish` + `registry:edit` actions are what trigger the
+# approval workflow when config.requireCreateApproval=true is set on the
+# AgentRegistry Helm release.
+apiVersion: ar.dev/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: writers-group-catalog-write
+spec:
+  description: "Catalog read, publish, and edit access for a non-admin group; submissions are approval-gated when requireCreateApproval is enabled"
+  principals:
+    - kind: Role
+      name: "${GROUP_GUID}"
+  rules:
+    - actions:
+        - "registry:read"
+        - "registry:publish"
+        - "registry:edit"
+      resources:
+        - kind: agent
+          name: "*"
+        - kind: server
+          name: "*"
+        - kind: runtime
+          name: "*"

@@ -84,6 +84,7 @@ A **Runtime** (sometimes called a Provider) is where AgentRegistry actually depl
 ## AccessPolicy / RBAC
 
 - [080 — AccessPolicy for Entra Groups, kagent fan-out, and MCP tools](080-access-policies.md)
+- [081 — Approval Workflows (admin gating of catalog submissions)](081-approval-workflows.md)
 
 ---
 
@@ -127,7 +128,7 @@ Curated learning paths that walk through a subset of the labs in a recommended o
 
 ## Validated On
 
-- AgentRegistry Enterprise chart `2026.5.3` / `2026.05.0`
+- AgentRegistry Enterprise chart `2026.5.3` / `2026.05.0` (`2026.6.0` for [081 approval workflows](081-approval-workflows.md))
 - `arctl` v2026.5.3 / v2026.5.4
 - Kubernetes 1.29+
 - AWS Bedrock AgentCore (us-east-1)
@@ -154,6 +155,7 @@ agentregistry-enterprise/
 ├── 071-register-github-copilot-mcp.md
 ├── 072-wire-mcp-to-agent.md
 ├── 080-access-policies.md
+├── 081-approval-workflows.md
 ├── 090-observability-tracing.md
 ├── 091-trace-fanout-workaround.md
 ├── 095-gitops-gitlab-ci.md
@@ -162,6 +164,7 @@ agentregistry-enterprise/
 │   ├── aws-track.md
 │   └── kagent-track.md
 └── assets/                       # YAML manifests, agent source, Terraform, ConfigMap patches
+    ├── access-policies/          # parameterized AccessPolicy templates
     ├── demochatbot-a2a/
     ├── k8shelper-anthropic/
     ├── k8shelper-gemini/
