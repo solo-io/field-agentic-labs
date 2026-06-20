@@ -1,0 +1,93 @@
+# prettier-ignore
+services:
+  postgres:
+    image: postgres:18
+    container_name: agent-registry-postgres
+    environment:
+      POSTGRES_DB: agent-registry
+      POSTGRES_USER: agentregistry
+      POSTGRES_PASSWORD: agentregistry
+      # Initialize the cluster in a subdirectory of the volume mount.
+      # Docker volume drivers commonly seed `lost+found` (or similar) at the
+      # mount root; postgres:18's `initdb` rejects "data directory is not
+      # empty" when PGDATA points at the mount root. Subdirectory keeps
+      # init's view clean and matches the chart's bundled-postgres path.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentregistry -d agent-registry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentregistry-network
+
+  agentregistry:
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPO:-agentregistry-enterprise}/server:${VERSION}
+    container_name: agentregistry-enterprise-server
+    extra_hosts:
+      - "keycloak.default:host-gateway" # Maps keycloak.default to host machine
+    environment:
+      ARCTL_API_BASE_URL: http://localhost:12121
+      AGENT_REGISTRY_DATABASE_URL: "postgres://agentregistry:agentregistry@postgres:5432/agent-registry?sslmode=disable"
+      AGENT_REGISTRY_SERVER_ADDRESS: ":8080"
+      AGENT_REGISTRY_AGENT_GATEWAY_PORT: "21212"
+      AGENT_REGISTRY_RECONCILE_ON_STARTUP: "true"
+      # AWS Credentials (set in .env file)
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+      AWS_SESSION_TOKEN: "${AWS_SESSION_TOKEN:-}"
+      AWS_REGION: "${AWS_REGION:-}"
+      # Local wheels directory - mount point for file:// refs in AGENT_WRAPPER_DEPS.
+      # Set both LOCAL_WHEELS_DIR (to mount the volume) and AGENT_WRAPPER_DEPS (to
+      # reference wheels via file:// URIs) for local dev. Unset in production.
+      LOCAL_WHEELS_DIR: "${LOCAL_WHEELS_DIR:-}"
+      # Temporarily only for local development
+      AGENT_REGISTRY_ENABLE_REGISTRY_VALIDATION: "false"
+      KUBECONFIG: "/root/.kube/config"
+      # OIDC / RBAC defaults, match the demo Keycloak spun up by `make keycloak-up`
+      OIDC_ISSUER: "${OIDC_ISSUER:-https://keycloak.default:8443/realms/kagent-dev}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-are-backend}"
+      OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-c1fba58c133e8db0c2311f149d832bd4}"
+      OIDC_PUBLIC_CLIENT_ID: "${OIDC_PUBLIC_CLIENT_ID:-kagent-ui}"
+      OIDC_INSECURE_SKIP_VERIFY: "${OIDC_INSECURE_SKIP_VERIFY:-true}"
+      RBAC_ROLE_CLAIM: "${RBAC_ROLE_CLAIM:-Groups}"
+      RBAC_SUPERUSER_ROLE: "${RBAC_SUPERUSER_ROLE:-admins}"
+      REQUIRE_CREATE_APPROVAL: "${REQUIRE_CREATE_APPROVAL:-false}"
+      SYNC_MANAGER_INTERVAL: "${SYNC_MANAGER_INTERVAL:-30s}"
+    ports:
+      - "12121:8080"
+    volumes:
+      # Mount Docker socket to allow the server to manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount /tmp so the registry can write configs accessible to Docker on the host
+      - /tmp:/tmp
+      # NOTE: This might not work on MacOS with a local cluster using Docker
+      - ~/.kube/config:/root/.kube/config:ro
+      # Volume mount for local wheels used by file:// refs in AGENT_WRAPPER_DEPS.
+      # Set LOCAL_WHEELS_DIR on the host (e.g. /src/code/kagent-wheels) and add
+      # matching AGENT_WRAPPER_DEPS entries. When unset, a harmless empty dir is mounted.
+      - ${LOCAL_WHEELS_DIR:-/tmp/kagent-wheels-disabled}:${LOCAL_WHEELS_DIR:-/tmp/kagent-wheels-disabled}:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentregistry-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v0/health"]
+      interval: 60s
+      timeout: 1s
+      retries: 5
+      start_period: 10s
+      start_interval: 0.5s
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  agentregistry-network:
+    driver: bridge

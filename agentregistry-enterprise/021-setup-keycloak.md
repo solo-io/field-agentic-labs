@@ -14,7 +14,7 @@ This lab is the Keycloak equivalent of [020](020-setup-entra.md). It walks throu
 
 - A Kubernetes cluster with a `LoadBalancer`-capable Service (or use port-forward)
 - `kubectl` access
-- The realm file `dev/keycloak/realm-data/kagent-dev-realm.json` from the upstream AgentRegistry Enterprise repo (the realm import is referenced by the script below — adapt the path if you have it elsewhere)
+- The realm file `dev/keycloak/realm-data/kagent-dev-realm.json` to populate keycloak with realm information is supplied in this repo.
 
 If you already run Keycloak externally and just need values, skip to [Step 4](#4-helm-values-snippet) and use your existing issuer / clients.
 

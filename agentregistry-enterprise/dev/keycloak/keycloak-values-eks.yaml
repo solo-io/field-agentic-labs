@@ -1,0 +1,52 @@
+command:
+  - /opt/keycloak/bin/kc.sh
+
+args:
+  - start
+  - --import-realm
+  - --http-enabled=true
+
+http:
+  relativePath: /
+
+database:
+  vendor: postgres
+  hostname: keycloak-postgresql
+  port: 5432
+  database: keycloak
+  username: keycloak
+  # Must match POSTGRES_PASSWORD in dev/keycloak/postgresql.yaml. Postgres only
+  # honors the env var on initdb, so changing this value requires wiping the
+  # PVC (install-keycloak.sh down --force && up) to take effect on an existing
+  # cluster.
+  password: DdNX9PwNxIZ4chmsMCFfvZ2VLQPSLAOr
+
+dbchecker:
+  enabled: true
+  image:
+    repository: docker.io/library/busybox
+    tag: "latest"
+
+# Master realm admin credentials. KEYCLOAK_ADMIN_PASSWORD only seeds the master
+# admin on FIRST boot — once postgres has the user, the DB password is
+# authoritative. Wipe the postgres PVC (install-keycloak.sh down --force) to
+# re-bootstrap from this value.
+extraEnv: |
+  - name: KEYCLOAK_ADMIN
+    value: admin
+  - name: KEYCLOAK_ADMIN_PASSWORD
+    value: LdoiXIKKbZramWg7QwFOEFPlG5LerKh3
+
+extraVolumes: |
+  - name: realm-import
+    configMap:
+      name: keycloak-realm
+
+extraVolumeMounts: |
+  - name: realm-import
+    mountPath: /opt/keycloak/data/import
+    readOnly: true
+
+service:
+  type: ClusterIP
+  httpPort: 80
