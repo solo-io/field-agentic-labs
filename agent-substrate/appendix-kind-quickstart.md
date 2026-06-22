@@ -1,6 +1,6 @@
-# Appendix — Local `kind` Quickstart
+# Appendix - Local `kind` Quickstart
 
-For laptop development without GCP. Substrate ships `hack/create-kind-cluster.sh` + a `manifests/ate-install/kind/` overlay that handles the apiserver flag plumbing for you. **No GCS** — the kind overlay ships [rustfs](https://github.com/rustfs/rustfs), an S3-compatible local snapshot store, so the counter demo's state still persists across suspend/resume on your laptop.
+For laptop development without GCP. Substrate ships `hack/create-kind-cluster.sh` + a `manifests/ate-install/kind/` overlay that handles the apiserver flag plumbing for you. **No GCS** - the kind overlay ships [rustfs](https://github.com/rustfs/rustfs), an S3-compatible local snapshot store, so the counter demo's state still persists across suspend/resume on your laptop.
 
 The main workshop targets GKE because that's the supported managed path (see [appendix-why-gke](appendix-why-gke.md)). The kind path is **for development only** and produces an ephemeral cluster.
 
@@ -18,7 +18,7 @@ The main workshop targets GKE because that's the supported managed path (see [ap
 - `kubectl`
 - The upstream Substrate repo cloned ([001](001-baseline-setup.md))
 
-> `kind` is **fetched automatically** by Substrate's hack scripts via its `tools/` go.mod — you don't need to install it separately.
+> `kind` is **fetched automatically** by Substrate's hack scripts via its `tools/` go.mod - you don't need to install it separately.
 
 ## 1. Create the Cluster + Local Registry
 
@@ -30,7 +30,7 @@ hack/create-kind-cluster.sh
 
 This:
 
-- Creates a kind cluster with the Pod Certificate beta APIs enabled at the apiserver (via the cluster config — kind exposes the apiserver flags directly)
+- Creates a kind cluster with the Pod Certificate beta APIs enabled at the apiserver (via the cluster config - kind exposes the apiserver flags directly)
 - Stands up a local container registry the cluster can pull from
 - Configures Docker / kind networking so `KO_DOCKER_REPO` and local image refs Just Work
 
@@ -40,7 +40,7 @@ This:
 hack/install-ate-kind.sh --deploy-ate-system
 ```
 
-This is the kind-specific wrapper around `install-ate.sh`. It applies the manifests from `manifests/ate-install/` **and** the `manifests/ate-install/kind/` overlay (which adds rustfs, Prometheus, Jaeger, and the OTel Collector — all in the `otel-system` namespace).
+This is the kind-specific wrapper around `install-ate.sh`. It applies the manifests from `manifests/ate-install/` **and** the `manifests/ate-install/kind/` overlay (which adds rustfs, Prometheus, Jaeger, and the OTel Collector - all in the `otel-system` namespace).
 
 Wait for the system pods:
 
@@ -58,7 +58,7 @@ Wait:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/counter \
-  -n ate-demo-counter --timeout=5m
+ -n ate-demo-counter --timeout=5m
 ```
 
 ## 4. Install `kubectl-ate` and Create an Actor
@@ -80,12 +80,12 @@ kubectl port-forward -n ate-system svc/atenet-router 8000:80
 ```bash
 # Terminal 2
 curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
-  -i http://localhost:8000/
+ -i http://localhost:8000/
 ```
 
-Repeat, suspend, repeat — same proof-of-state-survival as the GKE counter lab in [050](010-counter-demo.md).
+Repeat, suspend, repeat - same proof-of-state-survival as the GKE counter lab in [050](010-counter-demo.md).
 
-## 6. Observability — Bundled Prometheus + Jaeger
+## 6. Observability - Bundled Prometheus + Jaeger
 
 The kind overlay also installs Prometheus + an OTel Collector + Jaeger in `otel-system`:
 
@@ -133,6 +133,6 @@ hack/install-ate-kind.sh --delete-all
 
 ## Related
 
-- [001 — Clone upstream](001-baseline-setup.md)
-- [appendix-why-gke](appendix-why-gke.md) — why kind works locally but managed-AKS/EKS don't
-- [050 — Counter Demo](010-counter-demo.md) — the same demo on GKE
+- [001 - Clone upstream](001-baseline-setup.md)
+- [appendix-why-gke](appendix-why-gke.md) - why kind works locally but managed-AKS/EKS don't
+- [050 - Counter Demo](010-counter-demo.md) - the same demo on GKE

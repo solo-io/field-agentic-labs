@@ -1,6 +1,6 @@
 {
   "name": "demochatbot",
-  "description": "A deterministic demo chatbot deployed to AWS AgentCore through AgentRegistry Enterprise.",
+  "description": "A deterministic demo chatbot deployed to AWS AgentCore through agentregistry Enterprise.",
   "url": "http://localhost:9000",
   "version": "1.0.4",
   "capabilities": {

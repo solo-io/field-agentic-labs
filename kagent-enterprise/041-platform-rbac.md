@@ -1,6 +1,6 @@
 # Platform RBAC for kagent CRDs
 
-`AccessPolicy` controls what agents and users can do at the **runtime** layer. Plain Kubernetes RBAC controls what cluster identities can do at the **platform** layer — who can list, create, and edit the kagent CRDs (`agents`, `mcpservers`, `modelconfigs`). This lab demonstrates the kagent-specific RBAC pattern: a `ClusterRole` granting read access to the kagent CRDs, bound to a `ServiceAccount`, then verified with `kubectl auth can-i`.
+`AccessPolicy` controls what agents and users can do at the **runtime** layer. Plain Kubernetes RBAC controls what cluster identities can do at the **platform** layer - who can list, create, and edit the kagent CRDs (`agents`, `mcpservers`, `modelconfigs`). This lab demonstrates the kagent-specific RBAC pattern: a `ClusterRole` granting read access to the kagent CRDs, bound to a `ServiceAccount`, then verified with `kubectl auth can-i`.
 
 ## Lab Objectives
 
@@ -25,15 +25,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kagent-crd-viewer
+ name: kagent-crd-viewer
 rules:
-  - apiGroups: ["kagent.dev"]
-    resources: ["agents", "mcpservers", "modelconfigs"]
-    verbs: ["get", "list", "watch"]
+ - apiGroups: ["kagent.dev"]
+ resources: ["agents", "mcpservers", "modelconfigs"]
+ verbs: ["get", "list", "watch"]
 EOF
 ```
 
-If you want broader read access (every kagent CRD in every API group), add `policy.kagent-enterprise.solo.io` and `enterpriseagentgateway.solo.io` rules — though usually you'd factor that into a separate role.
+If you want broader read access (every kagent CRD in every API group), add `policy.kagent-enterprise.solo.io` and `enterpriseagentgateway.solo.io` rules - though usually you'd factor that into a separate role.
 
 ## 3. Bind the ClusterRole to the ServiceAccount
 
@@ -42,15 +42,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kagent-viewer-binding
+ name: kagent-viewer-binding
 subjects:
-  - kind: ServiceAccount
-    name: test-reader
-    namespace: kagent
+ - kind: ServiceAccount
+ name: test-reader
+ namespace: kagent
 roleRef:
-  kind: ClusterRole
-  name: kagent-crd-viewer
-  apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: kagent-crd-viewer
+ apiGroup: rbac.authorization.k8s.io
 EOF
 ```
 
@@ -77,19 +77,19 @@ kubectl apply -f - --as=system:serviceaccount:kagent:test-reader <<EOF
 apiVersion: kagent.dev/v1alpha1
 kind: MCPServer
 metadata:
-  name: test-reader-only
-  namespace: kagent
-  labels:
-    kagent.solo.io/waypoint: "true"
+ name: test-reader-only
+ namespace: kagent
+ labels:
+ kagent.solo.io/waypoint: "true"
 spec:
-  deployment:
-    image: mcp/everything
-    port: 3000
-    cmd: npx
-    args:
-      - "-y"
-      - "@modelcontextprotocol/server-github"
-  transportType: stdio
+ deployment:
+ image: mcp/everything
+ port: 3000
+ cmd: npx
+ args:
+ - "-y"
+ - "@modelcontextprotocol/server-github"
+ transportType: stdio
 EOF
 ```
 
@@ -97,8 +97,8 @@ Expected error:
 
 ```
 Error from server (Forbidden): error when creating "STDIN": mcpservers.kagent.dev is forbidden:
-  User "system:serviceaccount:kagent:test-reader" cannot create resource "mcpservers" in API group
-  "kagent.dev" in the namespace "kagent"
+ User "system:serviceaccount:kagent:test-reader" cannot create resource "mcpservers" in API group
+ "kagent.dev" in the namespace "kagent"
 ```
 
 ## Cleanup
@@ -121,4 +121,4 @@ In practice both are needed: RBAC for "who can shape the deployment", `AccessPol
 
 ## Next
 
-- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) — replace the implicit cluster-admin identity in your kubeconfig with Keycloak-fronted users + groups
+- [080 - Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) - replace the implicit cluster-admin identity in your kubeconfig with Keycloak-fronted users + groups

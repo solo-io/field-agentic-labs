@@ -1,8 +1,8 @@
-# Appendix — Benchmarking with Locust
+# Appendix - Benchmarking with Locust
 
 Substrate ships a benchmarking suite under `benchmarking/` in the upstream repo. It pairs a [Locust](https://locust.io/) load generator with a Prometheus + Grafana stack to drive traffic against `ate-api` and the counter demo, and to visualize the resulting RPS / latency / resource use.
 
-This is **not part of the main workshop path** — use it when you want to push Substrate hard and see what breaks first.
+This is **not part of the main workshop path** - use it when you want to push Substrate hard and see what breaks first.
 
 ## Lab Objectives
 
@@ -14,8 +14,8 @@ This is **not part of the main workshop path** — use it when you want to push 
 
 ## Prerequisites
 
-- [040 — Substrate installed](003-install-substrate.md) (or [appendix-install-script-alternative](appendix-install-script-alternative.md))
-- [020 — `.ate-dev-env.sh` sourced](001-baseline-setup.md)
+- [040 - Substrate installed](003-install-substrate.md) (or [appendix-install-script-alternative](appendix-install-script-alternative.md))
+- [020 - `.ate-dev-env.sh` sourced](001-baseline-setup.md)
 - Python 3 + a venv for generating the Python proto clients
 - `ko` (for the Locust container image build, via `KO_DOCKER_REPO`)
 - Docker (the build pushes `locust-test:latest` to your registry)
@@ -25,7 +25,7 @@ This is **not part of the main workshop path** — use it when you want to push 
 | Path | Purpose |
 |---|---|
 | `benchmarking/monitoring.yaml` | Prometheus `v2.45.0` + Grafana `10.0.0` in the `monitoring` namespace |
-| `benchmarking/locust/` | Locust Python harness — `requirements.txt`, `Dockerfile`, generated `ateapi_pb2*.py` gRPC stubs, tests (`ate_api.py`, `counter_demo.py`, `kernelmem.py`, `sleep.py`, `usermem.py`), shapes (`burst_shape.py`), manifest templates |
+| `benchmarking/locust/` | Locust Python harness - `requirements.txt`, `Dockerfile`, generated `ateapi_pb2*.py` gRPC stubs, tests (`ate_api.py`, `counter_demo.py`, `kernelmem.py`, `sleep.py`, `usermem.py`), shapes (`burst_shape.py`), manifest templates |
 | `benchmarking/locust/generate_protos.sh` | Regenerates the Python proto stubs from the `ateapi.proto` |
 | `benchmarking/locust/build_and_push.sh` | Builds and pushes the `locust-test:latest` image to `KO_DOCKER_REPO` |
 | `benchmarking/locust/deploy_locust.sh` | Applies the Locust worker manifests; controlled by `LOAD_TYPE` env var |
@@ -48,7 +48,7 @@ You only need to regenerate when the upstream `ateapi.proto` changes.
 
 ## 2. Install Monitoring
 
-This must be done **first** — it creates the `monitoring` namespace that the Locust manifests deploy into.
+This must be done **first** - it creates the `monitoring` namespace that the Locust manifests deploy into.
 
 ```bash
 kubectl apply -f monitoring.yaml
@@ -86,7 +86,7 @@ The counter benchmark uses the counter `ActorTemplate` from [050](010-counter-de
 ./hack/install-ate.sh --delete-demo-counter
 ```
 
-> **Source the env file** in your shell before running these — both deploy scripts need `BUCKET_NAME`, `PROJECT_ID`, etc.
+> **Source the env file** in your shell before running these - both deploy scripts need `BUCKET_NAME`, `PROJECT_ID`, etc.
 
 ## 4. Build and Deploy the Locust Worker
 
@@ -113,7 +113,7 @@ The deploy script applies a Locust manifest from `benchmarking/locust/manifests/
 kubectl port-forward svc/grafana -n monitoring 3000:3000
 ```
 
-Open <http://localhost:3000>. Default credentials and dashboards depend on the `monitoring.yaml` shipped — read it.
+Open <http://localhost:3000>. Default credentials and dashboards depend on the `monitoring.yaml` shipped - read it.
 
 Import the Substrate dashboard at `monitoring/dashboards/ate-grpc-dashboard.json` (Grafana → Dashboards → Import → paste JSON → set the Prometheus data source).
 
@@ -141,6 +141,6 @@ The upstream README explicitly calls out that running discrete load tests + stor
 
 ## Related
 
-- [090 — Observability](040-observability.md) — the standard logs / metrics / traces lab
-- [050 — Counter Demo](010-counter-demo.md) — the counter `ActorTemplate` is what `LOAD_TYPE=counter` targets
+- [090 - Observability](040-observability.md) - the standard logs / metrics / traces lab
+- [050 - Counter Demo](010-counter-demo.md) - the counter `ActorTemplate` is what `LOAD_TYPE=counter` targets
 - Upstream: [benchmarking/README.md](https://github.com/agent-substrate/substrate/blob/main/benchmarking/README.md)

@@ -1,6 +1,6 @@
-# Validate Your Install — Fix a Broken Pod with the `k8s-agent`
+# Validate Your Install - Fix a Broken Pod with the `k8s-agent`
 
-This lab is a five-minute smoke test of the kagent install. You deploy a deliberately-broken Pod (an Nginx Pod with the image tag `nginx:latesttttt` — note the typo), then ask the pre-built `k8s-agent` Agent to diagnose and fix it. If kagent is installed correctly and connected to your LLM, the agent will walk through `kubectl describe`, identify the bad image tag, and offer to apply the fix.
+This lab is a five-minute smoke test of the kagent install. You deploy a deliberately-broken Pod (an Nginx Pod with the image tag `nginx:latesttttt` - note the typo), then ask the pre-built `k8s-agent` Agent to diagnose and fix it. If kagent is installed correctly and connected to your LLM, the agent will walk through `kubectl describe`, identify the bad image tag, and offer to apply the fix.
 
 ## Lab Objectives
 
@@ -18,13 +18,13 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ngi14
+ name: ngi14
 spec:
-  containers:
-  - name: nginx
-    image: nginx:latesttttt
-    ports:
-    - containerPort: 80
+ containers:
+ - name: nginx
+ image: nginx:latesttttt
+ ports:
+ - containerPort: 80
 EOF
 ```
 
@@ -47,14 +47,14 @@ In the Solo Enterprise for kagent UI, find the pre-built **k8s-agent** Agent.
 Why is the Nginx Pod failing in my default namespace?
 ```
 
-A good run looks like this — the agent should:
+A good run looks like this - the agent should:
 
 1. Call something like `pods_list_in_namespace(namespace="default")` and find `ngi14`.
 2. Call `pods_get` and `events_list` to gather details.
 3. Identify the image tag typo (`nginx:latesttttt` should be `nginx:latest`).
 4. Either explain the fix or offer to apply a patched manifest.
 
-If the agent can suggest the fix but its tools don't include `pods_delete` / `resources_create_or_update`, you'll need to apply the corrected Pod manually — that's fine, it's still proof that the tool surface, LLM, and reasoning loop all work end-to-end.
+If the agent can suggest the fix but its tools don't include `pods_delete` / `resources_create_or_update`, you'll need to apply the corrected Pod manually - that's fine, it's still proof that the tool surface, LLM, and reasoning loop all work end-to-end.
 
 ## Cleanup
 
@@ -73,8 +73,8 @@ Running this successfully proves:
 | The agent's tools resolve | The MCP server's tool surface is mounted into the agent runtime |
 | The agent can list and read cluster state | RBAC for the agent's ServiceAccount is intact |
 
-If the agent says it has no tools, see [040](010-mcp-connection-agent-config.md) — your MCP server is probably not set up yet. If the agent errors on the LLM call, double-check `llm-api-keys` and the `ModelConfig`.
+If the agent says it has no tools, see [040](010-mcp-connection-agent-config.md) - your MCP server is probably not set up yet. If the agent errors on the LLM call, double-check `llm-api-keys` and the `ModelConfig`.
 
 ## Next
 
-- [060 — `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md) — restrict the tools this agent (or any other) can call
+- [060 - `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md) - restrict the tools this agent (or any other) can call

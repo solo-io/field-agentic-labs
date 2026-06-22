@@ -12,9 +12,9 @@ The first of four mandatory setup labs. Takes you from "I have a Kubernetes clus
 
 This lab is on purpose minimal. It does not install kagent, Gloo Operator, Enterprise Agentgateway, or any OIDC provider. Those come in:
 
-- [002 — Licenses + Secrets](002-licenses-and-secrets.md)
-- [003 — Install Kagent Enterprise](003-install-kagent-enterprise.md)
-- [004 — Install Enterprise Agentgateway](004-install-enterprise-agentgateway.md)
+- [002 - Licenses + Secrets](002-licenses-and-secrets.md)
+- [003 - Install Kagent Enterprise](003-install-kagent-enterprise.md)
+- [004 - Install Enterprise Agentgateway](004-install-enterprise-agentgateway.md)
 
 After **001 → 002 → 003 → 004**, you have the baseline that every unit-of-value lab from 010 onwards assumes.
 
@@ -34,7 +34,7 @@ kubectl get nodes
 kubectl get storageclass
 ```
 
-You need at least one `StorageClass` with `(default)` in the output — kagent's bundled PostgreSQL and Solo Istio's ClickHouse both request PVs. If none is marked default:
+You need at least one `StorageClass` with `(default)` in the output - kagent's bundled PostgreSQL and Solo Istio's ClickHouse both request PVs. If none is marked default:
 
 ```bash
 kubectl annotate storageclass <name> storageclass.kubernetes.io/is-default-class=true
@@ -64,8 +64,8 @@ terraform init
 terraform apply
 
 gcloud container clusters get-credentials \
-  $(terraform output -raw cluster_name) \
-  --region $(terraform output -raw cluster_location)
+ $(terraform output -raw cluster_name) \
+ --region $(terraform output -raw cluster_location)
 
 kubectl get nodes
 cd ../..
@@ -73,14 +73,14 @@ cd ../..
 
 The Terraform creates a regional cluster with autoscaling (1-3 `c3-standard-4` nodes) and the `cloud-platform` OAuth scope on the node service account so the nodes can pull from Artifact Registry without an `imagePullSecret`. See [`assets/gke-terraform/`](assets/gke-terraform/) for the full module.
 
-> **Don't commit `terraform.tfvars`** — your `project_id` leaks if you do. It's gitignored alongside `terraform.tfstate`.
+> **Don't commit `terraform.tfvars`** - your `project_id` leaks if you do. It's gitignored alongside `terraform.tfstate`.
 
 ## 3. Sanity-Check Local Tools
 
 ```bash
 for cmd in kubectl helm openssl jq envsubst; do
-  printf '%-12s ' "$cmd"
-  command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
+ printf '%-12s ' "$cmd"
+ command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
 done
 ```
 
@@ -110,4 +110,4 @@ cd ../..
 
 ## Next
 
-- [002 — Licenses, Namespace, and Secrets](002-licenses-and-secrets.md)
+- [002 - Licenses, Namespace, and Secrets](002-licenses-and-secrets.md)

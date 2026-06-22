@@ -1,4 +1,4 @@
-# Track — Install + First Demo
+# Track - Install + First Demo
 
 Fastest path from "no cluster" to "stateful counter actor surviving suspend/resume."
 
@@ -9,11 +9,11 @@ Fastest path from "no cluster" to "stateful counter actor surviving suspend/resu
 
 ## Order
 
-1. [001 — Baseline Setup](../001-baseline-setup.md)
-2. [002 — GCP IAM + Snapshot Bucket](../002-gcp-iam-and-bucket.md)
-3. [003 — Install Substrate](../003-install-substrate.md)
-4. [010 — Counter Demo](../010-counter-demo.md)
-5. [099 — Cleanup](../099-cleanup.md)
+1. [001 - Baseline Setup](../001-baseline-setup.md)
+2. [002 - GCP IAM + Snapshot Bucket](../002-gcp-iam-and-bucket.md)
+3. [003 - Install Substrate](../003-install-substrate.md)
+4. [010 - Counter Demo](../010-counter-demo.md)
+5. [099 - Cleanup](../099-cleanup.md)
 
 ## What You Will Have at the End
 
@@ -23,9 +23,9 @@ Fastest path from "no cluster" to "stateful counter actor surviving suspend/resu
 - `kubectl-ate` on your `PATH`
 - A counter actor demonstrably preserving state across suspend → snapshot → resume
 
-If the counter's value picks up where it left off after the suspend in [010](../010-counter-demo.md) — even when it lands on a different worker — Substrate is working.
+If the counter's value picks up where it left off after the suspend in [010](../010-counter-demo.md) - even when it lands on a different worker - Substrate is working.
 
 ## Next
 
-- [demos-track](demos-track.md) — Sandbox + Agent-Secret + Claude Code Multiplex
-- [kagent-track](kagent-track.md) — Substrate + kagent end-to-end
+- [demos-track](demos-track.md) - Sandbox + Agent-Secret + Claude Code Multiplex
+- [kagent-track](kagent-track.md) - Substrate + kagent end-to-end

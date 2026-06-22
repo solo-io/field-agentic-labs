@@ -1,12 +1,12 @@
 # Substrate-backed AgentHarness.
 #
 # Set these env vars before applying with envsubst, e.g.:
-#   export HARNESS_NAME=openclaw-substrate-demo
-#   export WORKER_POOL_NAME=kagent-default
-#   export SNAPSHOT_BUCKET=gs://<your-snapshot-bucket>/<harness-folder>/
+# export HARNESS_NAME=openclaw-substrate-demo
+# export WORKER_POOL_NAME=kagent-default
+# export SNAPSHOT_BUCKET=gs://<your-snapshot-bucket>/<harness-folder>/
 #
 # If your kagent controller has controller.substrate.defaultWorkerPool.name
-# configured, the `workerPoolRef` block is optional — comment it out and rely
+# configured, the `workerPoolRef` block is optional - comment it out and rely
 # on the default.
 apiVersion: kagent.dev/v1alpha2
 kind: AgentHarness

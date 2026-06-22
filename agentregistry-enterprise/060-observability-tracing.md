@@ -1,6 +1,6 @@
-# Observability — Tracing Setup (kagent + AWS AgentCore)
+# Observability - Tracing Setup (kagent + AWS AgentCore)
 
-AgentRegistry Enterprise stores traces in ClickHouse and displays them in the UI under **Tracing**. Workloads send OTLP to the AgentRegistry telemetry collector, which writes to `agentregistry.otel_traces_json`.
+Agentregistry Enterprise stores traces in ClickHouse and displays them in the UI under **Tracing**. Workloads send OTLP to the agentregistry telemetry collector, which writes to `agentregistry.otel_traces_json`.
 
 This lab covers the setup needed for both in-cluster runtimes (kagent) and external runtimes (AWS Bedrock AgentCore). The kagent-controller traces fan-out workaround lives in [061](061-trace-fanout.md).
 
@@ -10,9 +10,9 @@ Three components:
 
 1. **ClickHouse** stores trace rows in `agentregistry.otel_traces_json`.
 2. **The bundled OpenTelemetry Collector** receives OTLP on ports `4317` (gRPC) and `4318` (HTTP).
-3. **`Runtime.spec.telemetryEndpoint`** is what AgentRegistry exports to deployed workloads as `OTEL_EXPORTER_OTLP_ENDPOINT`.
+3. **`Runtime.spec.telemetryEndpoint`** is what agentregistry exports to deployed workloads as `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
-Use `spec.telemetryEndpoint` (not `spec.runtimeConfig`) to enable trace export for a runtime. `spec.runtimeConfig` is for deployment parameters — AWS region, workdir, VPC subnets, etc.
+Use `spec.telemetryEndpoint` (not `spec.runtimeConfig`) to enable trace export for a runtime. `spec.runtimeConfig` is for deployment parameters - AWS region, workdir, VPC subnets, etc.
 
 ## Lab Objectives
 
@@ -32,39 +32,39 @@ The values from [003](003-install-components.md) already include:
 
 ```yaml
 clickhouse:
-  enabled: true
+ enabled: true
 
 telemetry:
-  enabled: true
+ enabled: true
 ```
 
 For **external** runtimes such as AWS AgentCore, expose the collector with a `LoadBalancer`:
 
 ```yaml
 telemetry:
-  enabled: true
-  service:
-    type: LoadBalancer
+ enabled: true
+ service:
+ type: LoadBalancer
 ```
 
 Apply to an existing install:
 
 ```bash
 helm upgrade agentregistry-enterprise \
-  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
-  -n agentregistry-system \
-  --reuse-values \
-  --set telemetry.service.type=LoadBalancer \
-  --wait --timeout 10m
+ oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+ --version 2026.5.4 \
+ -n agentregistry-system \
+ --reuse-values \
+ --set telemetry.service.type=LoadBalancer \
+ --wait --timeout 10m
 ```
 
 Get the external OTLP endpoint:
 
 ```bash
 export OTEL_COLLECTOR_HOST=$(kubectl get svc agentregistry-enterprise-telemetry-collector \
-  -n agentregistry-system \
-  -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
+ -n agentregistry-system \
+ -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
 
 export OTEL_HTTP_ENDPOINT="http://${OTEL_COLLECTOR_HOST}:4318"
 echo "${OTEL_HTTP_ENDPOINT}"
@@ -92,14 +92,14 @@ cat > /tmp/aws-runtime.yaml <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
-  name: AWS
+ name: AWS
 spec:
-  type: BedrockAgentCore
-  telemetryEndpoint: "${OTEL_HTTP_ENDPOINT}"
-  config:
-    region: "${AWS_REGION}"
-    roleArn: "${AWS_ROLE_ARN}"
-    externalId: "${AWS_EXTERNAL_ID}"
+ type: BedrockAgentCore
+ telemetryEndpoint: "${OTEL_HTTP_ENDPOINT}"
+ config:
+ region: "${AWS_REGION}"
+ roleArn: "${AWS_ROLE_ARN}"
+ externalId: "${AWS_EXTERNAL_ID}"
 EOF
 
 arctl apply -f /tmp/aws-runtime.yaml
@@ -112,18 +112,18 @@ Existing deployments **do not** automatically restart when the runtime changes. 
 apiVersion: ar.dev/v1alpha1
 kind: Deployment
 metadata:
-  name: demochatbot
+ name: demochatbot
 spec:
-  targetRef:
-    kind: Agent
-    name: demochatbot
-    tag: "1.0.4"
-  runtimeRef:
-    kind: Runtime
-    name: AWS
-  runtimeConfig:
-    region: us-east-1
-    workdir: agentregistry-enterprise/demochatbot-a2a
+ targetRef:
+ kind: Agent
+ name: demochatbot
+ tag: "1.0.4"
+ runtimeRef:
+ kind: Runtime
+ name: AWS
+ runtimeConfig:
+ region: us-east-1
+ workdir: agentregistry-enterprise/demochatbot-a2a
 ```
 
 ### kagent Runtime
@@ -134,53 +134,53 @@ kagent runs in the same cluster, so use the service DNS:
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
-  name: kagent
+ name: kagent
 spec:
-  type: Kagent
-  telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
-  config:
-    kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
-    namespace: kagent
+ type: Kagent
+ telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
+ config:
+ kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
+ namespace: kagent
 ```
 
-AgentRegistry injects `OTEL_EXPORTER_OTLP_ENDPOINT` into kagent BYO agents from this value.
+Agentregistry injects `OTEL_EXPORTER_OTLP_ENDPOINT` into kagent BYO agents from this value.
 
 #### Repoint kagent's Injected Trace Endpoint
 
-The kagent controller injects its own tracing env into every generated Agent Deployment from the `kagent-controller` ConfigMap. The OpenTelemetry SDK treats `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` as **higher priority** than `OTEL_EXPORTER_OTLP_ENDPOINT`, so the AgentRegistry endpoint is ignored unless you also override the kagent-injected one.
+The kagent controller injects its own tracing env into every generated Agent Deployment from the `kagent-controller` ConfigMap. The OpenTelemetry SDK treats `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` as **higher priority** than `OTEL_EXPORTER_OTLP_ENDPOINT`, so the agentregistry endpoint is ignored unless you also override the kagent-injected one.
 
 Check the current values:
 
 ```bash
 kubectl get configmap kagent-controller -n kagent \
-  -o jsonpath='{.data.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}{"\n"}{.data.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL}{"\n"}{.data.OTEL_TRACING_ENABLED}{"\n"}'
+ -o jsonpath='{.data.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}{"\n"}{.data.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL}{"\n"}{.data.OTEL_TRACING_ENABLED}{"\n"}'
 ```
 
 If it points at kagent's collector (e.g., `solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317`), repoint it.
 
-**Recommended — Helm values.** The kagent (enterprise) chart templates the trace env from `otel.tracing.exporter.otlp.*`:
+**Recommended - Helm values.** The kagent (enterprise) chart templates the trace env from `otel.tracing.exporter.otlp.*`:
 
 ```bash
 helm upgrade kagent <chart> \
-  -n kagent \
-  --reuse-values \
-  --set otel.tracing.enabled=true \
-  --set otel.tracing.exporter.otlp.endpoint=agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317 \
-  --set otel.tracing.exporter.otlp.protocol=grpc \
-  --set otel.tracing.exporter.otlp.insecure=true \
-  --wait --timeout 5m
+ -n kagent \
+ --reuse-values \
+ --set otel.tracing.enabled=true \
+ --set otel.tracing.exporter.otlp.endpoint=agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317 \
+ --set otel.tracing.exporter.otlp.protocol=grpc \
+ --set otel.tracing.exporter.otlp.insecure=true \
+ --wait --timeout 5m
 ```
 
-**Temporary — direct ConfigMap patch.** Use this only if you cannot run a Helm upgrade right now. Persist the same values in Helm so the next `helm upgrade` does not revert them:
+**Temporary - direct ConfigMap patch.** Use this only if you cannot run a Helm upgrade right now. Persist the same values in Helm so the next `helm upgrade` does not revert them:
 
 ```bash
 kubectl patch configmap kagent-controller -n kagent --type merge -p '{
-  "data": {
-    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317",
-    "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "grpc",
-    "OTEL_EXPORTER_OTLP_TRACES_INSECURE": "true",
-    "OTEL_TRACING_ENABLED": "true"
-  }
+ "data": {
+ "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317",
+ "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "grpc",
+ "OTEL_EXPORTER_OTLP_TRACES_INSECURE": "true",
+ "OTEL_TRACING_ENABLED": "true"
+ }
 }'
 
 kubectl rollout restart deployment/kagent-controller -n kagent
@@ -191,7 +191,7 @@ The injected env only applies when kagent regenerates an Agent Deployment. Force
 
 ```bash
 kubectl annotate agent <agent-name> -n kagent \
-  tracing.agentregistry.dev/restarted-at="$(date -u +%Y%m%d%H%M%S)" --overwrite
+ tracing.agentregistry.dev/restarted-at="$(date -u +%Y%m%d%H%M%S)" --overwrite
 
 kubectl rollout status deployment/<agent-name> -n kagent --timeout=5m
 ```
@@ -200,12 +200,12 @@ Verify:
 
 ```bash
 kubectl get deploy <agent-name> -n kagent \
-  -o jsonpath='{range .spec.template.spec.containers[0].env[?(@.name=="OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")]}{.value}{"\n"}{end}'
+ -o jsonpath='{range .spec.template.spec.containers[0].env[?(@.name=="OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")]}{.value}{"\n"}{end}'
 ```
 
 > **Tip:** only real agent invocations (chats / tool calls) emit spans. Fetching `/.well-known/agent-card.json` does not, so the trace table stays empty until you send a real prompt.
 
-> **Note:** the [061](061-trace-fanout.md) "trace fan-out" workaround is a complementary approach — instead of repointing kagent's trace exporter, you keep both backends and have the kagent collector forward `traces/genai` to the AgentRegistry collector. Pick one.
+> **Note:** the [061](061-trace-fanout.md) "trace fan-out" workaround is a complementary approach - instead of repointing kagent's trace exporter, you keep both backends and have the kagent collector forward `traces/genai` to the agentregistry collector. Pick one.
 
 ## 3. Verify the Pipeline
 
@@ -216,18 +216,18 @@ kubectl get pods -n agentregistry-system -l app.kubernetes.io/component=telemetr
 
 # ClickHouse tables
 kubectl exec -n agentregistry-system statefulset/agentregistry-enterprise-clickhouse-shard0 -- \
-  clickhouse-client --user default --password password \
-  --query 'SHOW TABLES FROM agentregistry'
+ clickhouse-client --user default --password password \
+ --query 'SHOW TABLES FROM agentregistry'
 
 # Trace count (should grow as you invoke agents)
 kubectl exec -n agentregistry-system statefulset/agentregistry-enterprise-clickhouse-shard0 -- \
-  clickhouse-client --user default --password password \
-  --query 'SELECT count() FROM agentregistry.otel_traces_json'
+ clickhouse-client --user default --password password \
+ --query 'SELECT count() FROM agentregistry.otel_traces_json'
 ```
 
 ## 4. Open the UI
 
-In AgentRegistry Enterprise, navigate to **Tracing**. Tracing access currently requires a registry admin role.
+In agentregistry Enterprise, navigate to **Tracing**. Tracing access currently requires a registry admin role.
 
 ## Troubleshooting
 
@@ -247,13 +247,13 @@ The tracing schema is there, but no workload has successfully exported traces ye
 
 AWS AgentCore cannot resolve Kubernetes service DNS names. Use the collector `LoadBalancer` endpoint `http://<external-ip-or-hostname>:4318`.
 
-### kagent traces go to kagent instead of AgentRegistry
+### kagent traces go to kagent instead of agentregistry
 
 ```bash
 kubectl get deploy <agent-name> -n kagent -o yaml | grep -i OTEL
 ```
 
-If `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` points to kagent's collector, traces will appear in the kagent UI rather than AgentRegistry.
+If `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` points to kagent's collector, traces will appear in the kagent UI rather than agentregistry.
 
 ### Collector is internal only
 
@@ -270,12 +270,12 @@ Return the cluster to the post-baseline state:
 ```bash
 # Revert the collector Service to ClusterIP (if you flipped it to LoadBalancer in step 1)
 helm upgrade agentregistry-enterprise \
-  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
-  -n agentregistry-system \
-  --reuse-values \
-  --set telemetry.service.type=ClusterIP \
-  --wait --timeout 5m
+ oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+ --version 2026.5.4 \
+ -n agentregistry-system \
+ --reuse-values \
+ --set telemetry.service.type=ClusterIP \
+ --wait --timeout 5m
 
 # Revert the kagent-controller ConfigMap patch (if you applied step 2 → "Repoint kagent's Injected Trace Endpoint")
 kubectl rollout restart deployment/kagent-controller -n kagent 2>/dev/null || true
@@ -287,8 +287,8 @@ kubectl rollout restart deployment/kagent-controller -n kagent 2>/dev/null || tr
 unset OTEL_COLLECTOR_HOST OTEL_HTTP_ENDPOINT
 ```
 
-The Runtime `spec.telemetryEndpoint` values stay in place — they were correct for the baseline and don't need to be removed. If you also want to undo them, edit `Runtime/AWS` or `Runtime/kagent` and drop the field.
+The Runtime `spec.telemetryEndpoint` values stay in place - they were correct for the baseline and don't need to be removed. If you also want to undo them, edit `Runtime/AWS` or `Runtime/kagent` and drop the field.
 
 ## Next
 
-- [061 — Trace Fan-Out Workaround](061-trace-fanout.md) — alternative to repointing kagent's exporter
+- [061 - Trace Fan-Out Workaround](061-trace-fanout.md) - alternative to repointing kagent's exporter

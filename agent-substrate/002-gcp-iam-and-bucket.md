@@ -12,13 +12,13 @@ The second mandatory setup lab. Creates the GCS bucket Substrate uses for actor 
 
 ## Prerequisites
 
-- [001 — Baseline Setup](001-baseline-setup.md) completed (cluster up, beta APIs enabled, repo cloned, `.ate-dev-env.sh` sourced)
+- [001 - Baseline Setup](001-baseline-setup.md) completed (cluster up, beta APIs enabled, repo cloned, `.ate-dev-env.sh` sourced)
 - `gcloud` authenticated against `${PROJECT_ID}` (login + ADC)
 
 ```bash
 # Confirm everything from 001 is still in your shell:
 for V in PROJECT_ID PROJECT_NUMBER CLUSTER_NAME CLUSTER_LOCATION GCE_REGION BUCKET_NAME KO_DOCKER_REPO; do
-  if [ -z "${!V}" ]; then echo "MISSING: $V"; else printf '  OK  %-20s %s\n' "$V" "${!V}"; fi
+ if [ -z "${!V}" ]; then echo "MISSING: $V"; else printf ' OK %-20s %s\n' "$V" "${!V}"; fi
 done
 ```
 
@@ -37,11 +37,11 @@ export NODE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 >
 > ```bash
 > gcloud container node-pools describe <pool-name> \
->   --cluster="${CLUSTER_NAME}" --location="${CLUSTER_LOCATION}" \
->   --project="${PROJECT_ID}" --format='value(config.serviceAccount)'
+> --cluster="${CLUSTER_NAME}" --location="${CLUSTER_LOCATION}" \
+> --project="${PROJECT_ID}" --format='value(config.serviceAccount)'
 > ```
 >
-> Set `NODE_SA` to whatever that returns. Repeat for every pool that may run Substrate workloads — `atelet` runs as a DaemonSet so it lands on every node.
+> Set `NODE_SA` to whatever that returns. Repeat for every pool that may run Substrate workloads - `atelet` runs as a DaemonSet so it lands on every node.
 
 ## 2. Enable Workload Identity on the Cluster
 
@@ -49,8 +49,8 @@ Additive update, safe to re-run:
 
 ```bash
 gcloud container clusters update "${CLUSTER_NAME}" \
-  --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
-  --workload-pool="${PROJECT_ID}.svc.id.goog"
+ --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
+ --workload-pool="${PROJECT_ID}.svc.id.goog"
 ```
 
 ## 3. Confirm the GKE Metadata Server On Every Pool
@@ -61,24 +61,24 @@ For each pool:
 
 ```bash
 gcloud container node-pools describe <pool-name> --cluster="${CLUSTER_NAME}" \
-  --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
-  --format='value(config.workloadMetadataConfig.mode)'
+ --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
+ --format='value(config.workloadMetadataConfig.mode)'
 ```
 
 `GKE_METADATA` = good. Blank or `GCE_METADATA` = enable it:
 
 ```bash
 gcloud container node-pools update <pool-name> --cluster="${CLUSTER_NAME}" \
-  --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
-  --workload-metadata=GKE_METADATA
+ --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}" \
+ --workload-metadata=GKE_METADATA
 ```
 
 ## 4. Create the Snapshot Bucket
 
 ```bash
 gcloud storage buckets create "gs://${BUCKET_NAME}" \
-  --project="${PROJECT_ID}" --location="${GCE_REGION}" \
-  --uniform-bucket-level-access
+ --project="${PROJECT_ID}" --location="${GCE_REGION}" \
+ --uniform-bucket-level-access
 ```
 
 If the bucket name is taken globally, `BUCKET_NAME` collides with someone else's. Pick a different one in `.ate-dev-env.sh` and re-source.
@@ -87,32 +87,32 @@ If the bucket name is taken globally, `BUCKET_NAME` collides with someone else's
 
 ```bash
 gcloud storage buckets add-iam-policy-binding "gs://${BUCKET_NAME}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin
+ --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin
 gcloud storage buckets add-iam-policy-binding "gs://${BUCKET_NAME}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/storage.bucketViewer
+ --member="${ATELET_PRINCIPAL}" --role=roles/storage.bucketViewer
 ```
 
 ## 6. Project-Level IAM (Image Pull + Snapshot Access)
 
 ```bash
-# Node SA — for image pulls
+# Node SA - for image pulls
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer
+ --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader
+ --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader
 
-# atelet — for project-scope snapshot writes + image pulls
+# atelet - for project-scope snapshot writes + image pulls
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin
+ --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/artifactregistry.reader
+ --member="${ATELET_PRINCIPAL}" --role=roles/artifactregistry.reader
 ```
 
 ## 7. Configure `kubectl`
 
 ```bash
 gcloud container clusters get-credentials "${CLUSTER_NAME}" \
-  --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}"
+ --location="${CLUSTER_LOCATION}" --project="${PROJECT_ID}"
 
 kubectl get nodes
 ```
@@ -124,14 +124,14 @@ If you already have a kubeconfig context for the cluster (`KUBECTL_CONTEXT` set 
 ```bash
 # atelet bindings
 gcloud projects get-iam-policy "${PROJECT_ID}" \
-  --flatten='bindings[].members' \
-  --format='table(bindings.role)' \
-  --filter="bindings.members:${ATELET_PRINCIPAL}"
+ --flatten='bindings[].members' \
+ --format='table(bindings.role)' \
+ --filter="bindings.members:${ATELET_PRINCIPAL}"
 
 # Bucket-scoped atelet bindings
 gcloud storage buckets get-iam-policy "gs://${BUCKET_NAME}" \
-  --format='table(bindings.role,bindings.members)' \
-  --filter="bindings.members:${ATELET_PRINCIPAL}"
+ --format='table(bindings.role,bindings.members)' \
+ --filter="bindings.members:${ATELET_PRINCIPAL}"
 ```
 
 ## Cleanup
@@ -144,23 +144,23 @@ gcloud storage buckets delete "gs://${BUCKET_NAME}" --project="${PROJECT_ID}" --
 
 # Project IAM bindings
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin       --condition=None
+ --member="${ATELET_PRINCIPAL}" --role=roles/storage.objectAdmin --condition=None
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
-  --member="${ATELET_PRINCIPAL}" --role=roles/artifactregistry.reader   --condition=None
+ --member="${ATELET_PRINCIPAL}" --role=roles/artifactregistry.reader --condition=None
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer  --condition=None
+ --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer --condition=None
 gcloud projects remove-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader --condition=None
+ --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader --condition=None
 
 unset ATELET_PRINCIPAL NODE_SA
 ```
 
-The Workload Identity + Metadata Server cluster mutations are kept — see [099](099-cleanup.md) for the rest.
+The Workload Identity + Metadata Server cluster mutations are kept - see [099](099-cleanup.md) for the rest.
 
 ## Command-Accuracy Note
 
-These `gcloud` flags were verified against Google Cloud SDK **484.0.0**. Flags shift between releases — confirm with `gcloud <group> <command> --help` if yours differs.
+These `gcloud` flags were verified against Google Cloud SDK **484.0.0**. Flags shift between releases - confirm with `gcloud <group> <command> --help` if yours differs.
 
 ## Next
 
-- [003 — Install Substrate](003-install-substrate.md)
+- [003 - Install Substrate](003-install-substrate.md)

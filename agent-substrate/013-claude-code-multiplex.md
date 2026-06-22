@@ -8,8 +8,8 @@ Three Claude Code agents (`luna`, `mars`, `orion`) sharing a 2-pod `WorkerPool`.
 
 | Upstream issue | Symptom | Workaround in the demo |
 |---|---|---|
-| **`#189`** | Atelet OCI bundle gaps — missing `Args`, `Secret`, symlinks | Bundled fix patch applied at deploy time |
-| **`#197` Bug 2a** | `valueFrom.secretKeyRef` on `ActorTemplate` container env not supported | `ANTHROPIC_API_KEY` passed as a plain `value:` env var (envsubst-substituted at apply time). The key ends up in the rendered manifest as plaintext — **scrub history** after teardown if your shell or registry logs it. |
+| **`#189`** | Atelet OCI bundle gaps - missing `Args`, `Secret`, symlinks | Bundled fix patch applied at deploy time |
+| **`#197` Bug 2a** | `valueFrom.secretKeyRef` on `ActorTemplate` container env not supported | `ANTHROPIC_API_KEY` passed as a plain `value:` env var (envsubst-substituted at apply time). The key ends up in the rendered manifest as plaintext - **scrub history** after teardown if your shell or registry logs it. |
 | **`#197` Bug 3** | Atelet symlink resolution | Fix PR forthcoming |
 
 Treat this demo as a preview, not a stable pattern.
@@ -41,7 +41,7 @@ With three agents and two pods, the third agent stays suspended (state snapshott
 |---|---|
 | `demos/claude-code-multiplex/claude-code-multiplex.yaml.tmpl` | Namespace + WorkerPool + 3 ActorTemplates (single envsubst template) |
 | `hack/install-demo-claude-code-multiplex.sh` | Sourced by `install-ate.sh`; registers `--deploy-demo-claude-code-multiplex` and `--delete-demo-claude-code-multiplex` |
-| `demos/claude-code-multiplex/workload/` | Workload container source (Dockerfile + Python + Claude Code wrapper) — built with `docker buildx`, **not** `ko` |
+| `demos/claude-code-multiplex/workload/` | Workload container source (Dockerfile + Python + Claude Code wrapper) - built with `docker buildx`, **not** `ko` |
 | `demos/claude-code-multiplex/ui/` | Static dashboard (`index.html`) + Go HTTP server (`server.go`) |
 
 ## Prerequisites
@@ -51,9 +51,9 @@ With three agents and two pods, the third agent stays suspended (state snapshott
 - `docker buildx` with multi-platform support (the workload is a Python+Claude image, so `ko` doesn't apply here)
 - An **Anthropic API key**:
 
-  ```bash
-  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
-  ```
+ ```bash
+ export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+ ```
 
 ## 1. Deploy
 
@@ -62,7 +62,7 @@ From the root of the cloned `substrate/` repo:
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... \
 BUCKET_NAME="$BUCKET_NAME" \
-  ./hack/install-ate.sh --deploy-demo-claude-code-multiplex
+ ./hack/install-ate.sh --deploy-demo-claude-code-multiplex
 ```
 
 This:
@@ -79,11 +79,11 @@ This:
 The dashboard talks to `ate-api-server` over gRPC (port-forwarded to your laptop) and reads pod logs from the Kubernetes API via `client-go` (so it picks up your `~/.kube/config` for cluster context).
 
 ```bash
-# Terminal 1: ateapi port-forward — keep alive for the lifetime of the demo
+# Terminal 1: ateapi port-forward - keep alive for the lifetime of the demo
 kubectl port-forward svc/ateapi 8080:8080 -n ate-system
 ```
 
-> The Service name (`ateapi` vs `api` vs `ate-api-server`) may vary by chart version — `kubectl get svc -n ate-system` will tell you. Adjust both the `-n ate-system svc/<name>` arg and the `ATEAPI_ADDR` env var below.
+> The Service name (`ateapi` vs `api` vs `ate-api-server`) may vary by chart version - `kubectl get svc -n ate-system` will tell you. Adjust both the `-n ate-system svc/<name>` arg and the `ATEAPI_ADDR` env var below.
 
 ## 3. Run the Dashboard
 
@@ -112,7 +112,7 @@ Smoke-test:
 
 ```bash
 curl localhost:8090/healthz
-# {"logs":true}  ← means client-go picked up the cluster context
+# {"logs":true} ← means client-go picked up the cluster context
 ```
 
 ## 4. Drive the Demo
@@ -124,7 +124,7 @@ Click **"Give a task"**:
 - Badge → `queued` (agent has work, no pod yet)
 - Substrate binds the agent to a free pod → badge → `running`
 - Agent calls Claude, writes a result, exits → badge → `completed`
-- After a short idle window, Substrate suspends the agent — released pod available for the next task on a **different** agent
+- After a short idle window, Substrate suspends the agent - released pod available for the next task on a **different** agent
 
 Click "Give a task" a few more times. With three agents and two pods, you'll see the third agent **stay suspended** while the other two run. When one finishes and suspends, the third can be resumed.
 
@@ -162,5 +162,5 @@ The same upstream workarounds apply until the linked issues land.
 
 ## Next
 
-- [060 — Install kagent with Substrate Enabled](020-kagent-integration.md) — wire kagent on top, so `AgentHarness` resources can run on Substrate workers
-- [080 — Operations](030-operations.md)
+- [060 - Install kagent with Substrate Enabled](020-kagent-integration.md) - wire kagent on top, so `AgentHarness` resources can run on Substrate workers
+- [080 - Operations](030-operations.md)

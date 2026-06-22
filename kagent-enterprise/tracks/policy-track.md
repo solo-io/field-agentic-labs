@@ -1,4 +1,4 @@
-# Track — Policy Deep Dive
+# Track - Policy Deep Dive
 
 A focused path through `AccessPolicy` (both subject kinds), prompt guards on the gateway, and Kubernetes RBAC for the kagent CRDs. Assumes you've already done the install track.
 
@@ -8,20 +8,20 @@ A focused path through `AccessPolicy` (both subject kinds), prompt guards on the
 
 ## Prerequisites
 
-- Completed the [install-track](install-track.md) — kagent + an MCP server + a working agent
+- Completed the [install-track](install-track.md) - kagent + an MCP server + a working agent
 
-For [061 (UserGroup AccessPolicy)](../031-accesspolicy-usergroup.md) you also need a Keycloak (or any OIDC IdP) whose tokens carry a `preferred_username` claim. If you don't have one, do [080](../060-pinniped-keycloak.md) first — it stands up Keycloak in-cluster — and reuse the same realm here.
+For [061 (UserGroup AccessPolicy)](../031-accesspolicy-usergroup.md) you also need a Keycloak (or any OIDC IdP) whose tokens carry a `preferred_username` claim. If you don't have one, do [080](../060-pinniped-keycloak.md) first - it stands up Keycloak in-cluster - and reuse the same realm here.
 
-For [070 (Prompt Guards)](../040-prompt-guards.md) you need [025 — Enterprise Agentgateway](../004-install-enterprise-agentgateway.md) installed.
+For [070 (Prompt Guards)](../040-prompt-guards.md) you need [025 - Enterprise Agentgateway](../004-install-enterprise-agentgateway.md) installed.
 
 ## Order
 
-1. [025 — Install Enterprise Agentgateway](../004-install-enterprise-agentgateway.md) *(if not already installed)*
-2. [060 — `AccessPolicy`: Agent → MCP (Declarative + BYO)](../030-accesspolicy-agent-to-mcp.md)
-3. [061 — `AccessPolicy`: UserGroup → Agent (OIDC JWT)](../031-accesspolicy-usergroup.md)
-4. [070 — Prompt Guards](../040-prompt-guards.md)
-5. [071 — Platform RBAC for kagent CRDs](../041-platform-rbac.md)
-6. [099 — Cleanup](../099-cleanup.md) (just the policy/RBAC sections)
+1. [025 - Install Enterprise Agentgateway](../004-install-enterprise-agentgateway.md) *(if not already installed)*
+2. [060 - `AccessPolicy`: Agent → MCP (Declarative + BYO)](../030-accesspolicy-agent-to-mcp.md)
+3. [061 - `AccessPolicy`: UserGroup → Agent (OIDC JWT)](../031-accesspolicy-usergroup.md)
+4. [070 - Prompt Guards](../040-prompt-guards.md)
+5. [071 - Platform RBAC for kagent CRDs](../041-platform-rbac.md)
+6. [099 - Cleanup](../099-cleanup.md) (just the policy/RBAC sections)
 
 ## What You Will Have at the End
 
@@ -43,4 +43,4 @@ In production all four typically apply. Start from the inside out: tools first, 
 
 ## Next
 
-- [obo-track](obo-track.md) — Add Entra OBO for true end-to-end user identity through to the LLM
+- [obo-track](obo-track.md) - Add Entra OBO for true end-to-end user identity through to the LLM

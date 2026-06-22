@@ -1,8 +1,8 @@
 # Local stdio MCP Server (`demo-tools`)
 
-Register a small in-tree MCP server with AgentRegistry. The server is a zero-dependency Python script that exposes three tools (`get_time`, `random_number`, `reverse_string`) over `stdio`. AgentRegistry clones it from this repo and treats it as a catalog asset that agents can reference.
+Register a small in-tree MCP server with agentregistry. The server is a zero-dependency Python script that exposes three tools (`get_time`, `random_number`, `reverse_string`) over `stdio`. Agentregistry clones it from this repo and treats it as a catalog asset that agents can reference.
 
-This is the simplest MCP lab — it's catalog-only. No deployment to a runtime. To actually call these tools, you'd reference `demo-tools` from an Agent's `mcpServers:` block (the agent runtime spawns the MCP server in-process).
+This is the simplest MCP lab - it's catalog-only. No deployment to a runtime. To actually call these tools, you'd reference `demo-tools` from an Agent's `mcpServers:` block (the agent runtime spawns the MCP server in-process).
 
 ## Lab Objectives
 
@@ -19,8 +19,8 @@ This is the simplest MCP lab — it's catalog-only. No deployment to a runtime. 
 
 ```
 assets/mcp/demo-mcp/
-├── mcpserver.yaml    # the AgentRegistry MCPServer manifest
-└── server.py         # a ~120-line Python MCP server over stdio JSON-RPC
+├── mcpserver.yaml # the agentregistry MCPServer manifest
+└── server.py # a ~120-line Python MCP server over stdio JSON-RPC
 ```
 
 [`mcpserver.yaml`](assets/mcp/demo-mcp/mcpserver.yaml):
@@ -29,23 +29,23 @@ assets/mcp/demo-mcp/
 apiVersion: ar.dev/v1alpha1
 kind: MCPServer
 metadata:
-  name: demo-tools
-  version: "1.0.0"
+ name: demo-tools
+ version: "1.0.0"
 spec:
-  description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
-  transport: stdio
-  command: "python3 server.py"
-  source:
-    repository:
-      url: "https://github.com/solo-io/field-agentic-labs"
-      subfolder: "agentregistry-enterprise/assets/mcp/demo-mcp"
-  tools:
-    - name: get_time
-      description: "Get the current UTC time"
-    - name: random_number
-      description: "Generate a random number between min and max"
-    - name: reverse_string
-      description: "Reverse a string"
+ description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
+ transport: stdio
+ command: "python3 server.py"
+ source:
+ repository:
+ url: "https://github.com/solo-io/field-agentic-labs"
+ subfolder: "agentregistry-enterprise/assets/mcp/demo-mcp"
+ tools:
+ - name: get_time
+ description: "Get the current UTC time"
+ - name: random_number
+ description: "Generate a random number between min and max"
+ - name: reverse_string
+ description: "Reverse a string"
 ```
 
 ## 2. Register the MCP Server
@@ -63,8 +63,8 @@ arctl get mcps
 Expected:
 
 ```
-NAME         VERSION   DESCRIPTION
-demo-tools   1.0.0     A minimal MCP server with simple tools: get_time, random_...
+NAME VERSION DESCRIPTION
+demo-tools 1.0.0 A minimal MCP server with simple tools: get_time, random_...
 ```
 
 Inspect the full record:
@@ -75,9 +75,9 @@ arctl get mcp demo-tools --version 1.0.0 -o yaml
 
 ## Where the Server Actually Runs
 
-Unlike [031](031-mcp-remote-github-copilot.md) (remote, deployed to a runtime), the stdio variant runs **inside** the agent's container. When an agent references `demo-tools` in its `mcpServers:` block, the agent runtime spawns `python3 server.py` as a subprocess and talks to it over stdin/stdout. So there's no `Deployment` resource for an stdio MCP — just the catalog entry.
+Unlike [031](031-mcp-remote-github-copilot.md) (remote, deployed to a runtime), the stdio variant runs **inside** the agent's container. When an agent references `demo-tools` in its `mcpServers:` block, the agent runtime spawns `python3 server.py` as a subprocess and talks to it over stdin/stdout. So there's no `Deployment` resource for an stdio MCP - just the catalog entry.
 
-To wire it into an agent, add the reference under `spec.mcpServers` (and `spec.tools`) on the Agent — see how [020 step 5](020-kagent-runtime-and-agent.md#5-register-the-agent) references `github-copilot-mcp-server` for the pattern.
+To wire it into an agent, add the reference under `spec.mcpServers` (and `spec.tools`) on the Agent - see how [020 step 5](020-kagent-runtime-and-agent.md#5-register-the-agent) references `github-copilot-mcp-server` for the pattern.
 
 ## Cleanup
 
@@ -87,6 +87,6 @@ arctl delete mcp demo-tools --version 1.0.0
 
 ## Next
 
-- [031 — Remote MCP via kagent (GitHub Copilot)](031-mcp-remote-github-copilot.md) — same MCPServer concept but pointing at a remote HTTP server
-- [032 — Remote MCP through Agentgateway](032-mcp-through-agentgateway.md) — third MCP topology
-- [050 — AccessPolicy](050-access-policies.md) — restrict which tools an agent (or user) can call on `demo-tools`
+- [031 - Remote MCP via kagent (GitHub Copilot)](031-mcp-remote-github-copilot.md) - same MCPServer concept but pointing at a remote HTTP server
+- [032 - Remote MCP through Agentgateway](032-mcp-through-agentgateway.md) - third MCP topology
+- [050 - AccessPolicy](050-access-policies.md) - restrict which tools an agent (or user) can call on `demo-tools`

@@ -41,7 +41,7 @@ Wait for the template to be ready:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/sandbox-template \
-  -n ate-demo-sandbox --timeout=5m
+ -n ate-demo-sandbox --timeout=5m
 ```
 
 ## 2. Create an Actor
@@ -74,9 +74,9 @@ In a third terminal, from the cloned `substrate/` repo:
 go build -o bin/sandbox-client ./demos/sandbox/client
 
 ./bin/sandbox-client \
-  --ateapi=localhost:8080 \
-  --atenet=localhost:8000 \
-  --id=my-sandbox-1
+ --ateapi=localhost:8080 \
+ --atenet=localhost:8000 \
+ --id=my-sandbox-1
 ```
 
 Once you see the `sandbox>` prompt, you have an interactive shell **inside the actor**:
@@ -92,7 +92,7 @@ Hello
 
 ## 5. Prove Filesystem State Persists
 
-The interesting bit. Type `exit` at the `sandbox>` prompt — this **automatically suspends** the actor (the client calls `SuspendActor` on close). `runsc` checkpoints both memory and the writable layer of the container's filesystem to your GCS bucket.
+The interesting bit. Type `exit` at the `sandbox>` prompt - this **automatically suspends** the actor (the client calls `SuspendActor` on close). `runsc` checkpoints both memory and the writable layer of the container's filesystem to your GCS bucket.
 
 Confirm the actor is `SUSPENDED`:
 
@@ -100,13 +100,13 @@ Confirm the actor is `SUSPENDED`:
 kubectl ate get actor my-sandbox-1
 ```
 
-Now re-open the REPL — same actor ID, same args:
+Now re-open the REPL - same actor ID, same args:
 
 ```bash
 ./bin/sandbox-client \
-  --ateapi=localhost:8080 \
-  --atenet=localhost:8000 \
-  --id=my-sandbox-1
+ --ateapi=localhost:8080 \
+ --atenet=localhost:8000 \
+ --id=my-sandbox-1
 ```
 
 Your file is still there (possibly on a **different** worker pod):
@@ -121,8 +121,8 @@ This is the disk-side analog of the counter demo's RAM-side state preservation.
 ## Cleanup
 
 ```bash
-kubectl ate suspend actor my-sandbox-1   # if still running
-kubectl ate delete  actor my-sandbox-1
+kubectl ate suspend actor my-sandbox-1 # if still running
+kubectl ate delete actor my-sandbox-1
 
 ./hack/install-ate.sh --delete-demo-sandbox
 ```
@@ -132,11 +132,11 @@ kubectl ate delete  actor my-sandbox-1
 | Aspect | Counter ([050](010-counter-demo.md)) | Sandbox (this lab) |
 |---|---|---|
 | State preserved | In-memory counter integer | Both RAM **and** writable filesystem layer |
-| Trigger for suspend | Manual `kubectl ate suspend` | Implicit — `exit` in the REPL client |
+| Trigger for suspend | Manual `kubectl ate suspend` | Implicit - `exit` in the REPL client |
 | Driver | `curl` with `Host:` header | Custom REPL client speaking to both `ateapi` and `atenet` |
 | Security | None demonstrated | None enforced (executes arbitrary commands) |
 
 ## Next
 
-- [052 — Agent-Secret Demo (self-suspending, RAM-resident secret)](012-agent-secret-demo.md)
-- [053 — Claude Code Multiplex](013-claude-code-multiplex.md)
+- [052 - Agent-Secret Demo (self-suspending, RAM-resident secret)](012-agent-secret-demo.md)
+- [053 - Claude Code Multiplex](013-claude-code-multiplex.md)

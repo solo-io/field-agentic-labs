@@ -7,7 +7,7 @@ This lab installs Solo Enterprise for kagent via the **Gloo Operator**. The oper
 - `KagentManagementController` → installs the Solo Enterprise management plane
 - `KagentController` → installs the kagent runtime controller (image tag `0.1.5`)
 
-This is the canonical install for the rest of the workshop. If you only need the OBO scenario, skip ahead to [090](070-obo-entra.md) — it installs kagent with a different chart pattern.
+This is the canonical install for the rest of the workshop. If you only need the OBO scenario, skip ahead to [090](070-obo-entra.md) - it installs kagent with a different chart pattern.
 
 ## Lab Objectives
 
@@ -18,25 +18,25 @@ This is the canonical install for the rest of the workshop. If you only need the
 
 ## Prerequisites
 
-- [001 — Baseline Setup](001-baseline-setup.md) completed
-- [002 — Licenses, Namespace, and Secrets](002-licenses-and-secrets.md) completed — namespace, license env vars, OIDC env vars, LLM Secret, `jwt` Secret, `kagent-backend-secret` all in place
+- [001 - Baseline Setup](001-baseline-setup.md) completed
+- [002 - Licenses, Namespace, and Secrets](002-licenses-and-secrets.md) completed - namespace, license env vars, OIDC env vars, LLM Secret, `jwt` Secret, `kagent-backend-secret` all in place
 
 ## 1. Install the Gloo Operator
 
 ```bash
 helm upgrade -i gloo-operator \
-  oci://us-docker.pkg.dev/solo-public/gloo-operator-helm/gloo-operator \
-  --version 0.4.0 \
-  -n kagent \
-  --create-namespace \
-  --values - <<EOF
+ oci://us-docker.pkg.dev/solo-public/gloo-operator-helm/gloo-operator \
+ --version 0.4.0 \
+ -n kagent \
+ --create-namespace \
+ --values - <<EOF
 manager:
-  env:
-    KAGENT_CONTROLLER: true
-    WATCH_NAMESPACES: "kagent"
-    GLOO_GATEWAY_LICENSE_KEY: ${GLOO_GATEWAY_LICENSE_KEY}
-    AGENTGATEWAY_LICENSE_KEY: ${AGENTGATEWAY_LICENSE_KEY}
-    SOLO_ISTIO_LICENSE_KEY: ${SOLO_LICENSE_KEY}
+ env:
+ KAGENT_CONTROLLER: true
+ WATCH_NAMESPACES: "kagent"
+ GLOO_GATEWAY_LICENSE_KEY: ${GLOO_GATEWAY_LICENSE_KEY}
+ AGENTGATEWAY_LICENSE_KEY: ${AGENTGATEWAY_LICENSE_KEY}
+ SOLO_ISTIO_LICENSE_KEY: ${SOLO_LICENSE_KEY}
 EOF
 ```
 
@@ -65,86 +65,86 @@ kubectl apply -n kagent -f - <<EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gloo-extensions-config
+ name: gloo-extensions-config
 data:
-  values.management: |
-    cluster: ${CLUSTER1_NAME}
-    ui:
-      frontend:
-        uiBackendHost: "http://localhost:8090"
-  values.gloo: |
-    agentgateway:
-      enabled: true
-  values.kagent: |
-    controller:
-      image:
-        registry: us-docker.pkg.dev/solo-public
-        repository: kagent-enterprise/kagent-enterprise-kagent-enterprise-controller
-        tag: 0.1.5
-    oidc:
-      enabled: true
+ values.management: |
+ cluster: ${CLUSTER1_NAME}
+ ui:
+ frontend:
+ uiBackendHost: "http://localhost:8090"
+ values.gloo: |
+ agentgateway:
+ enabled: true
+ values.kagent: |
+ controller:
+ image:
+ registry: us-docker.pkg.dev/solo-public
+ repository: kagent-enterprise/kagent-enterprise-kagent-enterprise-controller
+ tag: 0.1.5
+ oidc:
+ enabled: true
 ---
 apiVersion: operator.gloo.solo.io/v1
 kind: ServiceMeshController
 metadata:
-  name: managed-istio
-  labels:
-    app.kubernetes.io/name: managed-istio
+ name: managed-istio
+ labels:
+ app.kubernetes.io/name: managed-istio
 spec:
-  dataplaneMode: Ambient
-  installNamespace: istio-system
-  version: 1.27.1
+ dataplaneMode: Ambient
+ installNamespace: istio-system
+ version: 1.27.1
 ---
 apiVersion: operator.gloo.solo.io/v1
 kind: GatewayController
 metadata:
-  name: gloo-gateway
+ name: gloo-gateway
 spec:
-  version: 2.0.0
+ version: 2.0.0
 ---
 apiVersion: operator.gloo.solo.io/v1
 kind: KagentManagementController
 metadata:
-  name: kagent-enterprise
+ name: kagent-enterprise
 spec:
-  version: 0.1.5
-  repository:
-    url: oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts
-  oidc:
-    clientID: ${OIDC_BACKEND}
-    clientSecret: kagent-backend-secret
-    issuer: ${OIDC_ISSUER}
-    authEndpoint: ${authEndpoint}
-    logoutEndpoint: ${logoutEndpoint}
-    tokenEndpoint: ${tokenEndpoint}
+ version: 0.1.5
+ repository:
+ url: oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts
+ oidc:
+ clientID: ${OIDC_BACKEND}
+ clientSecret: kagent-backend-secret
+ issuer: ${OIDC_ISSUER}
+ authEndpoint: ${authEndpoint}
+ logoutEndpoint: ${logoutEndpoint}
+ tokenEndpoint: ${tokenEndpoint}
 ---
 apiVersion: operator.gloo.solo.io/v1
 kind: KagentController
 metadata:
-  name: kagent
+ name: kagent
 spec:
-  version: 0.1.5
-  repository:
-    url: oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts
-  apiKey:
-    type: OpenAI
-    secretRef:
-      name: llm-api-keys
-      namespace: kagent
-  oidc:
-    clientId: ${OIDC_BACKEND}
-    issuer: ${OIDC_ISSUER}
-    secretRef: kagent-backend-secret
-    secret: ${BACKEND_CLIENT_SECRET}
-  telemetry:
-    logging:
-      endpoint: kagent-enterprise-ui.kagent.svc.cluster.local:4317
-    tracing:
-      endpoint: kagent-enterprise-ui.kagent.svc.cluster.local:4317
+ version: 0.1.5
+ repository:
+ url: oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts
+ apiKey:
+ type: OpenAI
+ secretRef:
+ name: llm-api-keys
+ namespace: kagent
+ oidc:
+ clientId: ${OIDC_BACKEND}
+ issuer: ${OIDC_ISSUER}
+ secretRef: kagent-backend-secret
+ secret: ${BACKEND_CLIENT_SECRET}
+ telemetry:
+ logging:
+ endpoint: kagent-enterprise-ui.kagent.svc.cluster.local:4317
+ tracing:
+ endpoint: kagent-enterprise-ui.kagent.svc.cluster.local:4317
 EOF
 ```
 
-## 3. Wait for Everything to Come Up (2–3 minutes)
+## 3. Wait for Everything to Come Up (2-3 minutes)
 
 The operator now installs Istio Ambient, Gloo Gateway, the Solo Enterprise management plane, and the kagent runtime. Watch each surface:
 
@@ -214,6 +214,6 @@ kubectl logs -n kagent -l app=kagent --tail=100 | grep -i oidc
 
 ## Next
 
-- [025 — Install Enterprise Agentgateway](004-install-enterprise-agentgateway.md)
-- [030 — Gateway Access Logs](050-access-logs.md)
-- [040 — MCP Server + Agent](010-mcp-connection-agent-config.md)
+- [025 - Install Enterprise Agentgateway](004-install-enterprise-agentgateway.md)
+- [030 - Gateway Access Logs](050-access-logs.md)
+- [040 - MCP Server + Agent](010-mcp-connection-agent-config.md)

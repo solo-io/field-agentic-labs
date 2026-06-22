@@ -3,13 +3,13 @@
 # Build + push the image yourself before applying this manifest. From the
 # workshop root:
 #
-#   cd agentregistry-enterprise/assets/k8shelper-anthropic
-#   export K8SHELPER_IMAGE="<your-registry>/<your-repo>/k8shelperanthropic:latest"
-#   docker buildx build --platform linux/amd64 -t "${K8SHELPER_IMAGE}" --push .
+# cd agentregistry-enterprise/assets/k8shelper-anthropic
+# export K8SHELPER_IMAGE="<your-registry>/<your-repo>/k8shelperanthropic:latest"
+# docker buildx build --platform linux/amd64 -t "${K8SHELPER_IMAGE}" --push .
 #
 # Then render this manifest with envsubst and apply:
 #
-#   envsubst < assets/providers/kagent/anthropicagent/k8shelperanthropic.yaml | arctl apply -f -
+# envsubst < assets/providers/kagent/anthropicagent/k8shelperanthropic.yaml | arctl apply -f -
 #
 # `<your-registry>/<your-repo>` is whatever container registry the cluster
 # nodes can pull from (Docker Hub, GHCR, ECR, GAR, ACR, etc.).

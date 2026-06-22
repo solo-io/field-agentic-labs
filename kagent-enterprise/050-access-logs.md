@@ -24,38 +24,38 @@ That manifest is:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: HTTPListenerPolicy
 metadata:
-  name: access-logs
-  namespace: gloo-system
+ name: access-logs
+ namespace: gloo-system
 spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: kagent-gateway
-  accessLog:
-  - fileSink:
-      path: /dev/stdout
-      jsonFormat:
-          start_time: "%START_TIME%"
-          method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
-          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
-          protocol: "%PROTOCOL%"
-          response_code: "%RESPONSE_CODE%"
-          response_flags: "%RESPONSE_FLAGS%"
-          bytes_received: "%BYTES_RECEIVED%"
-          bytes_sent: "%BYTES_SENT%"
-          total_duration: "%DURATION%"
-          resp_backend_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
-          req_x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
-          user_agent: "%REQ(USER-AGENT)%"
-          request_id: "%REQ(X-REQUEST-ID)%"
-          authority: "%REQ(:AUTHORITY)%"
-          backendHost: "%UPSTREAM_HOST%"
-          backendCluster: "%UPSTREAM_CLUSTER%"
+ targetRefs:
+ - group: gateway.networking.k8s.io
+ kind: Gateway
+ name: kagent-gateway
+ accessLog:
+ - fileSink:
+ path: /dev/stdout
+ jsonFormat:
+ start_time: "%START_TIME%"
+ method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
+ path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+ protocol: "%PROTOCOL%"
+ response_code: "%RESPONSE_CODE%"
+ response_flags: "%RESPONSE_FLAGS%"
+ bytes_received: "%BYTES_RECEIVED%"
+ bytes_sent: "%BYTES_SENT%"
+ total_duration: "%DURATION%"
+ resp_backend_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+ req_x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
+ user_agent: "%REQ(USER-AGENT)%"
+ request_id: "%REQ(X-REQUEST-ID)%"
+ authority: "%REQ(:AUTHORITY)%"
+ backendHost: "%UPSTREAM_HOST%"
+ backendCluster: "%UPSTREAM_CLUSTER%"
 ```
 
 ## Verify
 
-Send any request through the gateway (the easiest is to open the kagent UI and prompt an agent — see [050](020-troubleshoot-pod.md)) and tail the gateway pod's stdout:
+Send any request through the gateway (the easiest is to open the kagent UI and prompt an agent - see [050](020-troubleshoot-pod.md)) and tail the gateway pod's stdout:
 
 ```bash
 kubectl logs -n gloo-system -l app.kubernetes.io/name=kagent-gateway -f
@@ -73,15 +73,15 @@ You should see structured JSON lines like:
 kubectl delete httplistenerpolicy access-logs -n gloo-system --ignore-not-found
 ```
 
-Existing log lines already emitted to stdout are not retroactively removed — your log aggregator keeps whatever it already ingested.
+Existing log lines already emitted to stdout are not retroactively removed - your log aggregator keeps whatever it already ingested.
 
 ## Notes
 
-- The Gateway name must match what Gloo Gateway provisions in `gloo-system`. The Gloo Operator install in [020](003-install-kagent-enterprise.md) creates `kagent-gateway` — confirm with `kubectl get gateway -n gloo-system`.
+- The Gateway name must match what Gloo Gateway provisions in `gloo-system`. The Gloo Operator install in [020](003-install-kagent-enterprise.md) creates `kagent-gateway` - confirm with `kubectl get gateway -n gloo-system`.
 - The `targetRefs` selector binds this policy to the Gateway. To narrow to a specific listener, add `sectionName` to the target reference.
-- If you don't want every field, drop entries from `jsonFormat`. Envoy supports a wide range of `%...%` substitutions — see the Envoy access-log documentation for the full list.
-- If you also want to enrich logs with JWT claims (group, email, etc.) once OIDC is in place, agentgateway has its own `EnterpriseAgentgatewayPolicy.frontend.accessLog` mechanism with `jwt.*` CEL expressions — that's a different policy applied to the agentgateway Gateway rather than the Gloo Gateway one.
+- If you don't want every field, drop entries from `jsonFormat`. Envoy supports a wide range of `%...%` substitutions - see the Envoy access-log documentation for the full list.
+- If you also want to enrich logs with JWT claims (group, email, etc.) once OIDC is in place, agentgateway has its own `EnterpriseAgentgatewayPolicy.frontend.accessLog` mechanism with `jwt.*` CEL expressions - that's a different policy applied to the agentgateway Gateway rather than the Gloo Gateway one.
 
 ## Next
 
-- [040 — Declarative MCP Server + Agent](010-mcp-connection-agent-config.md)
+- [040 - Declarative MCP Server + Agent](010-mcp-connection-agent-config.md)

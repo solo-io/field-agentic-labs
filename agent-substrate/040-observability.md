@@ -20,15 +20,15 @@ This lab covers all three on the validated paths (GKE for "real" environments + 
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
-- At least one running actor — easiest is the counter from [010](010-counter-demo.md)
+- At least one running actor - easiest is the counter from [010](010-counter-demo.md)
 
 ## 1. Logs
 
-### Live Inspection — `kubectl ate logs`
+### Live Inspection - `kubectl ate logs`
 
 ```bash
 kubectl ate logs actors <actor-id>
-kubectl ate logs actors <actor-id> --follow         # or -f
+kubectl ate logs actors <actor-id> --follow # or -f
 ```
 
 By default `kubectl ate logs` queries the Kubernetes API of the worker pod where the actor is **currently** running. If the actor is suspended, it tells you so immediately:
@@ -38,7 +38,7 @@ $ kubectl ate logs actors test
 Error: actor test is not currently running on any worker pod
 ```
 
-When the actor **is** running, you get clean JSON lines stripped of Substrate metadata — same shape as `kubectl logs`:
+When the actor **is** running, you get clean JSON lines stripped of Substrate metadata - same shape as `kubectl logs`:
 
 ```
 {"time":"2026-05-22T21:49:15.23700774Z","message":"Actor started"}
@@ -46,7 +46,7 @@ When the actor **is** running, you get clean JSON lines stripped of Substrate me
 {"time":"2026-05-22T21:49:25.263744806Z","count":1,"fshash":"mCY7...","level":"INFO","msg":"Count"}
 ```
 
-With `--follow`, the CLI is **actor-aware** — if the actor suspends and resumes on a different worker pod, the stream automatically re-attaches:
+With `--follow`, the CLI is **actor-aware** - if the actor suspends and resumes on a different worker pod, the stream automatically re-attaches:
 
 ```
 $ kubectl ate logs actors test -f
@@ -57,7 +57,7 @@ Actor is currently running on pod ate-demo-counter/counter-deployment-ab123-x4y5
 {"time":"...","count":2,...}
 ```
 
-### Historical Logs — Centralized Backend
+### Historical Logs - Centralized Backend
 
 For continuous history across past worker pods and suspension cycles, route logs to a centralized backend (Google Cloud Logging, Loki, Splunk, anything that indexes structured JSON). Substrate's pipeline injects these labels on every log row:
 
@@ -67,21 +67,21 @@ For continuous history across past worker pods and suspension cycles, route logs
 | `ate.dev/actor_template` | The `ActorTemplate` name (e.g. `counter`) |
 | `ate.dev/actor_namespace` | The `ActorTemplate` namespace (e.g. `ate-demo-counter`) |
 
-Three common queries (examples in Google Cloud Log Explorer syntax — adapt to your backend):
+Three common queries (examples in Google Cloud Log Explorer syntax - adapt to your backend):
 
-**Actor-centric — one actor's lifetime across many worker pods:**
+**Actor-centric - one actor's lifetime across many worker pods:**
 
 ```text
 labels.actor_id="test"
 ```
 
-**Template-centric — all actors of a kind, e.g. for error-rate analysis:**
+**Template-centric - all actors of a kind, e.g. for error-rate analysis:**
 
 ```text
 labels.actor_template="counter"
 ```
 
-**Pod-centric — every actor multiplexed onto a specific worker pod:**
+**Pod-centric - every actor multiplexed onto a specific worker pod:**
 
 ```text
 resource.labels.pod_name="counter-deployment-c995fdf4c-m7d96"
@@ -116,9 +116,9 @@ http_server_request_duration_seconds_bucket
 
 ### GKE
 
-Set up **Google Managed Prometheus** on the cluster — see [GKE → Managed Prometheus](https://docs.cloud.google.com/stackdriver/docs/managed-prometheus). The Substrate pods expose the same OTel metrics; Managed Prometheus scrapes them automatically once enabled.
+Set up **Google Managed Prometheus** on the cluster - see [GKE → Managed Prometheus](https://docs.cloud.google.com/stackdriver/docs/managed-prometheus). The Substrate pods expose the same OTel metrics; Managed Prometheus scrapes them automatically once enabled.
 
-> **Actor-level metrics are on the roadmap.** Today the `rpc_*` / `http_*` series are infrastructure-level — they tell you how the control plane and router are doing, not per-actor performance. Planned OTel instrumentation will add actor labels (`ate.dev/actor_id`, etc.) so you can slice by actor / template / pool. Track upstream for progress.
+> **Actor-level metrics are on the roadmap.** Today the `rpc_*` / `http_*` series are infrastructure-level - they tell you how the control plane and router are doing, not per-actor performance. Planned OTel instrumentation will add actor labels (`ate.dev/actor_id`, etc.) so you can slice by actor / template / pool. Track upstream for progress.
 
 ## 3. Tracing
 
@@ -139,24 +139,24 @@ kubectl ate suspend actor my-counter-1 --trace
 
 Copy the printed Trace ID into the Jaeger search box at <http://localhost:16686>, or pick `ateapi` / `atelet` under **Service** and click **Find Traces**.
 
-### GKE — Cloud Trace + Managed OTel
+### GKE - Cloud Trace + Managed OTel
 
 Two prerequisites:
 
 1. **Cloud Trace API on:**
 
-   ```bash
-   gcloud services enable cloudtrace.googleapis.com --project=$PROJECT_ID
-   ```
+ ```bash
+ gcloud services enable cloudtrace.googleapis.com --project=$PROJECT_ID
+ ```
 
 2. **Managed OpenTelemetry on the cluster:**
 
-   ```bash
-   gcloud beta container clusters update "$CLUSTER_NAME" \
-     --project="$PROJECT_ID" \
-     --location="$CLUSTER_LOCATION" \
-     --managed-otel-scope=COLLECTION_AND_INSTRUMENTATION_COMPONENTS
-   ```
+ ```bash
+ gcloud beta container clusters update "$CLUSTER_NAME" \
+ --project="$PROJECT_ID" \
+ --location="$CLUSTER_LOCATION" \
+ --managed-otel-scope=COLLECTION_AND_INSTRUMENTATION_COMPONENTS
+ ```
 
 Then run any command with `--trace`:
 
@@ -186,7 +186,7 @@ The upstream repo ships an `ate-api` gRPC dashboard at `monitoring/dashboards/at
 
 ## Cleanup
 
-This lab is mostly read-only — `kubectl ate logs --follow`, port-forwards to Prometheus / Jaeger, and `kubectl ate ... --trace` calls don't create persistent resources. Just `Ctrl-C` any port-forwards.
+This lab is mostly read-only - `kubectl ate logs --follow`, port-forwards to Prometheus / Jaeger, and `kubectl ate ... --trace` calls don't create persistent resources. Just `Ctrl-C` any port-forwards.
 
 If you imported the Grafana dashboard JSON in the last section, remove it through the Grafana UI (Dashboards → select → Delete) when you're done.
 
@@ -195,8 +195,8 @@ If you enabled Cloud Trace API + Managed OTel on GKE specifically for this lab:
 ```bash
 # Roll back Managed OTel on the cluster
 gcloud beta container clusters update "${CLUSTER_NAME}" \
-  --project="${PROJECT_ID}" --location="${CLUSTER_LOCATION}" \
-  --managed-otel-scope=DISABLED
+ --project="${PROJECT_ID}" --location="${CLUSTER_LOCATION}" \
+ --managed-otel-scope=DISABLED
 
 # Disable the Cloud Trace API on the project (only if no other workload uses it)
 gcloud services disable cloudtrace.googleapis.com --project="${PROJECT_ID}"
@@ -204,5 +204,5 @@ gcloud services disable cloudtrace.googleapis.com --project="${PROJECT_ID}"
 
 ## Next
 
-- [099 — Cleanup](099-cleanup.md)
-- [appendix-benchmarking](appendix-benchmarking.md) — drive real traffic at the control plane with Locust
+- [099 - Cleanup](099-cleanup.md)
+- [appendix-benchmarking](appendix-benchmarking.md) - drive real traffic at the control plane with Locust

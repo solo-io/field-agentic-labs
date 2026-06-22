@@ -1,8 +1,8 @@
 # Bearer token used by the OpenClaw / NemoClaw harness gateway.
 # DO NOT commit a real token. Generate one and stuff it in via stringData:
 #
-#   export SUBSTRATE_GATEWAY_TOKEN=$(openssl rand -hex 32)
-#   envsubst < assets/agentharness/gateway-token.yaml | kubectl apply -f -
+# export SUBSTRATE_GATEWAY_TOKEN=$(openssl rand -hex 32)
+# envsubst < assets/agentharness/gateway-token.yaml | kubectl apply -f -
 #
 # Or pipe the literal value through `kubectl create secret` with --dry-run=client.
 apiVersion: v1

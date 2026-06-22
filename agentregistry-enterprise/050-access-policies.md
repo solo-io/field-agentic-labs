@@ -1,6 +1,6 @@
-# AccessPolicy — RBAC for the Catalog, Chat, and MCP Tools
+# AccessPolicy - RBAC for the Catalog, Chat, and MCP Tools
 
-AgentRegistry Enterprise enforces RBAC with `AccessPolicy` resources that map an OIDC principal (an Entra group object ID, an Entra app role value, a Keycloak group name, or a `Deployment` identity) to a set of actions on catalog resources.
+Agentregistry Enterprise enforces RBAC with `AccessPolicy` resources that map an OIDC principal (an Entra group object ID, an Entra app role value, a Keycloak group name, or a `Deployment` identity) to a set of actions on catalog resources.
 
 This lab works through the policy model and shows worked examples for catalog read, catalog write, end-user chat, and per-MCP-tool agent runtime access.
 
@@ -16,7 +16,7 @@ This lab works through the policy model and shows worked examples for catalog re
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
 - The OIDC `groups` claim from 002a/002b is plumbed through (your `${GROUP_ADMINS}` / `${GROUP_READERS}` / `${GROUP_WRITERS}` env vars are still set)
-- Some labs reference the `k8shelper` Agent from [020](020-kagent-runtime-and-agent.md) and the `github-copilot-mcp-server` MCP from [031](031-mcp-remote-github-copilot.md) — apply those first if you want to run the chat-access and MCP-tool examples below
+- Some labs reference the `k8shelper` Agent from [020](020-kagent-runtime-and-agent.md) and the `github-copilot-mcp-server` MCP from [031](031-mcp-remote-github-copilot.md) - apply those first if you want to run the chat-access and MCP-tool examples below
 
 ## Policy Model
 
@@ -29,12 +29,12 @@ Two scope families, intentionally separate:
 | `runtime:invoke` (on `agent`) | Controls **chat / A2A** against the catalog `agent` that a `Deployment` targets. |
 | `runtime:invoke` (on `server`) | Controls **MCP invocation** by runtime components (deployed agents, gateway-backed MCP traffic). |
 
-Code-backed references in the AgentRegistry server tree:
+Code-backed references in the agentregistry server tree:
 
-- `internal/registry/authz/engine.go` — list filtering uses `registry:read`
-- `internal/registry/api/handlers/a2a.go` — chat/A2A authorizes `runtime:invoke` on the deployment target `agent`
-- `internal/accesspolicy/kagent/plan.go` — kagent fan-out only translates `runtime:invoke`; `Role` principals are dropped for kagent CRD fan-out
-- `internal/agwsync/config_translate.go` — agentgateway authorization only emits rules for `runtime:invoke`
+- `internal/registry/authz/engine.go` - list filtering uses `registry:read`
+- `internal/registry/api/handlers/a2a.go` - chat/A2A authorizes `runtime:invoke` on the deployment target `agent`
+- `internal/accesspolicy/kagent/plan.go` - kagent fan-out only translates `runtime:invoke`; `Role` principals are dropped for kagent CRD fan-out
+- `internal/agwsync/config_translate.go` - agentgateway authorization only emits rules for `runtime:invoke`
 
 ## Worked Examples
 
@@ -56,19 +56,19 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: are-admins-read-catalog
+ name: are-admins-read-catalog
 spec:
-  description: "Catalog read access for the are-admins group"
-  principals:
-    - kind: Role
-      name: "${GROUP_ADMINS}"
-  rules:
-    - actions:
-        - "registry:read"
-      resources:
-        - { kind: skill,  name: "*" }
-        - { kind: server, name: "*" }
-        - { kind: prompt, name: "*" }
+ description: "Catalog read access for the are-admins group"
+ principals:
+ - kind: Role
+ name: "${GROUP_ADMINS}"
+ rules:
+ - actions:
+ - "registry:read"
+ resources:
+ - { kind: skill, name: "*" }
+ - { kind: server, name: "*" }
+ - { kind: prompt, name: "*" }
 EOF
 ```
 
@@ -79,21 +79,21 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: are-admins-catalog-write
+ name: are-admins-catalog-write
 spec:
-  description: "Catalog read, publish, and edit access for the are-admins group"
-  principals:
-    - kind: Role
-      name: "${GROUP_ADMINS}"
-  rules:
-    - actions:
-        - "registry:read"
-        - "registry:publish"
-        - "registry:edit"
-      resources:
-        - { kind: agent,   name: "*" }
-        - { kind: server,  name: "*" }
-        - { kind: runtime, name: "*" }
+ description: "Catalog read, publish, and edit access for the are-admins group"
+ principals:
+ - kind: Role
+ name: "${GROUP_ADMINS}"
+ rules:
+ - actions:
+ - "registry:read"
+ - "registry:publish"
+ - "registry:edit"
+ resources:
+ - { kind: agent, name: "*" }
+ - { kind: server, name: "*" }
+ - { kind: runtime, name: "*" }
 EOF
 ```
 
@@ -106,17 +106,17 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: are-admins-k8shelper-chat
+ name: are-admins-k8shelper-chat
 spec:
-  description: "Allow are-admins users to invoke the k8shelper agent"
-  principals:
-    - kind: Role
-      name: "${GROUP_ADMINS}"
-  rules:
-    - actions:
-        - "runtime:invoke"
-      resources:
-        - { kind: agent, name: k8shelper }
+ description: "Allow are-admins users to invoke the k8shelper agent"
+ principals:
+ - kind: Role
+ name: "${GROUP_ADMINS}"
+ rules:
+ - actions:
+ - "runtime:invoke"
+ resources:
+ - { kind: agent, name: k8shelper }
 EOF
 ```
 
@@ -124,7 +124,7 @@ EOF
 
 This controls what a **deployed agent** can invoke at runtime. Use a `Deployment` principal for the deployed agent and grant `runtime:invoke` on the MCP `server`.
 
-Omitting `subresources` allows all tools on the server. Adding `subresources` limits access to specific MCP tools — each entry must use the prefix `tool/<name>`.
+Omitting `subresources` allows all tools on the server. Adding `subresources` limits access to specific MCP tools - each entry must use the prefix `tool/<name>`.
 
 Allow all tools on `github-copilot-mcp-server`:
 
@@ -133,17 +133,17 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: k8shelper-github-copilot-tools
+ name: k8shelper-github-copilot-tools
 spec:
-  description: "Allow the k8shelper deployment to invoke GitHub Copilot MCP tools"
-  principals:
-    - kind: Deployment
-      name: k8shelper-kagent
-  rules:
-    - actions:
-        - "runtime:invoke"
-      resources:
-        - { kind: server, name: github-copilot-mcp-server }
+ description: "Allow the k8shelper deployment to invoke GitHub Copilot MCP tools"
+ principals:
+ - kind: Deployment
+ name: k8shelper-kagent
+ rules:
+ - actions:
+ - "runtime:invoke"
+ resources:
+ - { kind: server, name: github-copilot-mcp-server }
 EOF
 ```
 
@@ -154,20 +154,20 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: k8shelper-github-copilot-create-issue
+ name: k8shelper-github-copilot-create-issue
 spec:
-  description: "Allow the k8shelper deployment to invoke only selected GitHub Copilot MCP tools"
-  principals:
-    - kind: Deployment
-      name: k8shelper-kagent
-  rules:
-    - actions:
-        - "runtime:invoke"
-      resources:
-        - kind: server
-          name: github-copilot-mcp-server
-          subresources:
-            - tool/create_issue
+ description: "Allow the k8shelper deployment to invoke only selected GitHub Copilot MCP tools"
+ principals:
+ - kind: Deployment
+ name: k8shelper-kagent
+ rules:
+ - actions:
+ - "runtime:invoke"
+ resources:
+ - kind: server
+ name: github-copilot-mcp-server
+ subresources:
+ - tool/create_issue
 EOF
 ```
 
@@ -193,21 +193,21 @@ arctl get runtimes
 | Principal | When to use it |
 |---|---|
 | `Role` | The user authenticates via OIDC and their token carries a group/role claim. The `name` is the claim value (GUID for Entra groups, role value for Entra app roles, group name for Keycloak). |
-| `Deployment` | The caller is a deployed agent acting on its own behalf — for example, `k8shelper-kagent` calling an MCP server. The `name` is the AgentRegistry `Deployment` name. |
+| `Deployment` | The caller is a deployed agent acting on its own behalf - for example, `k8shelper-kagent` calling an MCP server. The `name` is the agentregistry `Deployment` name. |
 
 ## Cleanup
 
 Remove any policies you applied above:
 
 ```bash
-arctl delete accesspolicy are-admins-read-catalog            2>/dev/null || true
-arctl delete accesspolicy are-admins-catalog-write           2>/dev/null || true
-arctl delete accesspolicy are-admins-k8shelper-chat          2>/dev/null || true
-arctl delete accesspolicy k8shelper-github-copilot-tools     2>/dev/null || true
+arctl delete accesspolicy are-admins-read-catalog 2>/dev/null || true
+arctl delete accesspolicy are-admins-catalog-write 2>/dev/null || true
+arctl delete accesspolicy are-admins-k8shelper-chat 2>/dev/null || true
+arctl delete accesspolicy k8shelper-github-copilot-tools 2>/dev/null || true
 arctl delete accesspolicy k8shelper-github-copilot-create-issue 2>/dev/null || true
 ```
 
 ## Next
 
-- [051 — Approval Workflows](051-approval-workflows.md) — gate every catalog submission behind admin approval
-- [060 — Observability / Tracing](060-observability-tracing.md)
+- [051 - Approval Workflows](051-approval-workflows.md) - gate every catalog submission behind admin approval
+- [060 - Observability / Tracing](060-observability-tracing.md)

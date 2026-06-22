@@ -1,4 +1,4 @@
-"""Minimal MCP server for AgentRegistry demo.
+"""Minimal MCP server for agentregistry demo.
 
 Provides a few simple tools: get current time, generate a random number,
 and reverse a string. Runs over stdio.

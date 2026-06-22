@@ -19,14 +19,14 @@ class DemoChatbotAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="demochatbot",
-            description="A deterministic demo chatbot for AgentRegistry Enterprise AgentCore deployments.",
+            description="A deterministic demo chatbot for agentregistry Enterprise AgentCore deployments.",
         )
 
     @override
     async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
         session = ctx.session
         text = (
-            "demochatbot is running on AWS AgentCore through AgentRegistry Enterprise. "
+            "demochatbot is running on AWS AgentCore through agentregistry Enterprise. "
             f"Session: {session.id}."
         )
 

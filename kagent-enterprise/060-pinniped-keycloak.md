@@ -1,6 +1,6 @@
 # Kubernetes OIDC Authentication with Keycloak + Pinniped
 
-This lab sets up Keycloak as an OIDC provider for **Kubernetes itself** (not kagent) using Pinniped. It is independent of the rest of the workshop — you don't need it to run kagent or apply `AccessPolicy`. It's how you make `kubectl` itself OIDC-authenticated instead of relying on the cluster's static admin credentials.
+This lab sets up Keycloak as an OIDC provider for **Kubernetes itself** (not kagent) using Pinniped. It is independent of the rest of the workshop - you don't need it to run kagent or apply `AccessPolicy`. It's how you make `kubectl` itself OIDC-authenticated instead of relying on the cluster's static admin credentials.
 
 The same Keycloak you stand up here can later be used as the OIDC provider for the kagent UI ([020](003-install-kagent-enterprise.md)) and as the `UserGroup` token source for `AccessPolicy` ([061](031-accesspolicy-usergroup.md)).
 
@@ -8,20 +8,20 @@ The same Keycloak you stand up here can later be used as the OIDC provider for t
 
 ```
 User
-  │
-  ▼
+ │
+ ▼
 pinniped get kubeconfig
-  │
-  ▼
+ │
+ ▼
 kubectl (with Pinniped credential plugin)
-  │
-  ▼
+ │
+ ▼
 Browser → Keycloak (authenticate) → OIDC Token
-  │
-  ▼
+ │
+ ▼
 Pinniped Concierge validates token → impersonates user
-  │
-  ▼
+ │
+ ▼
 Kubernetes API Server → RBAC authorization
 ```
 
@@ -49,28 +49,28 @@ kubectl create namespace keycloak
 
 ### 1.2 Generate a TLS Certificate
 
-Pinniped requires HTTPS for the OIDC issuer. Generate a self-signed certificate. You'll need to know the LoadBalancer IP — if you don't yet, run with a placeholder, deploy Keycloak, then regenerate once you have the real IP.
+Pinniped requires HTTPS for the OIDC issuer. Generate a self-signed certificate. You'll need to know the LoadBalancer IP - if you don't yet, run with a placeholder, deploy Keycloak, then regenerate once you have the real IP.
 
 ```bash
 # Replace with the LoadBalancer IP once known.
 export KEYCLOAK_IP=<your-loadbalancer-ip-or-placeholder>
 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout keycloak-tls.key \
-  -out keycloak-tls.crt \
-  -subj "/CN=keycloak" \
-  -addext "subjectAltName=DNS:keycloak,DNS:keycloak.keycloak.svc.cluster.local,IP:${KEYCLOAK_IP}"
+ -keyout keycloak-tls.key \
+ -out keycloak-tls.crt \
+ -subj "/CN=keycloak" \
+ -addext "subjectAltName=DNS:keycloak,DNS:keycloak.keycloak.svc.cluster.local,IP:${KEYCLOAK_IP}"
 
 kubectl create secret tls keycloak-tls \
-  --cert=keycloak-tls.crt \
-  --key=keycloak-tls.key \
-  -n keycloak
+ --cert=keycloak-tls.crt \
+ --key=keycloak-tls.key \
+ -n keycloak
 
 # Save the CA for Pinniped's JWTAuthenticator (step 3.2)
 export KEYCLOAK_CA_BASE64=$(cat keycloak-tls.crt | base64 | tr -d '\n')
 ```
 
-> **Security note:** the source repo committed `keycloak-tls.key` and `keycloak-tls.crt` directly. **They are not copied into this workshop.** Treat the private key as sensitive — never commit it. The `openssl` command above regenerates a fresh cert; that's the right pattern for both demo and production.
+> **Security note:** the source repo committed `keycloak-tls.key` and `keycloak-tls.crt` directly. **They are not copied into this workshop.** Treat the private key as sensitive - never commit it. The `openssl` command above regenerates a fresh cert; that's the right pattern for both demo and production.
 
 ### 1.3 Deploy Keycloak
 
@@ -79,63 +79,63 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: keycloak-data
-  namespace: keycloak
+ name: keycloak-data
+ namespace: keycloak
 spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: 1Gi
+ accessModes: [ReadWriteOnce]
+ resources:
+ requests:
+ storage: 1Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: keycloak
-  namespace: keycloak
+ name: keycloak
+ namespace: keycloak
 spec:
-  replicas: 1
-  selector: { matchLabels: { app: keycloak } }
-  template:
-    metadata: { labels: { app: keycloak } }
-    spec:
-      initContainers:
-        - name: fix-permissions
-          image: busybox
-          command: ['sh', '-c', 'chown -R 1000:1000 /data']
-          volumeMounts:
-            - { name: data, mountPath: /data }
-      containers:
-        - name: keycloak
-          image: quay.io/keycloak/keycloak:26.0
-          args: ["start-dev"]
-          env:
-            - { name: KEYCLOAK_ADMIN,                value: "admin" }
-            - { name: KEYCLOAK_ADMIN_PASSWORD,       value: "Password12!@" }
-            - { name: KC_HTTPS_CERTIFICATE_FILE,     value: "/etc/keycloak/tls/tls.crt" }
-            - { name: KC_HTTPS_CERTIFICATE_KEY_FILE, value: "/etc/keycloak/tls/tls.key" }
-            - { name: KC_HOSTNAME_STRICT,            value: "false" }
-          ports:
-            - { containerPort: 8443 }
-          volumeMounts:
-            - { name: tls,  mountPath: /etc/keycloak/tls,        readOnly: true }
-            - { name: data, mountPath: /opt/keycloak/data }
-          resources:
-            requests: { memory: 512Mi, cpu: 250m }
-            limits:   { memory: 1Gi,   cpu: 1000m }
-      volumes:
-        - { name: tls,  secret: { secretName: keycloak-tls } }
-        - { name: data, persistentVolumeClaim: { claimName: keycloak-data } }
+ replicas: 1
+ selector: { matchLabels: { app: keycloak } }
+ template:
+ metadata: { labels: { app: keycloak } }
+ spec:
+ initContainers:
+ - name: fix-permissions
+ image: busybox
+ command: ['sh', '-c', 'chown -R 1000:1000 /data']
+ volumeMounts:
+ - { name: data, mountPath: /data }
+ containers:
+ - name: keycloak
+ image: quay.io/keycloak/keycloak:26.0
+ args: ["start-dev"]
+ env:
+ - { name: KEYCLOAK_ADMIN, value: "admin" }
+ - { name: KEYCLOAK_ADMIN_PASSWORD, value: "Password12!@" }
+ - { name: KC_HTTPS_CERTIFICATE_FILE, value: "/etc/keycloak/tls/tls.crt" }
+ - { name: KC_HTTPS_CERTIFICATE_KEY_FILE, value: "/etc/keycloak/tls/tls.key" }
+ - { name: KC_HOSTNAME_STRICT, value: "false" }
+ ports:
+ - { containerPort: 8443 }
+ volumeMounts:
+ - { name: tls, mountPath: /etc/keycloak/tls, readOnly: true }
+ - { name: data, mountPath: /opt/keycloak/data }
+ resources:
+ requests: { memory: 512Mi, cpu: 250m }
+ limits: { memory: 1Gi, cpu: 1000m }
+ volumes:
+ - { name: tls, secret: { secretName: keycloak-tls } }
+ - { name: data, persistentVolumeClaim: { claimName: keycloak-data } }
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: keycloak
-  namespace: keycloak
+ name: keycloak
+ namespace: keycloak
 spec:
-  type: LoadBalancer
-  selector: { app: keycloak }
-  ports:
-    - { port: 443, targetPort: 8443 }
+ type: LoadBalancer
+ selector: { app: keycloak }
+ ports:
+ - { port: 443, targetPort: 8443 }
 EOF
 ```
 
@@ -146,7 +146,7 @@ kubectl get pods -n keycloak --watch
 kubectl get svc keycloak -n keycloak
 
 export KEYCLOAK_IP=$(kubectl get svc keycloak -n keycloak \
-  -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+ -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 echo "Keycloak is available at: https://${KEYCLOAK_IP}"
 ```
 
@@ -227,15 +227,15 @@ kubectl apply -f - <<EOF
 apiVersion: authentication.concierge.pinniped.dev/v1alpha1
 kind: JWTAuthenticator
 metadata:
-  name: keycloak
+ name: keycloak
 spec:
-  issuer: https://${KEYCLOAK_IP}/realms/kubernetes
-  audience: pinniped-cli
-  claims:
-    username: email
-    groups: groups
-  tls:
-    certificateAuthorityData: ${KEYCLOAK_CA_BASE64}
+ issuer: https://${KEYCLOAK_IP}/realms/kubernetes
+ audience: pinniped-cli
+ claims:
+ username: email
+ groups: groups
+ tls:
+ certificateAuthorityData: ${KEYCLOAK_CA_BASE64}
 EOF
 ```
 
@@ -258,15 +258,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: keycloak-cluster-admins
+ name: keycloak-cluster-admins
 subjects:
-  - kind: Group
-    name: k8s-admins
-    apiGroup: rbac.authorization.k8s.io
+ - kind: Group
+ name: k8s-admins
+ apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: cluster-admin
+ apiGroup: rbac.authorization.k8s.io
 EOF
 ```
 
@@ -277,15 +277,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: keycloak-developers
+ name: keycloak-developers
 subjects:
-  - kind: Group
-    name: k8s-developers
-    apiGroup: rbac.authorization.k8s.io
+ - kind: Group
+ name: k8s-developers
+ apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: edit
-  apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: edit
+ apiGroup: rbac.authorization.k8s.io
 EOF
 ```
 
@@ -296,15 +296,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: keycloak-viewers
+ name: keycloak-viewers
 subjects:
-  - kind: Group
-    name: k8s-viewers
-    apiGroup: rbac.authorization.k8s.io
+ - kind: Group
+ name: k8s-viewers
+ apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: view
-  apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: view
+ apiGroup: rbac.authorization.k8s.io
 EOF
 ```
 
@@ -324,12 +324,12 @@ sudo mv pinniped /usr/local/bin/
 
 ```bash
 pinniped get kubeconfig \
-  --oidc-issuer https://${KEYCLOAK_IP}/realms/kubernetes \
-  --oidc-client-id pinniped-cli \
-  --oidc-scopes openid,email,groups \
-  --oidc-listen-port 12345 \
-  --oidc-ca-bundle keycloak-tls.crt \
-  > pinniped-kubeconfig.yaml
+ --oidc-issuer https://${KEYCLOAK_IP}/realms/kubernetes \
+ --oidc-client-id pinniped-cli \
+ --oidc-scopes openid,email,groups \
+ --oidc-listen-port 12345 \
+ --oidc-ca-bundle keycloak-tls.crt \
+ > pinniped-kubeconfig.yaml
 ```
 
 ### 5.3 Authenticate
@@ -370,24 +370,24 @@ kubectl get jwtauthenticator keycloak -o jsonpath='{.status}' | jq .
 
 ```bash
 curl -k -X POST "https://${KEYCLOAK_IP}/realms/kubernetes/protocol/openid-connect/token" \
-  -d "client_id=pinniped-cli" \
-  -d "grant_type=password" \
-  -d "username=testuser" \
-  -d "password=Password123" \
-  -d "scope=openid email groups" \
-  | jq -r '.access_token' \
-  | cut -d'.' -f2 \
-  | base64 -d \
-  | jq .
+ -d "client_id=pinniped-cli" \
+ -d "grant_type=password" \
+ -d "username=testuser" \
+ -d "password=Password123" \
+ -d "scope=openid email groups" \
+ | jq -r '.access_token' \
+ | cut -d'.' -f2 \
+ | base64 -d \
+ | jq .
 ```
 
 Expected:
 
 ```json
 {
-  "email": "testuser@example.com",
-  "groups": ["k8s-admins"],
-  ...
+ "email": "testuser@example.com",
+ "groups": ["k8s-admins"],
+ ...
 }
 ```
 
@@ -403,10 +403,10 @@ Expected:
 
 ```bash
 # Pinniped Concierge + JWTAuthenticator
-kubectl delete jwtauthenticator   keycloak                  --ignore-not-found
-kubectl delete clusterrolebinding keycloak-cluster-admins   --ignore-not-found
-kubectl delete clusterrolebinding keycloak-developers       --ignore-not-found
-kubectl delete clusterrolebinding keycloak-viewers          --ignore-not-found
+kubectl delete jwtauthenticator keycloak --ignore-not-found
+kubectl delete clusterrolebinding keycloak-cluster-admins --ignore-not-found
+kubectl delete clusterrolebinding keycloak-developers --ignore-not-found
+kubectl delete clusterrolebinding keycloak-viewers --ignore-not-found
 kubectl delete -f https://get.pinniped.dev/latest/install-pinniped-concierge.yaml --ignore-not-found
 
 # Keycloak
@@ -430,5 +430,5 @@ unset KEYCLOAK_IP KEYCLOAK_CA_BASE64
 
 ## Next
 
-- [061 — `UserGroup` `AccessPolicy`](031-accesspolicy-usergroup.md) — the same Keycloak (different realm or client) can be the JWT source for runtime AccessPolicy
-- [090 — Microsoft Entra ID OBO](070-obo-entra.md) — same idea (OIDC token = identity), different IdP, completely different downstream
+- [061 - `UserGroup` `AccessPolicy`](031-accesspolicy-usergroup.md) - the same Keycloak (different realm or client) can be the JWT source for runtime AccessPolicy
+- [090 - Microsoft Entra ID OBO](070-obo-entra.md) - same idea (OIDC token = identity), different IdP, completely different downstream

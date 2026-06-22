@@ -1,6 +1,6 @@
 # Remote MCP via kagent (GitHub Copilot)
 
-Register the GitHub Copilot MCP as a **remote streamable-HTTP** MCP server with AgentRegistry, then deploy that catalog entry to the **kagent** runtime so kagent agents can call it.
+Register the GitHub Copilot MCP as a **remote streamable-HTTP** MCP server with agentregistry, then deploy that catalog entry to the **kagent** runtime so kagent agents can call it.
 
 ## Lab Objectives
 
@@ -11,12 +11,12 @@ Register the GitHub Copilot MCP as a **remote streamable-HTTP** MCP server with 
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
-- **kagent registered as an AgentRegistry Runtime.** If you haven't done [020](020-kagent-runtime-and-agent.md), do at least step 3 of it (`arctl apply -f /tmp/kagent-runtime.yaml`) to register `Runtime: kagent`. You don't need to deploy `k8shelper` itself.
+- **kagent registered as an agentregistry Runtime.** If you haven't done [020](020-kagent-runtime-and-agent.md), do at least step 3 of it (`arctl apply -f /tmp/kagent-runtime.yaml`) to register `Runtime: kagent`. You don't need to deploy `k8shelper` itself.
 - A GitHub Copilot MCP access token:
 
-  ```bash
-  export GITHUB_COPILOT_MCP_TOKEN=<your-github-copilot-mcp-token>
-  ```
+ ```bash
+ export GITHUB_COPILOT_MCP_TOKEN=<your-github-copilot-mcp-token>
+ ```
 
 ## 1. Register the MCP Catalog Entry
 
@@ -26,16 +26,16 @@ The manifest is at [`assets/mcp/github-copilot-mcpserver.yaml`](assets/mcp/githu
 apiVersion: ar.dev/v1alpha1
 kind: MCPServer
 metadata:
-  name: github-copilot-mcp-server
-  tag: latest
+ name: github-copilot-mcp-server
+ tag: latest
 spec:
-  description: GitHub Copilot MCP Server to interact with GitHub repositories, issues, pull requests, and Copilot coding-agent tasks
-  remote:
-    type: streamable-http
-    url: https://api.githubcopilot.com/mcp
-    headers:
-      - name: Authorization
-        value: ${GITHUB_COPILOT_MCP_TOKEN}
+ description: GitHub Copilot MCP Server to interact with GitHub repositories, issues, pull requests, and Copilot coding-agent tasks
+ remote:
+ type: streamable-http
+ url: https://api.githubcopilot.com/mcp
+ headers:
+ - name: Authorization
+ value: ${GITHUB_COPILOT_MCP_TOKEN}
 ```
 
 Render the env var and apply:
@@ -46,7 +46,7 @@ arctl get mcps
 arctl get mcp github-copilot-mcp-server --tag latest -o yaml
 ```
 
-> For demos, rendering the token directly into the artifact is fine. For production, use the secret mechanism supported by your AgentRegistry deployment instead of literal values.
+> For demos, rendering the token directly into the artifact is fine. For production, use the secret mechanism supported by your agentregistry deployment instead of literal values.
 
 ## 2. Deploy the MCP to kagent
 
@@ -56,15 +56,15 @@ arctl get mcp github-copilot-mcp-server --tag latest -o yaml
 apiVersion: ar.dev/v1alpha1
 kind: Deployment
 metadata:
-  name: github-copilot-mcp-kagent
+ name: github-copilot-mcp-kagent
 spec:
-  runtimeRef:
-    kind: Runtime
-    name: kagent
-  targetRef:
-    kind: MCPServer
-    name: github-copilot-mcp-server
-    tag: latest
+ runtimeRef:
+ kind: Runtime
+ name: kagent
+ targetRef:
+ kind: MCPServer
+ name: github-copilot-mcp-server
+ tag: latest
 ```
 
 ```bash
@@ -94,13 +94,13 @@ Healthy shape:
 
 ## 4. Use It from an Agent
 
-Reference `github-copilot-mcp-server` from any Agent's `spec.mcpServers`. The `k8shelper` Agent in [020](020-kagent-runtime-and-agent.md) already references it — if you ran 020, the wiring is in place and the agent will see the GitHub MCP tools at runtime.
+Reference `github-copilot-mcp-server` from any Agent's `spec.mcpServers`. The `k8shelper` Agent in [020](020-kagent-runtime-and-agent.md) already references it - if you ran 020, the wiring is in place and the agent will see the GitHub MCP tools at runtime.
 
 ## Cleanup
 
 ```bash
 arctl delete deployment github-copilot-mcp-kagent
-arctl delete mcp        github-copilot-mcp-server --tag latest
+arctl delete mcp github-copilot-mcp-server --tag latest
 
 unset GITHUB_COPILOT_MCP_TOKEN
 ```
@@ -120,6 +120,6 @@ arctl delete runtime kagent
 
 ## Next
 
-- [020 — kagent Agent (`k8shelper`)](020-kagent-runtime-and-agent.md) — wire this MCP into the k8shelper Agent
-- [032 — Remote MCP through Agentgateway](032-mcp-through-agentgateway.md) — third MCP topology (no kagent involved)
-- [050 — AccessPolicy](050-access-policies.md) — restrict which GitHub MCP tools a deployment is allowed to call
+- [020 - kagent Agent (`k8shelper`)](020-kagent-runtime-and-agent.md) - wire this MCP into the k8shelper Agent
+- [032 - Remote MCP through Agentgateway](032-mcp-through-agentgateway.md) - third MCP topology (no kagent involved)
+- [050 - AccessPolicy](050-access-policies.md) - restrict which GitHub MCP tools a deployment is allowed to call

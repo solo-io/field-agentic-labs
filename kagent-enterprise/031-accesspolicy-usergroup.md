@@ -22,12 +22,12 @@ Adapt the URL, client, and credentials to your IdP:
 
 ```bash
 TOKEN=$(curl -s -X POST \
-  "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/token" \
-  -d "grant_type=password" \
-  -d "client_id=kagent-backend" \
-  -d "client_secret=<your-client-secret>" \
-  -d "username=<username>" \
-  -d "password=<password>" | jq -r '.access_token')
+ "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/token" \
+ -d "grant_type=password" \
+ -d "client_id=kagent-backend" \
+ -d "client_secret=<your-client-secret>" \
+ -d "username=<username>" \
+ -d "password=<password>" | jq -r '.access_token')
 
 echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{preferred_username, aud, iss}'
 ```
@@ -50,32 +50,32 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
-  name: platform-agent
-  namespace: policies
-  labels:
-    kagent.solo.io/waypoint: "true"
+ name: platform-agent
+ namespace: policies
+ labels:
+ kagent.solo.io/waypoint: "true"
 spec:
-  description: Platform engineering agent for cluster operations
-  type: Declarative
-  declarative:
-    modelConfig: model-config
-    systemMessage: |-
-      You are a platform engineering assistant that helps with Kubernetes cluster operations.
+ description: Platform engineering agent for cluster operations
+ type: Declarative
+ declarative:
+ modelConfig: model-config
+ systemMessage: |-
+ You are a platform engineering assistant that helps with Kubernetes cluster operations.
 
-      # Instructions
+ # Instructions
 
-      - If user question is unclear, ask for clarification before running any tools
-      - Always be helpful and friendly
-      - If you don't know how to answer the question DO NOT make things up
-        respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
+ - If user question is unclear, ask for clarification before running any tools
+ - Always be helpful and friendly
+ - If you don't know how to answer the question DO NOT make things up
+ respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
 
-      # Response format
-      - ALWAYS format your response as Markdown
-      - Your response will include a summary of actions you took and an explanation of the result
+ # Response format
+ - ALWAYS format your response as Markdown
+ - Your response will include a summary of actions you took and an explanation of the result
 EOF
 ```
 
-> `kagent.solo.io/waypoint: "true"` is required — the policy is enforced by the waypoint proxy, not by the agent process.
+> `kagent.solo.io/waypoint: "true"` is required - the policy is enforced by the waypoint proxy, not by the agent process.
 
 Open the kagent UI, find `platform-agent` in the `policies` namespace, and prompt `"what can you do?"` to confirm baseline access works.
 
@@ -86,41 +86,41 @@ kubectl apply -f - <<EOF
 apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: deny-reader-agent-access
-  namespace: policies
+ name: deny-reader-agent-access
+ namespace: policies
 spec:
-  action: DENY
-  from:
-    subjects:
-      - kind: UserGroup
-        name: reader-user
-        userGroup:
-          claimName: "preferred_username"
-          claimValue: "reader"
-          issuer: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev"
-          audiences:
-            - "account"
-          jwksKey:
-            inline: |
-              {
-                "keys": [
-                  {
-                    "alg": "RS256",
-                    "e": "AQAB",
-                    "kid": "JWxVLtipR-Q6wF2zmQKEoxbFhqwibK2aKNLyRqNxdj4",
-                    "kty": "RSA",
-                    "use": "sig",
-                    "n": "5ApthhEwr6U00Coa0_572OytJXbVZKgl-myirM2m4GSrVfaKus41GEPHHXMzyGDPgHU7Rb4o0yzB-obkgz0zo2jnjv1zSx88BgdhhdE0BX2ULFDj67jVYdFZdCOoBr1_xJ5LEjQArHxfywZxW4a0egc3JaIwo-3qSSlRnD1KV2uzTG9FoDpvJLn1ZzdMgoTHuxIMla6WdgPDswVD8nrQM0I_1VGyGC0l2dICUEiqN0QrZen--U70J6EU6hd8vi_9qmALhjoSEASH2Z2sHco4Shv_aVx0BM-zN5UJWz4VF51Ag_KgcePS5Co7iVM0FUwMNWauWhPDPLWiXoUJvUWVPw"
-                  }
-                ]
-              }
-  targetRef:
-    kind: Agent
-    name: platform-agent
+ action: DENY
+ from:
+ subjects:
+ - kind: UserGroup
+ name: reader-user
+ userGroup:
+ claimName: "preferred_username"
+ claimValue: "reader"
+ issuer: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev"
+ audiences:
+ - "account"
+ jwksKey:
+ inline: |
+ {
+ "keys": [
+ {
+ "alg": "RS256",
+ "e": "AQAB",
+ "kid": "JWxVLtipR-Q6wF2zmQKEoxbFhqwibK2aKNLyRqNxdj4",
+ "kty": "RSA",
+ "use": "sig",
+ "n": "5ApthhEwr6U00Coa0_572OytJXbVZKgl-myirM2m4GSrVfaKus41GEPHHXMzyGDPgHU7Rb4o0yzB-obkgz0zo2jnjv1zSx88BgdhhdE0BX2ULFDj67jVYdFZdCOoBr1_xJ5LEjQArHxfywZxW4a0egc3JaIwo-3qSSlRnD1KV2uzTG9FoDpvJLn1ZzdMgoTHuxIMla6WdgPDswVD8nrQM0I_1VGyGC0l2dICUEiqN0QrZen--U70J6EU6hd8vi_9qmALhjoSEASH2Z2sHco4Shv_aVx0BM-zN5UJWz4VF51Ag_KgcePS5Co7iVM0FUwMNWauWhPDPLWiXoUJvUWVPw"
+ }
+ ]
+ }
+ targetRef:
+ kind: Agent
+ name: platform-agent
 EOF
 ```
 
-The inline JWKS is what the waypoint uses to verify the token signature. Production setups use `jwksKey.remote` against the IdP's JWKS URL instead — see your IdP docs.
+The inline JWKS is what the waypoint uses to verify the token signature. Production setups use `jwksKey.remote` against the IdP's JWKS URL instead - see your IdP docs.
 
 ## 5. Verify
 
@@ -156,5 +156,5 @@ kubectl delete namespace policies --ignore-not-found
 
 ## Next
 
-- [070 — Prompt Guards](040-prompt-guards.md) — block prompts at the gateway based on regex
-- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) — same Keycloak, different purpose: authenticating `kubectl`
+- [070 - Prompt Guards](040-prompt-guards.md) - block prompts at the gateway based on regex
+- [080 - Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) - same Keycloak, different purpose: authenticating `kubectl`

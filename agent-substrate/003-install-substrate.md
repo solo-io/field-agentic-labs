@@ -28,7 +28,7 @@ Don't mix them on the same cluster.
 
 ```bash
 for V in PROJECT_ID CLUSTER_NAME BUCKET_NAME KO_DOCKER_REPO; do
-  if [ -z "${!V}" ]; then echo "MISSING: $V"; fi
+ if [ -z "${!V}" ]; then echo "MISSING: $V"; fi
 done
 ```
 
@@ -38,7 +38,7 @@ done
 
 ```bash
 helm upgrade --install substrate-crds \
-  oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
+ oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
 ```
 
 Verify:
@@ -51,20 +51,20 @@ kubectl get crd actortemplates.ate.dev workerpools.ate.dev
 
 ```bash
 helm upgrade --install substrate \
-  oci://ghcr.io/kagent-dev/substrate/helm/substrate \
-  --namespace ate-system --create-namespace
+ oci://ghcr.io/kagent-dev/substrate/helm/substrate \
+ --namespace ate-system --create-namespace
 ```
 
-> Upstream publishes floating OCI tags. For reproducibility, pin with `--version <X.Y.Z>` — the workshop was authored against the tag listed in the README's "Validated On" section.
+> Upstream publishes floating OCI tags. For reproducibility, pin with `--version <X.Y.Z>` - the workshop was authored against the tag listed in the README's "Validated On" section.
 
 > **Not on GKE?** The chart's JWT issuer defaults are GKE-flavored. For AKS / EKS / self-managed, override:
 >
 > ```bash
 > helm upgrade --install substrate \
->   oci://ghcr.io/kagent-dev/substrate/helm/substrate \
->   --namespace ate-system --create-namespace \
->   --set auth.jwt.issuer=<your-cluster-oidc-issuer-url> \
->   --set auth.jwt.audience=api.ate-system.svc
+> oci://ghcr.io/kagent-dev/substrate/helm/substrate \
+> --namespace ate-system --create-namespace \
+> --set auth.jwt.issuer=<your-cluster-oidc-issuer-url> \
+> --set auth.jwt.audience=api.ate-system.svc
 > ```
 
 ## 2. Wait for the System Pods
@@ -86,7 +86,7 @@ You should see (eventually all Ready):
 
 ### If `ate-api-server` / `atenet-router` / `valkey` Stay Pending
 
-Most-likely cause: nodes don't honor the `podCertificate` projected volume because they were created before the beta APIs were enabled. See [001 step 2](001-baseline-setup.md#2-confirm-the-cluster) — the fix is a fresh node pool with `--workload-metadata=GKE_METADATA`.
+Most-likely cause: nodes don't honor the `podCertificate` projected volume because they were created before the beta APIs were enabled. See [001 step 2](001-baseline-setup.md#2-confirm-the-cluster) - the fix is a fresh node pool with `--workload-metadata=GKE_METADATA`.
 
 `kubectl describe pod` + `kubectl get events -n ate-system` will show the exact error.
 
@@ -124,7 +124,7 @@ kubectl get svc -n ate-system
 kubectl ate get workers
 ```
 
-Empty list is expected — no `WorkerPool` exists yet (those come with the demos in [010](010-counter-demo.md)–[013](013-claude-code-multiplex.md)).
+Empty list is expected - no `WorkerPool` exists yet (those come with the demos in [010](010-counter-demo.md)-[013](013-claude-code-multiplex.md)).
 
 ## What's In Place After This Lab
 
@@ -145,8 +145,8 @@ This is the **baseline**. Every unit-of-value lab from 010 onwards assumes it's 
 This lab installs the baseline that every unit-of-value lab relies on. Don't clean this up until you're done with the workshop. Full teardown is in [099](099-cleanup.md). Component-level rollback in case the install partially failed and you want to redo:
 
 ```bash
-helm uninstall substrate      -n ate-system 2>/dev/null || true
-helm uninstall substrate-crds                2>/dev/null || true
+helm uninstall substrate -n ate-system 2>/dev/null || true
+helm uninstall substrate-crds 2>/dev/null || true
 kubectl delete namespace ate-system --ignore-not-found
 
 rm -f "$(go env GOPATH)/bin/kubectl-ate"
@@ -156,10 +156,10 @@ rm -f "$(go env GOPATH)/bin/kubectl-ate"
 
 Every unit-of-value lab from here on is self-contained. Pick one:
 
-- [010 — Counter Demo (stateful HTTP, suspend/resume)](010-counter-demo.md) ← **start here for the canonical Substrate walkthrough**
-- [011 — Sandbox Demo (Alpine shell + REPL client)](011-sandbox-demo.md)
-- [012 — Agent-Secret Demo (Zero-Idle + RAM persistence)](012-agent-secret-demo.md)
-- [013 — Claude Code Multiplex (3 agents on 2 pods)](013-claude-code-multiplex.md)
-- [020 — kagent Integration (substrate-backed `AgentHarness`)](020-kagent-integration.md)
-- [030 — Suspend / Resume Operations](030-operations.md)
-- [040 — Observability (logs, metrics, traces)](040-observability.md)
+- [010 - Counter Demo (stateful HTTP, suspend/resume)](010-counter-demo.md) ← **start here for the canonical Substrate walkthrough**
+- [011 - Sandbox Demo (Alpine shell + REPL client)](011-sandbox-demo.md)
+- [012 - Agent-Secret Demo (Zero-Idle + RAM persistence)](012-agent-secret-demo.md)
+- [013 - Claude Code Multiplex (3 agents on 2 pods)](013-claude-code-multiplex.md)
+- [020 - kagent Integration (substrate-backed `AgentHarness`)](020-kagent-integration.md)
+- [030 - Suspend / Resume Operations](030-operations.md)
+- [040 - Observability (logs, metrics, traces)](040-observability.md)
