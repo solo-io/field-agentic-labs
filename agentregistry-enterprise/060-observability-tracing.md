@@ -2,7 +2,7 @@
 
 AgentRegistry Enterprise stores traces in ClickHouse and displays them in the UI under **Tracing**. Workloads send OTLP to the AgentRegistry telemetry collector, which writes to `agentregistry.otel_traces_json`.
 
-This lab covers the setup needed for both in-cluster runtimes (kagent) and external runtimes (AWS Bedrock AgentCore). The kagent-controller traces fan-out workaround lives in [091](091-trace-fanout-workaround.md).
+This lab covers the setup needed for both in-cluster runtimes (kagent) and external runtimes (AWS Bedrock AgentCore). The kagent-controller traces fan-out workaround lives in [061](061-trace-fanout.md).
 
 ## How Tracing Works
 
@@ -23,12 +23,12 @@ Use `spec.telemetryEndpoint` (not `spec.runtimeConfig`) to enable trace export f
 
 ## Prerequisites
 
-- [030 — AgentRegistry installed](030-install-agentregistry-helm.md) with `clickhouse.enabled: true` and `telemetry.enabled: true`
-- [050](050-aws-provider.md) and/or [051](051-kagent-provider.md) — at least one Runtime registered
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
+- At least one Runtime registered: [010 (AWS)](010-aws-bedrock-runtime.md) and/or [020 (kagent)](020-kagent-runtime-and-agent.md)
 
 ## 1. Enable Telemetry in the Helm Chart
 
-The values from [030](030-install-agentregistry-helm.md) already include:
+The values from [003](003-install-components.md) already include:
 
 ```yaml
 clickhouse:
@@ -205,7 +205,7 @@ kubectl get deploy <agent-name> -n kagent \
 
 > **Tip:** only real agent invocations (chats / tool calls) emit spans. Fetching `/.well-known/agent-card.json` does not, so the trace table stays empty until you send a real prompt.
 
-> **Note:** the [091](091-trace-fanout-workaround.md) "trace fan-out" workaround is a complementary approach — instead of repointing kagent's trace exporter, you keep both backends and have the kagent collector forward `traces/genai` to the AgentRegistry collector. Pick one.
+> **Note:** the [061](061-trace-fanout.md) "trace fan-out" workaround is a complementary approach — instead of repointing kagent's trace exporter, you keep both backends and have the kagent collector forward `traces/genai` to the AgentRegistry collector. Pick one.
 
 ## 3. Verify the Pipeline
 
@@ -239,7 +239,7 @@ The tracing schema is there, but no workload has successfully exported traces ye
 - The deployment was re-applied **after** setting `spec.telemetryEndpoint`.
 - The agent image actually emits OpenTelemetry traces.
 - A real chat or tool call has been sent (card fetches don't emit spans).
-- For kagent runtimes, `kagent-controller` injects `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, which **overrides** `OTEL_EXPORTER_OTLP_ENDPOINT`. Repoint it (above) or apply the fan-out from [091](091-trace-fanout-workaround.md).
+- For kagent runtimes, `kagent-controller` injects `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, which **overrides** `OTEL_EXPORTER_OTLP_ENDPOINT`. Repoint it (above) or apply the fan-out from [061](061-trace-fanout.md).
 - External runtimes can reach the collector endpoint (security groups, NACLs).
 - Collector logs don't show exporter or ClickHouse write errors.
 
@@ -263,6 +263,32 @@ kubectl get svc agentregistry-enterprise-telemetry-collector -n agentregistry-sy
 
 If TYPE is `ClusterIP`, set `telemetry.service.type=LoadBalancer` for external runtime tracing.
 
+## Cleanup
+
+Return the cluster to the post-baseline state:
+
+```bash
+# Revert the collector Service to ClusterIP (if you flipped it to LoadBalancer in step 1)
+helm upgrade agentregistry-enterprise \
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  -n agentregistry-system \
+  --reuse-values \
+  --set telemetry.service.type=ClusterIP \
+  --wait --timeout 5m
+
+# Revert the kagent-controller ConfigMap patch (if you applied step 2 → "Repoint kagent's Injected Trace Endpoint")
+kubectl rollout restart deployment/kagent-controller -n kagent 2>/dev/null || true
+
+# Drop the annotations you added to force kagent Agents to reconcile
+# (replace <agent-name> with the agents you annotated)
+# kubectl annotate agent <agent-name> -n kagent tracing.agentregistry.dev/restarted-at-
+
+unset OTEL_COLLECTOR_HOST OTEL_HTTP_ENDPOINT
+```
+
+The Runtime `spec.telemetryEndpoint` values stay in place — they were correct for the baseline and don't need to be removed. If you also want to undo them, edit `Runtime/AWS` or `Runtime/kagent` and drop the field.
+
 ## Next
 
-- [091 — Trace Fan-Out Workaround](091-trace-fanout-workaround.md) — alternative to repointing kagent's exporter
+- [061 — Trace Fan-Out Workaround](061-trace-fanout.md) — alternative to repointing kagent's exporter

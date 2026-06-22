@@ -14,8 +14,9 @@ This lab works through the policy model and shows worked examples for catalog re
 
 ## Prerequisites
 
-- [040 — `arctl` authenticated](040-arctl-auth.md)
-- An OIDC setup that emits the `groups` (or `roles`) claim — [020](020-setup-entra.md) or [021](021-setup-keycloak.md)
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
+- The OIDC `groups` claim from 002a/002b is plumbed through (your `${GROUP_ADMINS}` / `${GROUP_READERS}` / `${GROUP_WRITERS}` env vars are still set)
+- Some labs reference the `k8shelper` Agent from [020](020-kagent-runtime-and-agent.md) and the `github-copilot-mcp-server` MCP from [031](031-mcp-remote-github-copilot.md) — apply those first if you want to run the chat-access and MCP-tool examples below
 
 ## Policy Model
 
@@ -37,13 +38,14 @@ Code-backed references in the AgentRegistry server tree:
 
 ## Worked Examples
 
-These examples reference the `are-admins` Entra group **object ID** (the GUID from [020 step 5](020-setup-entra.md#5-create-security-groups)). Substitute your own:
+These examples reference the `are-admins` group identifier you exported in 002a/002b as `${GROUP_ADMINS}`. The value differs by IdP:
 
-```bash
-export ARE_ADMINS_GUID="94f6134f-0fbd-4786-b69f-1f163719f28c"
-```
+| OIDC backend | `${GROUP_ADMINS}` is | Notes |
+|---|---|---|
+| Keycloak ([002a](002a-setup-oidc-keycloak.md)) | The group's GUID (from the Keycloak admin API) | The `groups` claim emits `/are-admins` but `AccessPolicy` principals match against the GUID you exported |
+| Entra ID ([002b](002b-setup-oidc-entra.md)) | The group's object ID (GUID) | Entra emits group object IDs in the `groups` claim |
 
-> Entra emits group object IDs in the `groups` claim, so policy principals reference GUIDs, not display names. If you used Entra app roles instead, the principal is the role value (`admin`, `reader`, `writer`). If you used Keycloak with `roleClaim: groups`, the principal is the group name (`admins`, `readers`, `writers`).
+If you're starting fresh in a new shell, re-export the GROUP_* values from 002a or 002b before running the examples below.
 
 ### 1. Catalog Read Access
 
@@ -56,10 +58,10 @@ kind: AccessPolicy
 metadata:
   name: are-admins-read-catalog
 spec:
-  description: "Catalog read access for the are-admins Entra group"
+  description: "Catalog read access for the are-admins group"
   principals:
     - kind: Role
-      name: "${ARE_ADMINS_GUID}" # are-admins
+      name: "${GROUP_ADMINS}"
   rules:
     - actions:
         - "registry:read"
@@ -79,10 +81,10 @@ kind: AccessPolicy
 metadata:
   name: are-admins-catalog-write
 spec:
-  description: "Catalog read, publish, and edit access for the are-admins Entra group"
+  description: "Catalog read, publish, and edit access for the are-admins group"
   principals:
     - kind: Role
-      name: "${ARE_ADMINS_GUID}"
+      name: "${GROUP_ADMINS}"
   rules:
     - actions:
         - "registry:read"
@@ -109,7 +111,7 @@ spec:
   description: "Allow are-admins users to invoke the k8shelper agent"
   principals:
     - kind: Role
-      name: "${ARE_ADMINS_GUID}"
+      name: "${GROUP_ADMINS}"
   rules:
     - actions:
         - "runtime:invoke"
@@ -193,7 +195,19 @@ arctl get runtimes
 | `Role` | The user authenticates via OIDC and their token carries a group/role claim. The `name` is the claim value (GUID for Entra groups, role value for Entra app roles, group name for Keycloak). |
 | `Deployment` | The caller is a deployed agent acting on its own behalf — for example, `k8shelper-kagent` calling an MCP server. The `name` is the AgentRegistry `Deployment` name. |
 
+## Cleanup
+
+Remove any policies you applied above:
+
+```bash
+arctl delete accesspolicy are-admins-read-catalog            2>/dev/null || true
+arctl delete accesspolicy are-admins-catalog-write           2>/dev/null || true
+arctl delete accesspolicy are-admins-k8shelper-chat          2>/dev/null || true
+arctl delete accesspolicy k8shelper-github-copilot-tools     2>/dev/null || true
+arctl delete accesspolicy k8shelper-github-copilot-create-issue 2>/dev/null || true
+```
+
 ## Next
 
-- [060](060-deploy-demochatbot-on-aws.md) / [061](061-deploy-k8shelper-on-kagent.md) — Deploy an agent so you have something to apply policy to
-- [072 — Wire MCP to an Agent](072-wire-mcp-to-agent.md) — useful before applying the MCP tool policies above
+- [051 — Approval Workflows](051-approval-workflows.md) — gate every catalog submission behind admin approval
+- [060 — Observability / Tracing](060-observability-tracing.md)

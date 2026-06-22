@@ -9,8 +9,8 @@ spec:
   command: "python3 server.py"
   source:
     repository:
-      url: "https://github.com/AdminTurnedDevOps/agentic-demo-repo"
-      subfolder: "agentregistry-enterprise/demo-mcp"
+      url: "https://github.com/solo-io/field-agentic-labs"
+      subfolder: "agentregistry-enterprise/assets/mcp/demo-mcp"
   tools:
     - name: get_time
       description: "Get the current UTC time"

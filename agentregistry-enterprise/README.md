@@ -1,126 +1,102 @@
-# Agentregistry Enterprise Workshop
+# AgentRegistry Enterprise Workshop
 
-A hands-on lab series for **Solo.io Agentregistry Enterprise** (`arctl` + `ar.dev/v1alpha1` CRDs). The labs cover installing the registry on Kubernetes, wiring it to an OIDC identity provider (Microsoft Entra ID or Keycloak), registering AWS Bedrock AgentCore and kagent runtimes, deploying agents and MCP servers, applying AccessPolicy-based RBAC, and surfacing telemetry in the AgentRegistry UI.
+A hands-on lab series for **Solo.io AgentRegistry Enterprise** (`arctl` + `ar.dev/v1alpha1` CRDs).
 
-All manifests, agent code, Terraform, and ConfigMap patches referenced by the labs live under [`assets/`](assets/) in this repo, mirrored from the upstream demo repo.
+The workshop is built around two ideas:
+
+1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + AgentRegistry + kagent + Enterprise Agentgateway). You only run setup once.
+
+2. **Independent unit-of-value labs.** Every lab numbered 010 and up is standalone — it states what it needs from the baseline, walks through one capability, and has its own `## Cleanup` section that returns the cluster to the post-baseline state. Run them in any order, run cleanup, move on.
+
+All manifests, agent source code, and Python MCP servers are in [`assets/`](assets/) in this repo. No external private references — everything pulls from `github.com/solo-io/field-agentic-labs`.
 
 ## Prerequisites
 
-Before starting this workshop, you will need:
-
-- A running Kubernetes cluster (GKE, EKS, AKS, or Kind) with `kubectl` access
-- `helm` v3 installed
-- The Enterprise `arctl` CLI (installed in [001](001-install-arctl.md))
-- An OIDC provider — Microsoft Entra ID ([020](020-setup-entra.md)) or Keycloak ([021](021-setup-keycloak.md))
-- (Optional) AWS account + `aws` CLI for the AWS Bedrock AgentCore runtime ([050](050-aws-provider.md))
-- (Optional) An existing kagent installation for the kagent runtime ([051](051-kagent-provider.md))
+- A running Kubernetes cluster (≥ 1.29) with a default `StorageClass` and a working `LoadBalancer` Service controller
+- `kubectl`, `helm` v3, `openssl`, `envsubst`, `jq`
+- An OIDC provider — Keycloak (in-cluster, [002a](002a-setup-oidc-keycloak.md)) or Microsoft Entra ID ([002b](002b-setup-oidc-entra.md))
+- An LLM provider API key — Anthropic / OpenAI / Gemini (used by kagent)
+- (Optional) AWS account for the AWS Bedrock AgentCore lab ([010](010-aws-bedrock-runtime.md))
+- (Optional) `docker buildx` + a container registry for the BYO-agent lab ([020](020-kagent-runtime-and-agent.md))
 
 # Table of Contents
 
-- [Installation](#installation)
-- [Identity Provider Setup](#identity-provider-setup)
-- [Cluster Access](#cluster-access)
-- [Runtimes (Providers)](#runtimes-providers)
-- [Agents](#agents)
+- [Setup (mandatory)](#setup-mandatory)
+- [Runtimes & Agents](#runtimes--agents)
 - [MCP Servers](#mcp-servers)
 - [Prompts](#prompts)
-- [AccessPolicy / RBAC](#accesspolicy--rbac)
+- [AccessPolicy & Approvals](#accesspolicy--approvals)
 - [Observability](#observability)
-- [GitOps / CI-CD](#gitops--ci-cd)
+- [GitOps](#gitops)
 - [Cleanup](#cleanup)
 
 ---
 
-## Installation
+## Setup (mandatory)
 
-> **Start here.** All other labs depend on the CLI and the AgentRegistry Enterprise install.
+> Three labs. Run them in order, once. After this, every lab from 010 onwards is independent.
 
-- [000 — Overview & Architecture](000-overview.md)
-- [001 — Install the `arctl` Enterprise CLI](001-install-arctl.md)
-- [030 — Install AgentRegistry Enterprise (Helm)](030-install-agentregistry-helm.md)
-
----
-
-## Identity Provider Setup
-
-Pick one OIDC backend before installing. Both expose the same `groups` (or `roles`) claim model that AccessPolicy consumes.
-
-- [020 — Microsoft Entra ID (Azure AD) OIDC](020-setup-entra.md)
-- [021 — Keycloak OIDC](021-setup-keycloak.md)
-- [040 — Authenticate `arctl` (device-code, manual token)](040-arctl-auth.md)
+- [001 — Baseline Setup](001-baseline-setup.md) — cluster prereqs check + `arctl` install + namespace
+- **Pick one OIDC path:**
+  - [002a — Setup OIDC: Keycloak (in-cluster)](002a-setup-oidc-keycloak.md) — recommended for a self-contained POC; no cloud account needed
+  - [002b — Setup OIDC: Entra ID](002b-setup-oidc-entra.md) — if you already have a Microsoft Entra tenant
+- [003 — Install Components](003-install-components.md) — AgentRegistry + kagent + Enterprise Agentgateway
 
 ---
 
-## Cluster Access
+## Runtimes & Agents
 
-- [010 — Cluster Prerequisites (Private EKS, EBS CSI, Terraform)](010-cluster-prereqs.md)
-- [035 — Private-Cluster Routing via Istio Gateway + NLB](035-private-cluster-istio-routing.md)
-
----
-
-## Runtimes (Providers)
-
-A **Runtime** (sometimes called a Provider) is where AgentRegistry actually deploys an agent: AWS Bedrock AgentCore, kagent, etc.
-
-- [050 — AWS Bedrock AgentCore Provider](050-aws-provider.md)
-- [051 — kagent Runtime](051-kagent-provider.md)
-
----
-
-## Agents
-
-- [060 — Deploy a Demo Chatbot on AWS Bedrock AgentCore](060-deploy-demochatbot-on-aws.md)
-- [061 — Deploy `k8shelper` on kagent (Anthropic + Gemini variants)](061-deploy-k8shelper-on-kagent.md)
+- [010 — AWS Bedrock AgentCore Runtime + demochatbot](010-aws-bedrock-runtime.md) — registers AWS as a Runtime + deploys the `demochatbot` agent on top
+- [020 — kagent Runtime + k8shelper Agent](020-kagent-runtime-and-agent.md) — register kagent as a Runtime + build/push your own `k8shelper` BYO image + deploy
 
 ---
 
 ## MCP Servers
 
-- [070 — Register a Local stdio MCP Server (`demo-tools`)](070-register-local-mcp.md)
-- [071 — Register a Remote Streamable-HTTP MCP Server (GitHub Copilot)](071-register-github-copilot-mcp.md)
-- [072 — Wire an MCP Server to an Agent](072-wire-mcp-to-agent.md)
-- [073 — Expose a Remote MCP Server Through Agentgateway (`Virtual` runtime)](073-remote-mcp-through-agentgateway.md)
+- [030 — Local stdio MCP Server (`demo-tools`)](030-mcp-local-stdio.md) — catalog-only, in-tree Python MCP
+- [031 — Remote MCP via kagent (GitHub Copilot)](031-mcp-remote-github-copilot.md) — remote streamable-HTTP MCP deployed to the kagent runtime
+- [032 — Remote MCP through Agentgateway (`Virtual` runtime)](032-mcp-through-agentgateway.md) — third topology, gateway-fronted
 
 ---
 
 ## Prompts
 
-- [075 — Prompt Quickstart (catalog asset CRUD)](075-prompt-quickstart.md)
+- [040 — Prompts (Catalog Asset Quickstart)](040-prompts.md) — `Prompt` CRUD via `arctl`
 
 ---
 
-## AccessPolicy / RBAC
+## AccessPolicy & Approvals
 
-- [080 — AccessPolicy for Entra Groups, kagent fan-out, and MCP tools](080-access-policies.md)
-- [081 — Approval Workflows (admin gating of catalog submissions)](081-approval-workflows.md)
+- [050 — AccessPolicy for Groups + MCP Tools + Chat](050-access-policies.md)
+- [051 — Approval Workflows (admin gating of catalog submissions)](051-approval-workflows.md)
 
 ---
 
 ## Observability
 
-- [090 — Tracing Setup (kagent + AWS AgentCore runtimes)](090-observability-tracing.md)
-- [091 — Trace Fan-Out Workaround for kagent](091-trace-fanout-workaround.md)
+- [060 — Tracing (kagent + AWS AgentCore runtimes)](060-observability-tracing.md)
+- [061 — Trace Fan-Out Workaround for kagent](061-trace-fanout.md)
 
 ---
 
-## GitOps / CI-CD
+## GitOps
 
-- [095 — Register Agents and MCP Servers from a GitLab Pipeline](095-gitops-gitlab-ci.md)
+- [070 — Register Agents and MCP Servers from a GitLab Pipeline](070-gitops-gitlab-ci.md)
 
 ---
 
 ## Cleanup
 
-- [099 — Cleanup & Common Troubleshooting](099-cleanup.md)
+- [099 — Cleanup](099-cleanup.md) — tear down the baseline (each unit-of-value lab has its own cleanup too)
 
 ---
 
 ## Tracks
 
-Curated learning paths that walk through a subset of the labs in a recommended order. See [`tracks/`](tracks/):
+Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
-- [`aws-track.md`](tracks/aws-track.md) — Install → Entra → AWS provider → demochatbot
-- [`kagent-track.md`](tracks/kagent-track.md) — Install → Keycloak → kagent runtime → k8shelper + MCP
+- [`aws-track.md`](tracks/aws-track.md) — Baseline → AWS Bedrock AgentCore + demochatbot
+- [`kagent-track.md`](tracks/kagent-track.md) — Baseline → kagent runtime → k8shelper + MCP
 
 ---
 
@@ -129,58 +105,58 @@ Curated learning paths that walk through a subset of the labs in a recommended o
 - Install AgentRegistry Enterprise on Kubernetes with OIDC
 - Federate AWS Bedrock AgentCore and kagent under a single agent catalog and RBAC model
 - Register agents either by repo source (cloned + built by AgentRegistry) or by pre-built container image (BYO image)
-- Register MCP servers (`stdio` local, `streamable-http` remote) and wire them into agents
+- Register MCP servers (`stdio` local, `streamable-http` remote, `Virtual` runtime via Agentgateway) and wire them into agents
 - Enforce AccessPolicy-based RBAC against Entra group object IDs, Entra app roles, or Keycloak groups
+- Gate every catalog submission behind admin approval (`requireCreateApproval`)
 - Surface traces from all runtimes in the AgentRegistry dashboard via the bundled OTel Collector + ClickHouse
-- Drive registration through `arctl apply` in GitLab CI/CD against private EKS clusters
+- Drive registration through `arctl apply` in GitLab CI/CD
 
 ## Validated On
 
-- AgentRegistry Enterprise chart `2026.5.3` / `2026.05.0` (`2026.6.0` for [081 approval workflows](081-approval-workflows.md))
-- `arctl` v2026.5.3 / v2026.5.4
+- AgentRegistry Enterprise chart `v2026.5.4`
+- `arctl` `v2026.5.4`
+- Kagent OSS chart `0.9.7`
+- Enterprise Agentgateway `v2.2.0`
+- Keycloak `quay.io/keycloak/keycloak:26.0`
 - Kubernetes 1.29+
 - AWS Bedrock AgentCore (us-east-1)
-- kagent management chart with the `solo-enterprise-telemetry-collector`
 
 ## Repo Layout
 
 ```
 agentregistry-enterprise/
-├── README.md                     # this file
-├── 000-overview.md               # architecture and lab flow
-├── 001-install-arctl.md          # CLI install
-├── 010-cluster-prereqs.md        # EKS + EBS CSI + StorageClass (+ Terraform under assets/private-eks)
-├── 020-setup-entra.md            # Entra ID OIDC
-├── 021-setup-keycloak.md         # Keycloak OIDC
-├── 030-install-agentregistry-helm.md
-├── 035-private-cluster-istio-routing.md
-├── 040-arctl-auth.md             # device-code / manual token
-├── 050-aws-provider.md
-├── 051-kagent-provider.md
-├── 060-deploy-demochatbot-on-aws.md
-├── 061-deploy-k8shelper-on-kagent.md
-├── 070-register-local-mcp.md
-├── 071-register-github-copilot-mcp.md
-├── 072-wire-mcp-to-agent.md
-├── 073-remote-mcp-through-agentgateway.md
-├── 075-prompt-quickstart.md
-├── 080-access-policies.md
-├── 081-approval-workflows.md
-├── 090-observability-tracing.md
-├── 091-trace-fanout-workaround.md
-├── 095-gitops-gitlab-ci.md
-├── 099-cleanup.md
+├── README.md                            # this file
+├── 001-baseline-setup.md                # cluster prereqs + arctl + namespace
+├── 002a-setup-oidc-keycloak.md          # OIDC path A: in-cluster Keycloak
+├── 002b-setup-oidc-entra.md             # OIDC path B: Microsoft Entra ID
+├── 003-install-components.md            # AgentRegistry + kagent + Enterprise Agentgateway
+├── 010-aws-bedrock-runtime.md           # AWS Runtime + demochatbot
+├── 020-kagent-runtime-and-agent.md      # kagent Runtime + k8shelper
+├── 030-mcp-local-stdio.md               # in-tree stdio MCP
+├── 031-mcp-remote-github-copilot.md     # GitHub Copilot MCP via kagent
+├── 032-mcp-through-agentgateway.md      # MCP via Virtual runtime + Agentgateway
+├── 040-prompts.md                       # Prompt CRUD
+├── 050-access-policies.md               # AccessPolicy patterns
+├── 051-approval-workflows.md            # requireCreateApproval feature
+├── 060-observability-tracing.md         # tracing setup
+├── 061-trace-fanout.md                  # kagent collector fan-out
+├── 070-gitops-gitlab-ci.md              # CI/CD pipeline
+├── 099-cleanup.md                       # full teardown
 ├── tracks/
 │   ├── aws-track.md
 │   └── kagent-track.md
-└── assets/                       # YAML manifests, agent source, Terraform, ConfigMap patches
-    ├── access-policies/          # parameterized AccessPolicy templates
-    ├── demochatbot-a2a/
-    ├── k8shelper-anthropic/
-    ├── k8shelper-gemini/
+└── assets/                              # YAML, agent source, Terraform, ConfigMap patches
+    ├── access-policies/
+    ├── demochatbot-a2a/                 # ADK agent source for the AWS lab
+    ├── k8shelper-anthropic/             # BYO image source for the kagent lab (Claude)
+    ├── k8shelper-gemini/                # BYO image source for the kagent lab (Gemini)
     ├── mcp/
-    ├── observability/
-    ├── private-eks/              # Terraform for a private EKS cluster (no tfstate committed)
-    ├── prompts/                  # Prompt catalog asset examples
-    └── providers/kagent/
+    │   ├── demo-mcp/                    # stdio MCP server source (Python)
+    │   ├── github-copilot-mcpserver.yaml
+    │   ├── github-copilot-mcp-deploy.yaml
+    │   └── agentgateway/                # parent Gateway + Route + Virtual runtime + MCP for lab 032
+    ├── observability/                   # ConfigMap patches for lab 061
+    ├── private-eks/                     # Terraform reference (not used by the main flow)
+    ├── prompts/
+    └── providers/kagent/                # k8shelper Agent + Deployment manifests
 ```

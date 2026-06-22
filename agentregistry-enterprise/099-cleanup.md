@@ -1,181 +1,160 @@
-# Cleanup & Common Troubleshooting
+# Cleanup
 
-This lab tears down everything created across the workshop. Run it in order — child resources first (HTTPRoute → Gateway → Secret), then the Helm release, then the namespace, then external resources (CloudFormation stack, Entra app registrations, Keycloak deployment).
+Tear down everything the workshop installed. Run this when you're done.
 
-## Cleanup
+Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)–[070](070-gitops-gitlab-ci.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** — the AgentRegistry / kagent / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
 
-### 1. HTTPS Gateway and route (Entra path)
+> **Always run each unit-of-value lab's own cleanup first.** Some labs create AWS / external resources (IAM roles, CloudFormation stacks, image pushes) that won't get cleaned up by the cluster-side teardown below. The teardown chain matters because Helm releases own Secrets / ConfigMaps / CRD instances — if you delete the namespace before `helm uninstall`, you'll leave finalizer-stuck resources behind.
+
+## Recommended Order
+
+1. **Each unit-of-value lab's `## Cleanup`** — run the cleanup section of every lab you ran (010 → 020 → 030 → … → 070). Skip the ones you didn't run.
+2. **This lab** — tear down the three component Helm releases, then the OIDC backend, then the namespaces, then local files.
+
+## 1. Run Each Lab's Cleanup First
+
+Quick checklist — confirm each ran:
 
 ```bash
-kubectl delete httproute  are-https-route   -n agentregistry-system 2>/dev/null || true
-kubectl delete gateway    are-https-gateway -n agentregistry-system 2>/dev/null || true
-kubectl delete secret     are-https-tls     -n agentregistry-system 2>/dev/null || true
+arctl get runtimes
+arctl get agents
+arctl get mcps
+arctl get prompts
+arctl get accesspolicies
+arctl get deployments
 ```
 
-### 2. AgentRegistry Helm release + namespace
+Every list should be empty (or contain only items you intentionally left for another reason). If anything is still there, find which lab created it and run that lab's Cleanup section.
+
+## 2. Uninstall the Three Component Helm Releases
+
+Order matters — uninstall in reverse install order to avoid dependency issues:
 
 ```bash
+# Enterprise Agentgateway
+helm uninstall agentgateway      -n agentgateway-system 2>/dev/null || true
+helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
+
+# kagent
+helm uninstall kagent      -n kagent 2>/dev/null || true
+helm uninstall kagent-crds -n kagent 2>/dev/null || true
+
+# AgentRegistry Enterprise
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
-kubectl delete namespace agentregistry-system 2>/dev/null || true
 ```
 
-### 3. kagent extras (if you applied lab 091)
+## 3. Wait for Helm-Managed Resources to Finalize
+
+Some CRDs (ClickHouse, PostgreSQL) have finalizers. Give them a minute, then check what's left:
 
 ```bash
-# Restore the original kagent collector config
-kubectl apply -f assets/observability/backups/solo-enterprise-telemetry-collector-config.backup.yaml
-kubectl -n kagent rollout restart statefulset solo-enterprise-telemetry-collector
+sleep 30
+kubectl get all -n agentregistry-system 2>/dev/null
+kubectl get all -n kagent 2>/dev/null
+kubectl get all -n agentgateway-system 2>/dev/null
 ```
 
-### 4. MCP gateway resources (if you used lab 095)
+If anything is stuck `Terminating` for more than a few minutes, force-finalize:
 
 ```bash
-kubectl delete httproute            mcp-route          -n agentgateway-system 2>/dev/null || true
-kubectl delete agentgatewaybackend  github-mcp-server  -n agentgateway-system 2>/dev/null || true
-kubectl delete secret               github-pat         -n agentgateway-system 2>/dev/null || true
-kubectl delete gateway              mcp-gateway        -n agentgateway-system 2>/dev/null || true
+kubectl get <kind> <name> -n <namespace> -o json \
+  | jq '.metadata.finalizers = null' \
+  | kubectl replace --raw "/api/v1/namespaces/<namespace>/<kind>/<name>/finalize" -f -
 ```
 
-### 5. AWS CloudFormation stack
+## 4. Delete the Three Component Namespaces
 
 ```bash
-aws cloudformation delete-stack \
-  --stack-name agentregistry-access-role \
-  --region us-east-1
-
-aws cloudformation wait stack-delete-complete \
-  --stack-name agentregistry-access-role \
-  --region us-east-1
+kubectl delete namespace agentregistry-system --ignore-not-found
+kubectl delete namespace kagent --ignore-not-found
+kubectl delete namespace agentgateway-system --ignore-not-found
 ```
 
-### 6. Temp files
+## 5. Tear Down the OIDC Backend
+
+### Keycloak (if you took [002a](002a-setup-oidc-keycloak.md))
 
 ```bash
-rm -f /tmp/are-values.yaml /tmp/are-values-private.yaml \
-      /tmp/aws-runtime.yaml /tmp/aws-provider.yaml \
-      /tmp/agentregistry-cf.yaml \
-      /tmp/kagent-runtime.yaml \
-      /tmp/are-https.key /tmp/are-https.crt \
-      /tmp/mcp-servers.json /tmp/mcp-servers.rendered.json \
-      /tmp/ebs-csi-trust.json
+kubectl delete namespace keycloak --ignore-not-found
 ```
 
-### 7. Entra app registrations + groups (optional)
+### Entra ID (if you took [002b](002b-setup-oidc-entra.md))
 
 ```bash
-az ad app delete --id "$ARE_BACKEND_CLIENT_ID"
-az ad app delete --id "$ARE_CLI_CLIENT_ID"
-az ad app delete --id "$ARE_UI_CLIENT_ID"
+# Make sure ARE_*_CLIENT_ID + GROUP_* are still in your shell, or look them up:
+#   az ad app list   --filter "startswith(displayName,'are-')" --query "[].{name:displayName,id:appId}" -o table
+#   az ad group list --filter "startswith(displayName,'are-')" --query "[].{name:displayName,id:id}"      -o table
 
-az ad group delete --group "$GROUP_ADMINS"
-az ad group delete --group "$GROUP_READERS"
-az ad group delete --group "$GROUP_WRITERS"
+az ad app delete --id "${ARE_BACKEND_CLIENT_ID}"
+az ad app delete --id "${ARE_CLI_CLIENT_ID}"
+az ad app delete --id "${ARE_UI_CLIENT_ID}"
+
+az ad group delete --group "${GROUP_ADMINS}"
+az ad group delete --group "${GROUP_READERS}"
+az ad group delete --group "${GROUP_WRITERS}"
 ```
 
-### 8. Keycloak (optional)
+## 6. Local Cleanup
 
 ```bash
-kubectl delete namespace keycloak
+# Temp files
+rm -f /tmp/are-values.yaml /tmp/aws-runtime.yaml /tmp/kagent-runtime.yaml \
+      /tmp/agentregistry-cf.yaml
+
+# arctl binary + PATH entry
+rm -rf "$HOME/.arctl"
+# (remove the PATH export from ~/.zshrc / ~/.bashrc by hand)
+
+# Env vars (all the OIDC + AWS + image vars the workshop set)
+unset OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
+      ARE_CLI_CLIENT_ID ARE_BACKEND_CLIENT_ID ARE_UI_CLIENT_ID \
+      TENANT_ID BACKEND_CLIENT_SECRET SCOPE_ID \
+      GROUP_ADMINS GROUP_READERS GROUP_WRITERS \
+      AR_IP ARCTL_API_BASE_URL ARCTL_API_TOKEN \
+      AWS_ACCOUNT_ID AWS_REGION AWS_ROLE_ARN AWS_EXTERNAL_ID \
+      K8SHELPER_IMAGE ANTHROPIC_API_KEY GITHUB_COPILOT_MCP_TOKEN \
+      KC_IP KC_TOKEN
 ```
 
-### 9. Private EKS cluster (optional)
+## 7. (Optional) Cluster
+
+If the cluster was created **only** for this workshop, delete it now. If it's a shared cluster, leave it.
+
+## Verify
 
 ```bash
-cd assets/private-eks
-terraform destroy -var "cluster_name=are-private" -var "region=us-east-1"
+kubectl get ns | grep -E 'agentregistry-system|kagent|agentgateway-system|keycloak' || echo "All workshop namespaces removed"
+helm list -A | grep -E 'agentregistry|kagent|agentgateway' || echo "No workshop Helm releases left"
 ```
 
-## Common Troubleshooting
+Both should print the "all removed" message.
 
-### `The logged in user does not have any mapped roles`
+## What's Left in the Cluster
 
-The OIDC token doesn't contain the expected role claim.
+These are intentionally **not** removed by this lab:
 
-1. Decode your token at [jwt.ms](https://jwt.ms) (Entra) or [jwt.io](https://jwt.io).
-2. Find the claim with your group / role memberships (`groups`, `Groups`, `roles`, `realm_access.roles`).
-3. Update `oidc.roleClaim` in your Helm values to match.
-4. `helm upgrade` and re-login.
+| Resource | Why |
+|---|---|
+| Cluster-scoped Gateway API CRDs | Other workloads may depend on them; removing requires `kubectl delete -f https://github.com/kubernetes-sigs/gateway-api/...` from [003 step 3](003-install-components.md#3-install-enterprise-agentgateway) |
+| Your default `StorageClass` | Pre-existed |
+| Your `LoadBalancer` controller | Pre-existed |
+| Container images pushed to your registry in [020](020-kagent-runtime-and-agent.md#2-build--push-the-k8shelper-image) | Outside the cluster — use your registry's tooling |
+| AWS CloudFormation stack from [010](010-aws-bedrock-runtime.md) | Should already be deleted by 010's Cleanup; double-check with `aws cloudformation list-stacks` |
 
-If Entra returns `_claim_names` / `_claim_sources` instead of `groups`, you hit the groups overage limit — switch to [Entra app roles](020-setup-entra.md#appendix-use-app-roles-instead-of-groups).
+## Troubleshooting
 
-### `AADSTS900144: The request body must contain the following parameter: 'scope'`
-
-The current `arctl user login` doesn't pass `scope`, which Entra requires. Use the manual device-code flow in [040](040-arctl-auth.md#3-entra--manual-device-code-login).
-
-### `AADSTS7000218: client_assertion or client_secret required`
-
-The `are-cli` app is a confidential client; device-code requires a public client:
+### Namespace stuck `Terminating`
 
 ```bash
-az ad app update --id "$ARE_CLI_CLIENT_ID" --is-fallback-public-client true
+kubectl get namespace <name> -o json \
+  | jq '.spec.finalizers = []' \
+  | kubectl replace --raw "/api/v1/namespaces/<name>/finalize" -f -
 ```
 
-### `AADSTS50011: redirect URI ... does not match`
+### `helm uninstall` returns "release not found"
 
-- `are-cli`: must have `http://localhost` under **Mobile and desktop applications**.
-- `are-ui`: must have `https://<ARE_HTTPS_IP>/callback` under **Single-page application**.
+Already gone — proceed to the namespace delete.
 
-### `AADSTS500117: reply uri specified in the request isn't using a secure scheme`
+### `arctl get ...` returns 401 / connection refused
 
-Entra requires HTTPS for SPA redirect URIs on non-localhost. Set up the HTTPS Gateway in [030](030-install-agentregistry-helm.md#5-expose-the-ui-over-https-for-entra-spa-login).
-
-### `Token provider: disabled (encryption key not set)`
-
-Informational. Only matters if you want to issue tokens to deployed agents. Generate a key:
-
-```bash
-openssl rand -hex 32
-```
-
-And add to your values:
-
-```yaml
-config:
-  jwtPrivateKey: "<generated-hex-string>"
-```
-
-### Pods not starting
-
-```bash
-kubectl describe pod -n agentregistry-system -l app.kubernetes.io/name=agentregistry-enterprise
-kubectl logs -n agentregistry-system deployment/agentregistry-enterprise -c wait-for-postgres
-kubectl logs -n agentregistry-system deployment/agentregistry-enterprise
-```
-
-Most common cause: the cluster has no default `StorageClass`. See [010](010-cluster-prereqs.md).
-
-### CloudFormation stack fails
-
-```bash
-aws cloudformation describe-stack-events \
-  --stack-name agentregistry-access-role \
-  --region us-east-1 \
-  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]'
-```
-
-Common: IAM user lacks `iam:CreateRole` or `cloudformation:CreateStack`; role name collision (`--role-name` with a unique name in `arctl provider setup aws`).
-
-### kagent: `authentication token expired during deployment; please retry`
-
-AgentRegistry maps every kagent API 401 to this. Usually the kagent controller is rejecting the forwarded identity. Enable `INSECURE_MODE` — see [051 step 2](051-kagent-provider.md#2-enable-insecure_mode-on-the-kagent-controller).
-
-### Tracing UI is empty
-
-See [090 troubleshooting](090-observability-tracing.md#troubleshooting) and the fan-out alternative in [091](091-trace-fanout-workaround.md).
-
-## Reference Card
-
-| Component | Value |
-|-----------|-------|
-| Chart | `oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise` |
-| Chart Version | `2026.5.3` (Entra track) / `2026.05.0` (Keycloak track) |
-| Image | `us-docker.pkg.dev/solo-public/agentregistry-enterprise/server:v2026.5.3` |
-| CLI install | `curl -sSL https://storage.googleapis.com/agentregistry-enterprise/install.sh \| ARCTL_VERSION=v2026.5.4 sh` |
-| HTTP | 8080 |
-| gRPC | 21212 |
-| MCP | 31313 |
-| OTel Collector | 4317 (gRPC) / 4318 (HTTP) |
-| HTTPS Gateway | 443 via `are-https-gateway` (self-signed TLS) |
-| Entra issuer | `https://login.microsoftonline.com/<TENANT_ID>/v2.0` |
-| Entra device login | `https://microsoft.com/devicelogin` |
-| Token decoders | [jwt.ms](https://jwt.ms) (Entra) / [jwt.io](https://jwt.io) |
+The AgentRegistry server is already down. Skip the `arctl get` checks in step 1 and go straight to step 2.

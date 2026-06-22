@@ -13,7 +13,7 @@ So traces only ever reach the **kagent** ClickHouse (`platformdb.otel_traces_jso
 
 There are two ways to fix this:
 
-1. **Repoint kagent's trace exporter** at the AgentRegistry collector — see [090](090-observability-tracing.md#repoint-kagents-injected-trace-endpoint). Trade-off: kagent's UI loses the traces.
+1. **Repoint kagent's trace exporter** at the AgentRegistry collector — see [060](060-observability-tracing.md#repoint-kagents-injected-trace-endpoint). Trade-off: kagent's UI loses the traces.
 2. **Fan out** — keep kagent's exporter pointed at its own collector, but have **that** collector forward `traces/genai` to the AgentRegistry collector as well. Both backends see the traces; both UIs work.
 
 This lab is the fan-out option.
@@ -26,9 +26,9 @@ This lab is the fan-out option.
 
 ## Prerequisites
 
-- [030 — AgentRegistry installed](030-install-agentregistry-helm.md)
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
 - An existing kagent install with the `solo-enterprise-telemetry-collector` StatefulSet in the `kagent` namespace
-- [051 — kagent Runtime registered](051-kagent-provider.md)
+- [020 — kagent Runtime registered](020-kagent-runtime-and-agent.md)
 
 ## How the Patch Works
 
@@ -98,7 +98,7 @@ kubectl -n kagent rollout restart statefulset solo-enterprise-telemetry-collecto
 
 For a permanent fix, upstream the exporter into the management chart's collector template.
 
-## Rollback
+## Cleanup
 
 ```bash
 kubectl apply -f assets/observability/backups/solo-enterprise-telemetry-collector-config.backup.yaml
@@ -107,4 +107,4 @@ kubectl -n kagent rollout restart statefulset solo-enterprise-telemetry-collecto
 
 ## Next
 
-- [090 — Tracing setup (the other half — runtime endpoints)](090-observability-tracing.md)
+- [060 — Tracing setup (the other half — runtime endpoints)](060-observability-tracing.md)

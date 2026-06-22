@@ -7,5 +7,5 @@ spec:
   description: "A deterministic A2A/ADK-compatible chatbot for AWS Bedrock AgentCore"
   source:
     repository:
-      url: "https://github.com/AdminTurnedDevOps/agentic-demo-repo"
-      subfolder: "agentregistry-enterprise/demochatbot-a2a"
+      url: "https://github.com/solo-io/field-agentic-labs"
+      subfolder: "agentregistry-enterprise/assets/demochatbot-a2a"

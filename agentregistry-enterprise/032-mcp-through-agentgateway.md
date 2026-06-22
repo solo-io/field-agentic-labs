@@ -1,6 +1,6 @@
 # Expose a Remote MCP Server Through Agentgateway
 
-A third deployment topology for the same GitHub Copilot remote MCP server from [071](071-register-github-copilot-mcp.md) — this time the MCP doesn't run *inside* a runtime like kagent at all. AgentRegistry catalogs it, then a `Virtual` runtime tells AgentRegistry to expose it as a child route on an **Agentgateway** Gateway. MCP clients hit a public path (`/registry/github-copilot`) on the gateway and the gateway brokers the connection to the upstream `https://api.githubcopilot.com/mcp`.
+A third deployment topology for the same GitHub Copilot remote MCP server from [031](031-mcp-remote-github-copilot.md) — this time the MCP doesn't run *inside* a runtime like kagent at all. AgentRegistry catalogs it, then a `Virtual` runtime tells AgentRegistry to expose it as a child route on an **Agentgateway** Gateway. MCP clients hit a public path (`/registry/github-copilot`) on the gateway and the gateway brokers the connection to the upstream `https://api.githubcopilot.com/mcp`.
 
 This is the right pattern when:
 
@@ -46,10 +46,8 @@ The `agentregistry.solo.io/runtime` label on the parent `Gateway` + parent `HTTP
 
 ## Prerequisites
 
-- [030 — AgentRegistry installed](030-install-agentregistry-helm.md) (assumed install namespace: `agentregistry-system`)
-- [040 — `arctl` authenticated](040-arctl-auth.md)
-- Enterprise Agentgateway installed with `GatewayClass: enterprise-agentgateway` and the Kubernetes Gateway API CRDs available
-- A GitHub Copilot MCP access token, exported as `GITHUB_COPILOT_MCP_TOKEN`:
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md). Step 3 of 003 installs Enterprise Agentgateway with `GatewayClass: enterprise-agentgateway` + the Kubernetes Gateway API CRDs — both required by this lab.
+- A GitHub Copilot MCP access token:
 
   ```bash
   export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
@@ -111,7 +109,7 @@ arctl get mcp github-copilot-remote-mcp --tag latest -o yaml
 
 > For demos, the token is rendered into the catalog entry. For production, use the secret mechanism supported by your AgentRegistry deployment instead of committing or sharing literal credentials.
 
-> **Naming differs from [071](071-register-github-copilot-mcp.md).** That lab catalogs the same upstream MCP as `github-copilot-mcp-server` (for the kagent runtime). This lab uses `github-copilot-remote-mcp` (for the Virtual runtime). They're independent catalog entries — you can have both registered simultaneously and they'll get deployed to different runtimes.
+> **Naming differs from [031](031-mcp-remote-github-copilot.md).** That lab catalogs the same upstream MCP as `github-copilot-mcp-server` (for the kagent runtime). This lab uses `github-copilot-remote-mcp` (for the Virtual runtime). They're independent catalog entries — you can have both registered simultaneously and they'll get deployed to different runtimes.
 
 ## 4. Deploy the Remote MCP to the Virtual Runtime
 
@@ -192,14 +190,14 @@ curl -i \
   "http://${AGW_ADDRESS}/registry/github-copilot"
 ```
 
-## How This Compares to [071](071-register-github-copilot-mcp.md)
+## How This Compares to [031](031-mcp-remote-github-copilot.md)
 
 Same upstream MCP server, three different ways to get an agent to talk to it:
 
 | Topology | Runtime kind | How agents reach it | Best for |
 |---|---|---|---|
-| **kagent runtime** ([071](071-register-github-copilot-mcp.md) + [072](072-wire-mcp-to-agent.md)) | `Kagent` | Each kagent agent dials the upstream directly via a generated `RemoteMCPServer` CR | Agents already running on kagent; tight per-agent control |
-| **stdio sidecar** ([070](070-register-local-mcp.md)) | `Kagent` | Agent process spawns the MCP server locally via `command:` | Self-contained, no external network |
+| **kagent runtime** ([031](031-mcp-remote-github-copilot.md)) | `Kagent` | Each kagent agent dials the upstream directly via a generated `RemoteMCPServer` CR | Agents already running on kagent; tight per-agent control |
+| **stdio sidecar** ([030](030-mcp-local-stdio.md)) | `Kagent` | Agent process spawns the MCP server locally via `command:` | Self-contained, no external network |
 | **Virtual runtime + Agentgateway** (this lab) | `Virtual` | Any MCP client (kagent, Claude Code, external) hits a path on the shared gateway | Centralized policy, non-kagent clients, gateway-level auth/observability |
 
 You can register the same upstream MCP under multiple catalog entries (one per topology) and deploy them simultaneously — they don't interfere.
@@ -258,5 +256,6 @@ Leave `Runtime/virtual-default` in place — it's the seeded default and other D
 
 ## Next
 
-- [075 — Prompt Quickstart](075-prompt-quickstart.md)
-- [080 — AccessPolicy](080-access-policies.md) — add `registry:read` on `server` resources for the groups that should see this MCP in the catalog
+- [040 — Prompts](040-prompts.md)
+- [050 — AccessPolicy](050-access-policies.md) — add `registry:read` on `server` resources for the groups that should see this MCP in the catalog
+- [060 — Observability / Tracing](060-observability-tracing.md)

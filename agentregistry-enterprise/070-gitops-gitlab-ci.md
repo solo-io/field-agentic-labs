@@ -1,8 +1,8 @@
 # Register Agents and MCP Servers from a GitLab Pipeline
 
-This lab walks through a GitLab CI/CD pipeline that registers an MCP server (GitHub Copilot, exposed through an in-cluster Agentgateway), an agent (the `demochatbot` from [060](060-deploy-demochatbot-on-aws.md)), and an AgentRegistry `Deployment` of the agent to AWS Bedrock AgentCore — all driven by `arctl apply`.
+This lab walks through a GitLab CI/CD pipeline that registers an MCP server (GitHub Copilot, exposed through an in-cluster Agentgateway), an agent (the `demochatbot` from [010 — AWS Bedrock Runtime](010-aws-bedrock-runtime.md)), and an AgentRegistry `Deployment` of the agent to AWS Bedrock AgentCore — all driven by `arctl apply`.
 
-It is the GitOps version of [060](060-deploy-demochatbot-on-aws.md) + [071](071-register-github-copilot-mcp.md), and pairs well with the private-EKS topology in [010](010-cluster-prereqs.md) + [035](035-private-cluster-istio-routing.md).
+It is the GitOps version of [010 — AWS Bedrock Runtime](010-aws-bedrock-runtime.md) + [031 — Remote MCP via kagent](031-mcp-remote-github-copilot.md). Run those labs interactively first to understand what the pipeline is doing — then come back here to put it on rails.
 
 ## Lab Objectives
 
@@ -11,6 +11,13 @@ It is the GitOps version of [060](060-deploy-demochatbot-on-aws.md) + [071](071-
 - Deploy an in-cluster Agentgateway + `AgentgatewayBackend` + `HTTPRoute` for the remote MCP
 - Register the MCP and agent in AgentRegistry and deploy to AWS
 
+## Prerequisites
+
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
+- An AWS account + IAM role registered as a Runtime ([010](010-aws-bedrock-runtime.md) steps 1–3)
+- A GitLab project with a runner that can reach (a) the Kubernetes API server, (b) `ARCTL_API_BASE_URL` from outside the cluster, and (c) any container registries the pipeline pulls from
+- A long-lived `ARCTL_API_TOKEN` (the same bearer token `arctl` uses). See [003 step 4](003-install-components.md#4-authenticate-arctl).
+
 ## Pipeline Variables
 
 Set these in **GitLab > Settings > CI/CD > Variables** (masked + protected):
@@ -18,7 +25,7 @@ Set these in **GitLab > Settings > CI/CD > Variables** (masked + protected):
 | Variable | Description |
 |----------|-------------|
 | `ARCTL_API_BASE_URL` | AgentRegistry endpoint (e.g., `http://agentregistry.internal.example.com`) |
-| `ARCTL_API_TOKEN` | Bearer token for `arctl` (see [040](040-arctl-auth.md)) |
+| `ARCTL_API_TOKEN` | Bearer token for `arctl` (see [003 step 4](003-install-components.md#4-authenticate-arctl)) |
 | `AWS_ACCESS_KEY_ID` | AWS credentials for `kubectl` EKS access |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `AWS_DEFAULT_REGION` | AWS region (e.g., `us-east-1`) |
@@ -171,8 +178,8 @@ register-agent:
         description: "A deterministic A2A/ADK-compatible chatbot for AWS Bedrock AgentCore"
         source:
           repository:
-            url: "https://github.com/AdminTurnedDevOps/agentic-demo-repo"
-            subfolder: "agentregistry-enterprise/demochatbot-a2a"
+            url: "https://github.com/solo-io/field-agentic-labs"
+            subfolder: "agentregistry-enterprise/assets/demochatbot-a2a"
         mcpServers:
           - { kind: RemoteMCPServer, name: github/copilot-mcp-server, version: "0.1.0" }
       EOF
@@ -227,6 +234,27 @@ helm install gitlab-runner gitlab/gitlab-runner \
   --set runners.kubernetes.namespace="gitlab-runner"
 ```
 
+## Cleanup
+
+Tear down everything the pipeline created:
+
+```bash
+# AgentRegistry side
+arctl delete deployment demochatbot                          2>/dev/null || true
+arctl delete agent      demochatbot --version 1.0.4          2>/dev/null || true
+arctl delete remotemcpserver github/copilot-mcp-server --version 0.1.0 2>/dev/null || true
+
+# Kubernetes side: the gateway + backend + route + secret the pipeline applied
+kubectl delete httproute           mcp-route          -n agentgateway-system --ignore-not-found
+kubectl delete agentgatewaybackend github-mcp-server  -n agentgateway-system --ignore-not-found
+kubectl delete gateway             mcp-gateway        -n agentgateway-system --ignore-not-found
+kubectl delete secret              github-pat         -n agentgateway-system --ignore-not-found
+```
+
+If you also want to drop the AWS Runtime + CloudFormation stack the pipeline depends on, see the Cleanup section of [010](010-aws-bedrock-runtime.md#cleanup).
+
+If you want to remove the GitLab runner, follow your GitLab runner uninstall path (it's outside the scope of this lab).
+
 ## Next
 
-- [099 — Cleanup](099-cleanup.md)
+- [099 — Cleanup](099-cleanup.md) — full workshop teardown
