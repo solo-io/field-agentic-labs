@@ -2,7 +2,7 @@
 
 Three Claude Code agents (`luna`, `mars`, `orion`) sharing a 2-pod `WorkerPool`. Substrate suspends idle agents and resumes them on demand, so the cluster runs **fewer pods than agents**. A small Go web UI drives "give a task" against random idle agents and renders queued / running / completed badges.
 
-> **⚠ UPSTREAM DRAFT.** The upstream README is explicit that this PR is a draft and it applies **three runtime workarounds** for open Substrate issues. The demo works, but is the most fragile of the four. If you don't need a real-LLM demo, [052](052-agent-secret-demo.md) is the more reliable "high-density multiplexing" story.
+> **⚠ UPSTREAM DRAFT.** The upstream README is explicit that this PR is a draft and it applies **three runtime workarounds** for open Substrate issues. The demo works, but is the most fragile of the four. If you don't need a real-LLM demo, [052](012-agent-secret-demo.md) is the more reliable "high-density multiplexing" story.
 
 ## Upstream Blockers (Currently Worked Around)
 
@@ -46,12 +46,14 @@ With three agents and two pods, the third agent stays suspended (state snapshott
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md)
-- [045 — `kubectl-ate` on `PATH`](045-install-kubectl-ate.md)
-- [020 — `.ate-dev-env.sh` sourced](020-configure-env.md) — `KO_DOCKER_REPO` is reused as the prefix for the workload image
-- `docker buildx` with multi-platform support (the workload is a Python+Claude image, so `ko` doesn't apply)
-- An **Anthropic API key**
-- A GCS bucket for Substrate snapshots (already configured in [030](030-gcp-iam-and-bucket.md))
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- `.ate-dev-env.sh` still sourced (`KO_DOCKER_REPO` is reused as the prefix for the workload image)
+- `docker buildx` with multi-platform support (the workload is a Python+Claude image, so `ko` doesn't apply here)
+- An **Anthropic API key**:
+
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
 
 ## 1. Deploy
 
@@ -139,7 +141,7 @@ kubectl ate get workers
 kubectl ate logs actors luna
 ```
 
-## Teardown
+## Cleanup
 
 ```bash
 ./hack/install-ate.sh --delete-demo-claude-code-multiplex
@@ -160,5 +162,5 @@ The same upstream workarounds apply until the linked issues land.
 
 ## Next
 
-- [060 — Install kagent with Substrate Enabled](060-install-kagent-with-substrate.md) — wire kagent on top, so `AgentHarness` resources can run on Substrate workers
-- [080 — Operations](080-operations-suspend-resume.md)
+- [060 — Install kagent with Substrate Enabled](020-kagent-integration.md) — wire kagent on top, so `AgentHarness` resources can run on Substrate workers
+- [080 — Operations](030-operations.md)

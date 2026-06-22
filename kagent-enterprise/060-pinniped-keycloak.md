@@ -2,7 +2,7 @@
 
 This lab sets up Keycloak as an OIDC provider for **Kubernetes itself** (not kagent) using Pinniped. It is independent of the rest of the workshop — you don't need it to run kagent or apply `AccessPolicy`. It's how you make `kubectl` itself OIDC-authenticated instead of relying on the cluster's static admin credentials.
 
-The same Keycloak you stand up here can later be used as the OIDC provider for the kagent UI ([020](020-install-kagent-enterprise.md)) and as the `UserGroup` token source for `AccessPolicy` ([061](061-accesspolicy-usergroup.md)).
+The same Keycloak you stand up here can later be used as the OIDC provider for the kagent UI ([020](003-install-kagent-enterprise.md)) and as the `UserGroup` token source for `AccessPolicy` ([061](031-accesspolicy-usergroup.md)).
 
 ## Architecture
 
@@ -399,6 +399,24 @@ Expected:
 | Groups not appearing in the token | The group mapper in Step 2.6 isn't right. Confirm "Add to ID token" and "Add to access token" are both ON. |
 | `Unauthorized` after a successful login | The RBAC `Group` name doesn't match the value in the `groups` claim. Confirm both use the same string (e.g., `k8s-admins` vs `/k8s-admins`). |
 
+## Cleanup
+
+```bash
+# Pinniped Concierge + JWTAuthenticator
+kubectl delete jwtauthenticator   keycloak                  --ignore-not-found
+kubectl delete clusterrolebinding keycloak-cluster-admins   --ignore-not-found
+kubectl delete clusterrolebinding keycloak-developers       --ignore-not-found
+kubectl delete clusterrolebinding keycloak-viewers          --ignore-not-found
+kubectl delete -f https://get.pinniped.dev/latest/install-pinniped-concierge.yaml --ignore-not-found
+
+# Keycloak
+kubectl delete namespace keycloak --ignore-not-found
+
+# Local files
+rm -f keycloak-tls.crt keycloak-tls.key pinniped-kubeconfig.yaml pinniped
+unset KEYCLOAK_IP KEYCLOAK_CA_BASE64
+```
+
 ## Quick Reference
 
 | Component | URL / Value |
@@ -412,5 +430,5 @@ Expected:
 
 ## Next
 
-- [061 — `UserGroup` `AccessPolicy`](061-accesspolicy-usergroup.md) — the same Keycloak (different realm or client) can be the JWT source for runtime AccessPolicy
-- [090 — Microsoft Entra ID OBO](090-obo-entra.md) — same idea (OIDC token = identity), different IdP, completely different downstream
+- [061 — `UserGroup` `AccessPolicy`](031-accesspolicy-usergroup.md) — the same Keycloak (different realm or client) can be the JWT source for runtime AccessPolicy
+- [090 — Microsoft Entra ID OBO](070-obo-entra.md) — same idea (OIDC token = identity), different IdP, completely different downstream

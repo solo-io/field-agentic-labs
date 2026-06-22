@@ -11,8 +11,7 @@
 
 ## Prerequisites
 
-- [020 — Kagent Enterprise installed](020-install-kagent-enterprise.md)
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## 1. Create the ServiceAccount
 
 ```bash
@@ -102,7 +101,7 @@ Error from server (Forbidden): error when creating "STDIN": mcpservers.kagent.de
   "kagent.dev" in the namespace "kagent"
 ```
 
-## 7. Cleanup
+## Cleanup
 
 ```bash
 kubectl delete serviceaccount test-reader -n kagent
@@ -122,4 +121,4 @@ In practice both are needed: RBAC for "who can shape the deployment", `AccessPol
 
 ## Next
 
-- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](080-k8s-token-passthrough-pinniped.md) — replace the implicit cluster-admin identity in your kubeconfig with Keycloak-fronted users + groups
+- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) — replace the implicit cluster-admin identity in your kubeconfig with Keycloak-fronted users + groups

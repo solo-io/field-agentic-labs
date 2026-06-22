@@ -406,7 +406,7 @@ Then add `--set 'imagePullSecrets[0].name=gar-pull-secret'` to the kagent and Op
 
 > The `oauth2accesstoken` credential expires in ~1 hour. For longer-lived access, use a service account key or Workload Identity.
 
-**Option B — IAM** (requires `cloud-platform` OAuth scope on the node pool — the Terraform in [001](001-provision-gke.md) does this):
+**Option B — IAM** (requires `cloud-platform` OAuth scope on the node pool — the Terraform in [001](001-baseline-setup.md) does this):
 
 ```bash
 gcloud artifacts repositories add-iam-policy-binding <REPO> \

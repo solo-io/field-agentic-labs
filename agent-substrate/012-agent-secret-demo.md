@@ -14,11 +14,9 @@ The high-density side: this lab includes a "Wave Pulse" script that creates 24 s
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md)
-- [045 — `kubectl-ate` on `PATH`](045-install-kubectl-ate.md)
-- [020 — `.ate-dev-env.sh` sourced](020-configure-env.md)
-- `ko` (for the image build)
-- `watch` (for the live status feed)
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- `.ate-dev-env.sh` still sourced (the demo deploy reads `$BUCKET_NAME` and `$KO_DOCKER_REPO`)
+- `ko` installed (for the demo image build): `go install github.com/google/ko@latest`
 
 ## 1. Deploy
 
@@ -129,7 +127,7 @@ kubectl ate delete  actor my-agent
 
 ## What This Demo Adds
 
-| Aspect | Counter ([050](050-counter-demo.md)) | Sandbox ([051](051-sandbox-demo.md)) | Agent-Secret (this lab) |
+| Aspect | Counter ([050](010-counter-demo.md)) | Sandbox ([051](011-sandbox-demo.md)) | Agent-Secret (this lab) |
 |---|---|---|---|
 | Suspend trigger | Manual `kubectl ate suspend` | Implicit on REPL `exit` | **The agent suspends itself** (`SuspendActor` from inside) |
 | State preserved | In-memory counter | RAM + filesystem | **Volatile RAM** (secret) across many cycles |
@@ -139,5 +137,5 @@ This demo is the foundation for any "thousands of idle agents, handful of pods" 
 
 ## Next
 
-- [053 — Claude Code Multiplex](053-claude-code-multiplex.md) — the same pattern, but the workload is a real LLM agent
-- [080 — Operations](080-operations-suspend-resume.md)
+- [053 — Claude Code Multiplex](013-claude-code-multiplex.md) — the same pattern, but the workload is a real LLM agent
+- [080 — Operations](030-operations.md)

@@ -17,6 +17,11 @@ This lab covers all three on the validated paths (GKE for "real" environments + 
 - (On kind) Open the bundled Prometheus + Jaeger UIs
 - (On GKE) Enable Cloud Trace + Managed OTel and trace a CLI call
 
+## Prerequisites
+
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- At least one running actor — easiest is the counter from [010](010-counter-demo.md)
+
 ## 1. Logs
 
 ### Live Inspection — `kubectl ate logs`
@@ -178,6 +183,24 @@ Spans for each, with parent/child relationships. Read [`docs/observability.md`](
 ## Grafana Dashboard
 
 The upstream repo ships an `ate-api` gRPC dashboard at `monitoring/dashboards/ate-grpc-dashboard.json`. Import it into Grafana (file → Import) and point it at your Prometheus data source. Good starting view for control-plane health.
+
+## Cleanup
+
+This lab is mostly read-only — `kubectl ate logs --follow`, port-forwards to Prometheus / Jaeger, and `kubectl ate ... --trace` calls don't create persistent resources. Just `Ctrl-C` any port-forwards.
+
+If you imported the Grafana dashboard JSON in the last section, remove it through the Grafana UI (Dashboards → select → Delete) when you're done.
+
+If you enabled Cloud Trace API + Managed OTel on GKE specifically for this lab:
+
+```bash
+# Roll back Managed OTel on the cluster
+gcloud beta container clusters update "${CLUSTER_NAME}" \
+  --project="${PROJECT_ID}" --location="${CLUSTER_LOCATION}" \
+  --managed-otel-scope=DISABLED
+
+# Disable the Cloud Trace API on the project (only if no other workload uses it)
+gcloud services disable cloudtrace.googleapis.com --project="${PROJECT_ID}"
+```
 
 ## Next
 

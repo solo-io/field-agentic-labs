@@ -10,11 +10,86 @@ Enterprise Agentgateway can short-circuit a request before it ever reaches the L
 
 ## Prerequisites
 
-- [025 — Enterprise Agentgateway installed](025-install-enterprise-agentgateway.md)
-- A working `Gateway` + `HTTPRoute` named `claude` that proxies to an Anthropic backend (`AgentgatewayBackend`). The full setup is documented in the sister workshop `agentgateway-enterprise/security/prompt-guard/setup.md` in <https://github.com/AdminTurnedDevOps/agentic-demo-repo>. If you've completed [090 step 7c](090-obo-entra.md#7c-reference-direct-to-provider-path-not-suitable-for-obo) (the "reference only" direct-to-Anthropic section), you already have the `claude` `HTTPRoute`.
-- `$INGRESS_GW_ADDRESS` — the external IP/hostname of the agentgateway Gateway
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md) → [004](004-install-enterprise-agentgateway.md)
+- An **Anthropic API key** (the gateway proxies to Anthropic so you can prove the guard intercepts on the way out):
 
-## 1. Apply the Prompt-Guard Policy
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
+
+## 1. Stand Up an Anthropic Backend + Route
+
+The prompt-guard policy in step 2 targets an `HTTPRoute` named `claude`. This step creates that route + the Anthropic `AgentgatewayBackend` it points at, so the lab is self-contained.
+
+```bash
+# Anthropic API key Secret
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: anthropic-secret
+  namespace: agentgateway-system
+type: Opaque
+stringData:
+  Authorization: "${ANTHROPIC_API_KEY}"
+EOF
+
+# Anthropic AgentgatewayBackend + HTTPRoute named `claude`
+kubectl apply -f - <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: anthropic
+  namespace: agentgateway-system
+spec:
+  ai:
+    provider:
+      anthropic:
+        model: "claude-sonnet-4-6"
+  policies:
+    auth:
+      secretRef:
+        name: anthropic-secret
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: claude
+  namespace: agentgateway-system
+spec:
+  parentRefs:
+    - name: agentgateway-proxy
+      namespace: agentgateway-system
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /anthropic
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /v1/chat/completions
+      backendRefs:
+        - name: anthropic
+          namespace: agentgateway-system
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
+EOF
+```
+
+> Adjust the `parentRefs.name` (`agentgateway-proxy`) to match the actual `Gateway` resource that the install in [004](004-install-enterprise-agentgateway.md) creates. Confirm with `kubectl get gateway -n agentgateway-system`.
+
+Get the gateway address:
+
+```bash
+export INGRESS_GW_ADDRESS=$(kubectl get gateway agentgateway-proxy -n agentgateway-system \
+  -o jsonpath='{.status.addresses[0].value}')
+echo "Gateway: ${INGRESS_GW_ADDRESS}"
+```
+
+## 2. Apply the Prompt-Guard Policy
 
 ```bash
 kubectl apply -f - <<EOF
@@ -23,8 +98,6 @@ kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: credit-guard-prompt-guard
   namespace: agentgateway-system
-  labels:
-    app: agentgateway-route
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -50,7 +123,7 @@ What this says:
 - `matches: ["credit card"]` — case-insensitive regex; matches anywhere in the request body.
 - `response.message` — what the client sees in the 403 body.
 
-## 2. Send a Matching Prompt and Confirm the 403
+## 3. Send a Matching Prompt and Confirm the 403
 
 ```bash
 curl "$INGRESS_GW_ADDRESS:8080/anthropic" \
@@ -75,7 +148,7 @@ Expected:
 
 with the body `Rejected due to inappropriate content`.
 
-## 3. Send a Non-Matching Prompt to Confirm Pass-Through
+## 4. Send a Non-Matching Prompt to Confirm Pass-Through
 
 ```bash
 curl "$INGRESS_GW_ADDRESS:8080/anthropic" \
@@ -91,7 +164,7 @@ curl "$INGRESS_GW_ADDRESS:8080/anthropic" \
 
 You should see a normal 200 response with the model's answer.
 
-## 4. Clean Up
+## Cleanup
 
 ```bash
 kubectl delete enterpriseagentgatewaypolicy credit-guard-prompt-guard -n agentgateway-system
@@ -113,11 +186,11 @@ The same `promptGuard` block also has a `response` side that scans the LLM's rep
 
 This is not a substitute for proper authentication or per-user access control. It blocks specific text patterns from reaching the backend, but a determined caller can simply rephrase. Combine prompt guards with:
 
-- [061 — `UserGroup` `AccessPolicy`](061-accesspolicy-usergroup.md) — to limit who can call the agent at all
-- [060 — `Agent` `AccessPolicy`](060-accesspolicy-agent-to-mcp.md) — to limit what tools the agent can call when called
-- [090 — Entra OBO](090-obo-entra.md) — to preserve user identity all the way through to the LLM
+- [031 — `UserGroup` `AccessPolicy`](031-accesspolicy-usergroup.md) — to limit who can call the agent at all
+- [030 — `Agent` `AccessPolicy`](030-accesspolicy-agent-to-mcp.md) — to limit what tools the agent can call when called
+- [070 — Entra OBO](070-obo-entra.md) — to preserve user identity all the way through to the LLM
 
 ## Next
 
-- [071 — Platform RBAC for kagent CRDs](071-platform-rbac.md)
-- [090 — Microsoft Entra ID OBO](090-obo-entra.md)
+- [071 — Platform RBAC for kagent CRDs](041-platform-rbac.md)
+- [090 — Microsoft Entra ID OBO](070-obo-entra.md)

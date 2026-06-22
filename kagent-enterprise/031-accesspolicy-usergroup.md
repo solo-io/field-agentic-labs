@@ -1,6 +1,6 @@
 # `AccessPolicy`: UserGroup → Agent (OIDC JWT)
 
-The `UserGroup` subject form of `AccessPolicy` controls **which users can invoke an Agent** based on OIDC JWT claims. It's the user-facing complement to the `Agent` subject form in [060](060-accesspolicy-agent-to-mcp.md): that lab restricted what an Agent could do; this one restricts who can talk to an Agent.
+The `UserGroup` subject form of `AccessPolicy` controls **which users can invoke an Agent** based on OIDC JWT claims. It's the user-facing complement to the `Agent` subject form in [060](030-accesspolicy-agent-to-mcp.md): that lab restricted what an Agent could do; this one restricts who can talk to an Agent.
 
 The policy checks a specific claim (`sub`, `groups`, `email`, `preferred_username`, …) against an expected value, using JWKS for token signature verification. Validation happens at the Agent's waypoint proxy (Solo Istio Ambient), which means the target namespace must be mesh-enrolled.
 
@@ -15,26 +15,7 @@ This lab uses `preferred_username` so you don't need a `groups` mapper on your K
 
 ## Prerequisites
 
-- [020 — Kagent Enterprise installed](020-install-kagent-enterprise.md) with Solo Istio Ambient running
-- A Keycloak (or any OIDC) instance whose tokens carry a `preferred_username` claim. The source repo points at `https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev` with the `kagent-backend` client and an inline JWKS — adapt to your IdP.
-- An LLM Secret (`kagent-anthropic` with `ANTHROPIC_API_KEY` in the `policies` namespace), and a `ModelConfig` named `model-config` in the `policies` namespace. The minimal `ModelConfig` is:
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: kagent.dev/v1alpha2
-kind: ModelConfig
-metadata:
-  name: model-config
-  namespace: policies
-spec:
-  apiKeySecret: kagent-anthropic
-  apiKeySecretKey: ANTHROPIC_API_KEY
-  model: "claude-sonnet-4-6"
-  provider: Anthropic
-  anthropic: {}
-EOF
-```
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## 1. Verify the Token Carries `preferred_username`
 
 Adapt the URL, client, and credentials to your IdP:
@@ -159,7 +140,7 @@ Common claim choices:
 | Claim | When to use it |
 |---|---|
 | `preferred_username` | Username-based RBAC against Keycloak. No mapper required. |
-| `groups` | Group-based RBAC. Requires a group mapper on the OIDC client (see [080](080-k8s-token-passthrough-pinniped.md#26-configure-group-mapper) for the Keycloak procedure). |
+| `groups` | Group-based RBAC. Requires a group mapper on the OIDC client (see [080](060-pinniped-keycloak.md#26-configure-group-mapper) for the Keycloak procedure). |
 | `email` | Email-based RBAC. Available by default in most IdPs. |
 | `sub` | Stable subject ID. Best for service-account-like principals. |
 
@@ -175,5 +156,5 @@ kubectl delete namespace policies --ignore-not-found
 
 ## Next
 
-- [070 — Prompt Guards](070-prompt-guards.md) — block prompts at the gateway based on regex
-- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](080-k8s-token-passthrough-pinniped.md) — same Keycloak, different purpose: authenticating `kubectl`
+- [070 — Prompt Guards](040-prompt-guards.md) — block prompts at the gateway based on regex
+- [080 — Kubernetes OIDC Auth with Pinniped + Keycloak](060-pinniped-keycloak.md) — same Keycloak, different purpose: authenticating `kubectl`

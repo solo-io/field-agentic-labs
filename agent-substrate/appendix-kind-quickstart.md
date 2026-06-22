@@ -16,7 +16,7 @@ The main workshop targets GKE because that's the supported managed path (see [ap
 - Docker Desktop running
 - Go ≥ 1.26.3
 - `kubectl`
-- The upstream Substrate repo cloned ([001](001-clone-upstream.md))
+- The upstream Substrate repo cloned ([001](001-baseline-setup.md))
 
 > `kind` is **fetched automatically** by Substrate's hack scripts via its `tools/` go.mod — you don't need to install it separately.
 
@@ -83,7 +83,7 @@ curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
   -i http://localhost:8000/
 ```
 
-Repeat, suspend, repeat — same proof-of-state-survival as the GKE counter lab in [050](050-counter-demo.md).
+Repeat, suspend, repeat — same proof-of-state-survival as the GKE counter lab in [050](010-counter-demo.md).
 
 ## 6. Observability — Bundled Prometheus + Jaeger
 
@@ -133,6 +133,6 @@ hack/install-ate-kind.sh --delete-all
 
 ## Related
 
-- [001 — Clone upstream](001-clone-upstream.md)
+- [001 — Clone upstream](001-baseline-setup.md)
 - [appendix-why-gke](appendix-why-gke.md) — why kind works locally but managed-AKS/EKS don't
-- [050 — Counter Demo](050-counter-demo.md) — the same demo on GKE
+- [050 — Counter Demo](010-counter-demo.md) — the same demo on GKE

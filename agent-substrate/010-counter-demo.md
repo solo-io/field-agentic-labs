@@ -2,7 +2,7 @@
 
 A stateful Go HTTP server that increments an in-memory counter on every request. This is **the canonical first demo** — it proves the full suspend → snapshot → resume cycle works on your cluster, and the counter value persisting across the cycle is the most obvious visual confirmation that Substrate is doing what it says.
 
-Even though the workshop's [040](040-install-substrate-helm.md) install used Helm, the demos still ship as part of the upstream repo's `hack/install-ate.sh` (it builds the demo image with `ko`, applies the templated YAML, and creates the namespace + `WorkerPool` + `ActorTemplate`).
+Even though the workshop's [040](003-install-substrate.md) install used Helm, the demos still ship as part of the upstream repo's `hack/install-ate.sh` (it builds the demo image with `ko`, applies the templated YAML, and creates the namespace + `WorkerPool` + `ActorTemplate`).
 
 ## Lab Objectives
 
@@ -13,9 +13,8 @@ Even though the workshop's [040](040-install-substrate-helm.md) install used Hel
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md)
-- [045 — `kubectl-ate` on `PATH`](045-install-kubectl-ate.md)
-- [020 — `.ate-dev-env.sh` sourced](020-configure-env.md) — the demo deploy reads `$BUCKET_NAME` and `$KO_DOCKER_REPO`
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- `.ate-dev-env.sh` still sourced (the demo deploy reads `$BUCKET_NAME` and `$KO_DOCKER_REPO`)
 - `ko` installed (for the demo image build): `go install github.com/google/ko@latest`
 
 ## 1. Deploy the Demo
@@ -147,13 +146,13 @@ Remove the demo resources (namespace, `WorkerPool`, `ActorTemplate`):
 
 ## Troubleshooting
 
-- **`actortemplate/counter` never reaches `Ready`.** Look at the temporary Golden Pod: `kubectl describe actortemplate counter -n ate-demo-counter` and `kubectl get pods -n ate-demo-counter`. The usual cause is the image pull (verify `KO_DOCKER_REPO` and the node SA's `roles/artifactregistry.reader` from [030](030-gcp-iam-and-bucket.md)).
+- **`actortemplate/counter` never reaches `Ready`.** Look at the temporary Golden Pod: `kubectl describe actortemplate counter -n ate-demo-counter` and `kubectl get pods -n ate-demo-counter`. The usual cause is the image pull (verify `KO_DOCKER_REPO` and the node SA's `roles/artifactregistry.reader` from [030](002-gcp-iam-and-bucket.md)).
 - **First `curl` hangs.** Confirm `kubectl port-forward` is still alive in Terminal 1, and that the actor exists: `kubectl ate get actor my-counter-1`.
 - **`STATUS_RUNNING` but `curl` returns connection refused.** The `atenet-router` Service may not have endpoints yet. `kubectl get pods,svc,ep -n ate-system` and confirm the router pod is `Ready`.
-- **Snapshot read/write errors during suspend.** Walk back through [030 step 2c](030-gcp-iam-and-bucket.md#2c-bucket-scoped-iam-for-atelet) (bucket-scoped IAM) and [030 step 2d](030-gcp-iam-and-bucket.md#2d-project-level-iam-image-pull--atelet-snapshot-access) (project-level IAM). On a multi-pool cluster make sure the **GKE Metadata Server** is enabled on the pool the `atelet` pod landed on — see [030 step 2a](030-gcp-iam-and-bucket.md#reactive-checks-run-only-if-step-3-in-040-hits-these-symptoms).
+- **Snapshot read/write errors during suspend.** Walk back through [030 step 2c](002-gcp-iam-and-bucket.md#2c-bucket-scoped-iam-for-atelet) (bucket-scoped IAM) and [030 step 2d](002-gcp-iam-and-bucket.md#2d-project-level-iam-image-pull--atelet-snapshot-access) (project-level IAM). On a multi-pool cluster make sure the **GKE Metadata Server** is enabled on the pool the `atelet` pod landed on — see [030 step 2a](002-gcp-iam-and-bucket.md#reactive-checks-run-only-if-step-3-in-040-hits-these-symptoms).
 - **Checkpoint fails.** Your `runsc` needs `--allow-connected-on-save`. The demo template pins a `runsc` nightly that has it; if you're using a custom template, point it at a build that does too.
 
 ## Next
 
-- [051 — Sandbox Demo](051-sandbox-demo.md) — same pattern, different workload (Alpine shell + REPL client)
-- [080 — Suspend / Resume Operations](080-operations-suspend-resume.md) — including waking suspended actors via `grpcurl`
+- [051 — Sandbox Demo](011-sandbox-demo.md) — same pattern, different workload (Alpine shell + REPL client)
+- [080 — Suspend / Resume Operations](030-operations.md) — including waking suspended actors via `grpcurl`

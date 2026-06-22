@@ -10,8 +10,7 @@ A `Declarative` Agent can publish **A2A skills** in its `spec.declarative.a2aCon
 
 ## Prerequisites
 
-- [040 — Declarative MCP Server + Agent](040-mcp-connection-agent-config.md) — the `mcp-kubernetes-server` and `default-model-config` must exist
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## Apply the Agent with Skills
 
 This version of the `kubernetes-mcp-agent` declares three skills (`cluster-diagnostics`, `resource-management`, `security-audit`) on top of the MCP tool list. Skills are a superset of tools — they describe *capabilities* an agent advertises, not the individual tool calls it actually makes.
@@ -97,6 +96,17 @@ kubectl get agent kubernetes-mcp-agent -n kagent -o yaml \
 
 In the UI, the agent's card should now show the three skills with their descriptions, tags, and example prompts.
 
+## Cleanup
+
+If this lab was the only thing you applied (no leftover MCPServer / model-config from [010](010-mcp-connection-agent-config.md)), tear down with:
+
+```bash
+kubectl delete agent     kubernetes-mcp-agent  -n kagent --ignore-not-found
+kubectl delete mcpserver mcp-kubernetes-server -n kagent --ignore-not-found
+```
+
+If you ran [010](010-mcp-connection-agent-config.md) and this lab just *re-applied* the same Agent with skills metadata added, the lab's only contribution to delete is the `a2aConfig` block — `kubectl edit agent kubernetes-mcp-agent -n kagent` and remove it, or re-apply 010's manifest (which has no skills) on top.
+
 ## Skills vs Tools
 
 | Field | Layer | Audience |
@@ -108,5 +118,5 @@ A skill is an advertised capability. The tools are how the agent fulfills it. Th
 
 ## Next
 
-- [042 — Build a Custom MCP Server (Pharmaceutical Example)](042-build-custom-mcp-server.md) — go from "use someone else's MCP server" to "ship your own"
-- [060 — `AccessPolicy`: Agent → MCP](060-accesspolicy-agent-to-mcp.md)
+- [042 — Build a Custom MCP Server (Pharmaceutical Example)](012-build-custom-mcp-server.md) — go from "use someone else's MCP server" to "ship your own"
+- [060 — `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md)

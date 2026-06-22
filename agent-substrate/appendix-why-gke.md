@@ -29,11 +29,11 @@ The `podCertificate` projected volume is a Kubernetes 1.30+ feature gated behind
 
 If any of these aren't enabled, the volume **fails to mount**, the pod **fails to start**, and you get a stream of `MountVolume.SetUp failed ... ClusterTrustBundle projection is not supported in static kubelet mode` events from the kubelet.
 
-There's a second tier: even with the apiserver feature gates on, the **kubelet** has to be new enough to honor the projection. That's why pre-existing nodes need to be recreated (see [030 reactive checks](030-gcp-iam-and-bucket.md#reactive-checks-run-only-if-step-3-in-040-hits-these-symptoms)) — kubelet feature support is decided at node creation time.
+There's a second tier: even with the apiserver feature gates on, the **kubelet** has to be new enough to honor the projection. That's why pre-existing nodes need to be recreated (see [030 reactive checks](002-gcp-iam-and-bucket.md#reactive-checks-run-only-if-step-3-in-040-hits-these-symptoms)) — kubelet feature support is decided at node creation time.
 
 ## What GKE Exposes
 
-GKE has a supported knob for exactly this: `--enable-kubernetes-unstable-apis`. You tell GKE which beta resources to enable, and GKE flips the apiserver flags for you. The relevant invocation is in [030](030-gcp-iam-and-bucket.md):
+GKE has a supported knob for exactly this: `--enable-kubernetes-unstable-apis`. You tell GKE which beta resources to enable, and GKE flips the apiserver flags for you. The relevant invocation is in [030](002-gcp-iam-and-bucket.md):
 
 ```bash
 gcloud container clusters update "$CLUSTER_NAME" \
@@ -50,7 +50,7 @@ This is what makes GKE the **supported managed path** for Substrate today.
 **Nothing equivalent today.** Managed AKS doesn't expose apiserver feature gates directly. The standing request is [Azure/AKS#1887](https://github.com/Azure/AKS/issues/1887). Until that lands, your options on Azure:
 
 1. **Cluster API / kubeadm / k3s on Azure VMs** — full control over apiserver flags
-2. **AKS with the Substrate Helm chart's override flags** — see [040 step 2: "If You're Not on GKE or Kind"](040-install-substrate-helm.md#if-youre-not-on-gke-or-kind). This works for the JWT issuer side but **does not** solve the Pod Certificate apiserver-flag requirement
+2. **AKS with the Substrate Helm chart's override flags** — see [040 step 2: "If You're Not on GKE or Kind"](003-install-substrate.md#if-youre-not-on-gke-or-kind). This works for the JWT issuer side but **does not** solve the Pod Certificate apiserver-flag requirement
 3. **Wait for the upstream AKS request**
 
 The chart override flags from the kagent-substrate install doc treat AKS as a target *for kagent integration*, not for the Substrate control plane itself.
@@ -81,7 +81,7 @@ This is independent of **actor identity** — `SessionIdentity` (`MintJWT` / `Mi
 
 ## Related
 
-- [010 — GKE Cluster Prerequisites](010-gke-cluster-prereqs.md)
-- [030 — GCP IAM and Bucket](030-gcp-iam-and-bucket.md) — Step 2a flips the GKE knob
+- [010 — GKE Cluster Prerequisites](001-baseline-setup.md)
+- [030 — GCP IAM and Bucket](002-gcp-iam-and-bucket.md) — Step 2a flips the GKE knob
 - [appendix-kind-quickstart](appendix-kind-quickstart.md) — local-dev alternative
 - [Upstream architecture doc — Security & Isolation](https://github.com/agent-substrate/substrate/blob/main/docs/architecture.md#security--isolation)

@@ -1,6 +1,6 @@
 # Build a Custom Python MCP Server (Pharmaceutical Example)
 
-The two MCP labs before this one ([040](040-mcp-connection-agent-config.md), [041](041-agent-skills.md)) use an MCP server someone else published. This lab walks through writing one from scratch: a pharmaceutical-themed MCP server in Python with three tools (`check_drug_interactions`, `get_medication_info`, `search_clinical_trials`) backed by a mock in-memory database.
+The two MCP labs before this one ([040](010-mcp-connection-agent-config.md), [041](011-agent-skills.md)) use an MCP server someone else published. This lab walks through writing one from scratch: a pharmaceutical-themed MCP server in Python with three tools (`check_drug_interactions`, `get_medication_info`, `search_clinical_trials`) backed by a mock in-memory database.
 
 The example is **reference code** — it uses the `mcp` Python SDK and exposes the tools over `stdio_server`. You can run it locally with an MCP client like Claude Desktop, or package it as a container image and use it as the `spec.deployment.image` of an `MCPServer` CR.
 
@@ -12,10 +12,7 @@ The example is **reference code** — it uses the `mcp` Python SDK and exposes t
 
 ## Prerequisites
 
-- Python 3.10+ and `pip`
-- (Optional) Claude Desktop, for the local-client demo
-- (Optional) A container registry your cluster can pull from, if you want to deploy this as a kagent `MCPServer`
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## Source
 
 The full source is checked in at [`assets/mcp-server-example/pharma_mcp_server.py`](assets/mcp-server-example/pharma_mcp_server.py). It's 258 lines and compiles cleanly against Python 3.13.
@@ -94,7 +91,7 @@ Two paths:
 
 Quick to demo, brittle for production. Mount the `.py` and `requirements.txt` from a ConfigMap and have a `python:3.13-slim` container `pip install` at startup and exec the script.
 
-This is the same pattern the OBO lab uses for [`llm-obo-proxy/deployment.yaml`](assets/llm-obo-proxy/deployment.yaml) — see [090 step 7b](090-obo-entra.md#7b-deploy-the-in-cluster-llm-proxy-service) for the exact pattern. The shape ends up like:
+This is the same pattern the OBO lab uses for [`llm-obo-proxy/deployment.yaml`](assets/llm-obo-proxy/deployment.yaml) — see [090 step 7b](070-obo-entra.md#7b-deploy-the-in-cluster-llm-proxy-service) for the exact pattern. The shape ends up like:
 
 ```yaml
 apiVersion: kagent.dev/v1alpha2
@@ -153,7 +150,7 @@ spec:
 EOF
 ```
 
-Then point any `Declarative` Agent at it the same way [040](040-mcp-connection-agent-config.md) does:
+Then point any `Declarative` Agent at it the same way [040](010-mcp-connection-agent-config.md) does:
 
 ```yaml
 tools:
@@ -166,6 +163,20 @@ tools:
     - get_medication_info
     - search_clinical_trials
 ```
+
+## Cleanup
+
+If you deployed the pharma server as an MCPServer (step 3, Option A or B):
+
+```bash
+kubectl delete mcpserver pharma-mcp-server -n kagent --ignore-not-found
+# If you used Option A (ConfigMap), also:
+kubectl delete configmap pharma-mcp-code   -n kagent --ignore-not-found
+```
+
+If you only ran the local Claude Desktop integration in step 2, there's nothing to clean up on the cluster. Just remove the `pharma-server` entry from `~/Library/Application Support/Claude/claude_desktop_config.json` and restart Claude Desktop.
+
+If you built a container image and pushed it to a registry, use your registry's tooling to remove it.
 
 ## Productionizing
 
@@ -189,4 +200,4 @@ This is a demonstration system. In production:
 
 ## Next
 
-- [060 — `AccessPolicy`: Agent → MCP](060-accesspolicy-agent-to-mcp.md) — restrict which of these three tools an agent is allowed to call
+- [060 — `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md) — restrict which of these three tools an agent is allowed to call

@@ -7,7 +7,7 @@ This lab installs Solo Enterprise for kagent via the **Gloo Operator**. The oper
 - `KagentManagementController` → installs the Solo Enterprise management plane
 - `KagentController` → installs the kagent runtime controller (image tag `0.1.5`)
 
-This is the canonical install for the rest of the workshop. If you only need the OBO scenario, skip ahead to [090](090-obo-entra.md) — it installs kagent with a different chart pattern.
+This is the canonical install for the rest of the workshop. If you only need the OBO scenario, skip ahead to [090](070-obo-entra.md) — it installs kagent with a different chart pattern.
 
 ## Lab Objectives
 
@@ -18,7 +18,8 @@ This is the canonical install for the rest of the workshop. If you only need the
 
 ## Prerequisites
 
-- [010](010-licenses-and-secrets.md) — namespace, license env vars, OIDC env vars, LLM Secret, `jwt` Secret, `kagent-backend-secret`
+- [001 — Baseline Setup](001-baseline-setup.md) completed
+- [002 — Licenses, Namespace, and Secrets](002-licenses-and-secrets.md) completed — namespace, license env vars, OIDC env vars, LLM Secret, `jwt` Secret, `kagent-backend-secret` all in place
 
 ## 1. Install the Gloo Operator
 
@@ -213,6 +214,6 @@ kubectl logs -n kagent -l app=kagent --tail=100 | grep -i oidc
 
 ## Next
 
-- [025 — Install Enterprise Agentgateway](025-install-enterprise-agentgateway.md)
-- [030 — Gateway Access Logs](030-access-logs.md)
-- [040 — MCP Server + Agent](040-mcp-connection-agent-config.md)
+- [025 — Install Enterprise Agentgateway](004-install-enterprise-agentgateway.md)
+- [030 — Gateway Access Logs](050-access-logs.md)
+- [040 — MCP Server + Agent](010-mcp-connection-agent-config.md)

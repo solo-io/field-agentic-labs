@@ -25,7 +25,7 @@ kubectl ate get actors -o json \
     done
 ```
 
-### 2. Demos (Labs 050–053)
+### 2. Demos (Labs 010–013)
 
 Each demo registers a `--delete-demo-<name>` flag with `hack/install-ate.sh` — use them rather than deleting the namespace by hand, because the script also cleans up the `WorkerPool` and `ActorTemplate`:
 
@@ -36,7 +36,7 @@ Each demo registers a `--delete-demo-<name>` flag with `hack/install-ate.sh` —
 ./hack/install-ate.sh --delete-demo-claude-code-multiplex 2>/dev/null || true
 ```
 
-### 3. kagent Integration (Labs 060–070)
+### 3. kagent Integration (Lab 020)
 
 ```bash
 # Any AgentHarness resources you created
@@ -54,7 +54,7 @@ kubectl delete namespace kagent 2>/dev/null || true
 
 ### 4. Substrate System
 
-If you installed via Helm ([040](040-install-substrate-helm.md)):
+If you installed via Helm ([003](003-install-substrate.md)):
 
 ```bash
 helm uninstall substrate      -n ate-system 2>/dev/null || true
@@ -85,7 +85,7 @@ If you installed via the script path ([appendix-install-script-alternative](appe
 
 #### Project-level `atelet` roles aren't reversed by teardown
 
-The script removes the *bucket-scoped* `atelet` bindings but has no reverse for the project-level grants from [030 step 2d](030-gcp-iam-and-bucket.md#2d-project-level-iam-image-pull--atelet-snapshot-access). Remove by hand:
+The script removes the *bucket-scoped* `atelet` bindings but has no reverse for the project-level grants from [002 step 6](002-gcp-iam-and-bucket.md#6-project-level-iam-image-pull--snapshot-access). Remove by hand:
 
 ```bash
 gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
@@ -94,7 +94,7 @@ gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
   --member="$ATELET_PRINCIPAL" --role=roles/artifactregistry.reader --condition=None
 ```
 
-`--condition=None` targets the unconditioned bindings that [030](030-gcp-iam-and-bucket.md) created.
+`--condition=None` targets the unconditioned bindings that [002](002-gcp-iam-and-bucket.md) created.
 
 #### Custom node SAs aren't reversed either
 
@@ -107,7 +107,7 @@ gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader --condition=None
 ```
 
-#### Cluster mutations from [030 step 2a](030-gcp-iam-and-bucket.md#2a-cluster-mutations--pod-certificate-beta-apis--workload-identity) are NOT rolled back
+#### Cluster mutations from [001 step 2](001-baseline-setup.md#2-confirm-the-cluster) are NOT rolled back
 
 The cleanup above leaves these in place:
 
@@ -140,7 +140,7 @@ which -a kubectl-ate
 ls "$(go env GOPATH)/bin"
 ```
 
-Add `$(go env GOPATH)/bin` to your `PATH` and re-run `go install ./cmd/kubectl-ate`. See [045](045-install-kubectl-ate.md).
+Add `$(go env GOPATH)/bin` to your `PATH` and re-run `go install ./cmd/kubectl-ate`. See [003](003-install-substrate.md).
 
 ### System pods (`ate-api-server` / `atenet-router` / `valkey`) stuck not-ready
 
@@ -152,8 +152,8 @@ kubectl get events -n ate-system --sort-by=.lastTimestamp
 
 Most-common causes:
 
-1. **Pod Certificate beta APIs not enabled** on the cluster. Re-run [030 step 2a](030-gcp-iam-and-bucket.md#2a-cluster-mutations--pod-certificate-beta-apis--workload-identity).
-2. **Nodes too old to honor the kubelet feature.** Create a fresh pool with `--workload-metadata=GKE_METADATA` — see the [reactive node-rollout note in 030](030-gcp-iam-and-bucket.md#reactive-checks-run-only-if-step-3-in-040-hits-these-symptoms).
+1. **Pod Certificate beta APIs not enabled** on the cluster. Re-run [001 step 2](001-baseline-setup.md#2-confirm-the-cluster).
+2. **Nodes too old to honor the kubelet feature.** Create a fresh pool with `--workload-metadata=GKE_METADATA` — see the [reactive node-rollout note in 030](001-baseline-setup.md#2-confirm-the-cluster).
 
 ### Image pull errors
 
@@ -167,9 +167,9 @@ Confirm:
 
 Work through each layer:
 
-- **Bucket-scoped** atelet bindings exist ([030 step 2c](030-gcp-iam-and-bucket.md#2c-bucket-scoped-iam-for-atelet)): `roles/storage.objectAdmin` + `roles/storage.bucketViewer`
+- **Bucket-scoped** atelet bindings exist ([002 step 5](002-gcp-iam-and-bucket.md#5-bucket-scoped-iam-for-atelet)): `roles/storage.objectAdmin` + `roles/storage.bucketViewer`
 - `$BUCKET_NAME` actually exists (`gcloud storage buckets describe gs://$BUCKET_NAME`)
-- **Project-level** atelet bindings exist ([030 step 2d](030-gcp-iam-and-bucket.md#2d-project-level-iam-image-pull--atelet-snapshot-access))
+- **Project-level** atelet bindings exist ([002 step 6](002-gcp-iam-and-bucket.md#6-project-level-iam-image-pull--snapshot-access))
 - The atelet Workload Identity resolves — i.e. the GKE Metadata Server is enabled on the pool the atelet pod landed on. On a multi-pool cluster it's easy to miss a pool.
 
 ### Checkpoint/restore fails
@@ -186,11 +186,11 @@ Your `runsc` likely lacks `--allow-connected-on-save`. The demo templates pin a 
 - The `ate-api` endpoint on the kagent install is wrong (`controller.substrate.ateApiEndpoint`)
 - The default `WorkerPool` wasn't created (`substrateWorkerPool.create=true` skipped or failed)
 
-See [060](060-install-kagent-with-substrate.md).
+See [020](020-kagent-integration.md).
 
 ### "actor is not currently running on any worker pod"
 
-By design. The actor is `STATUS_SUSPENDED`. Resume it — see [080](080-operations-suspend-resume.md).
+By design. The actor is `STATUS_SUSPENDED`. Resume it — see [030](030-operations.md).
 
 ### Reset dynamic state (destructive — dev only)
 

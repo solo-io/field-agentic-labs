@@ -23,9 +23,7 @@ Because stdio transport doesn't speak HTTP, **do not specify a `port`** for stdi
 
 ## Prerequisites
 
-- [020 — Kagent Enterprise installed](020-install-kagent-enterprise.md) (or any working kagent install)
-- A `default-model-config` `ModelConfig` exists in `kagent` and is configured with your LLM provider. If you don't have one, the Solo Enterprise UI walks you through creating it on first login, or apply one explicitly (see [061](061-accesspolicy-usergroup.md#prerequisites) for an Anthropic example).
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## 1. Create the MCP Server
 
 ```bash
@@ -135,7 +133,7 @@ kubectl get all -n kagent -l kagent=kubernetes-mcp-agent
 
 ## 5. Test It
 
-Open the kagent UI (port-forward from [020 step 4](020-install-kagent-enterprise.md#4-work-around-the-ui-backend-bug-port-forward) if you took the Gloo Operator path), find `kubernetes-mcp-agent`, and ask:
+Open the kagent UI (port-forward from [020 step 4](003-install-kagent-enterprise.md#4-work-around-the-ui-backend-bug-port-forward) if you took the Gloo Operator path), find `kubernetes-mcp-agent`, and ask:
 
 ```
 What tools do you have available?
@@ -149,11 +147,19 @@ List all pods in the kagent namespace.
 
 It should call `pods_list_in_namespace` and return a Markdown table.
 
+## Cleanup
+
+```bash
+# Agent + MCP server created in steps 1-2
+kubectl delete agent     kubernetes-mcp-agent  -n kagent --ignore-not-found
+kubectl delete mcpserver mcp-kubernetes-server -n kagent --ignore-not-found
+```
+
 ## What's Next
 
-You can repeat this pattern with **any** MCP server that has a published npm/PyPI package or a public container image. The MCP server doesn't have to be in npm — `spec.deployment.image` lets you point at a pre-built image instead of using `cmd: npx`. See [060 step 1](060-accesspolicy-agent-to-mcp.md#1-declarative-agent--access-policy) for the `mcp/everything` image example.
+You can repeat this pattern with **any** MCP server that has a published npm/PyPI package or a public container image. The MCP server doesn't have to be in npm — `spec.deployment.image` lets you point at a pre-built image instead of using `cmd: npx`. See [060 step 1](030-accesspolicy-agent-to-mcp.md#1-declarative-agent--access-policy) for the `mcp/everything` image example.
 
 ## Next
 
-- [041 — Agent A2A Skills Metadata](041-agent-skills.md) — surface skills metadata on this Agent
-- [060 — `AccessPolicy`: Agent → MCP](060-accesspolicy-agent-to-mcp.md) — restrict which tools the agent can call
+- [041 — Agent A2A Skills Metadata](011-agent-skills.md) — surface skills metadata on this Agent
+- [060 — `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md) — restrict which tools the agent can call

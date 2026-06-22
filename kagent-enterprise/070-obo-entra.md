@@ -2,7 +2,7 @@
 
 End-to-end **On-Behalf-Of** token exchange with Microsoft Entra ID. The user logs into the kagent UI, the user's token is propagated through the agent (`KAGENT_PROPAGATE_TOKEN`), and when the agent calls the gateway-fronted LLM endpoint, **enterprise-agentgateway** exchanges that token for a new one scoped to the downstream backend (here, an in-cluster Python proxy) before forwarding. The proxy validates the exchanged Entra token, then calls Anthropic with a provider API key.
 
-> **Heads-up — this lab uses a different install of kagent than [020](020-install-kagent-enterprise.md).** The OBO scenario was authored against the direct-Helm pattern (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at chart `0.3.12`, `enterprise-agentgateway` at `v2.2.0`). Pick this lab **or** the Gloo Operator install — they install from different upstream chart streams and shouldn't be mixed on the same cluster.
+> **Heads-up — this lab uses a different install of kagent than [020](003-install-kagent-enterprise.md).** The OBO scenario was authored against the direct-Helm pattern (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at chart `0.3.12`, `enterprise-agentgateway` at `v2.2.0`). Pick this lab **or** the Gloo Operator install — they install from different upstream chart streams and shouldn't be mixed on the same cluster.
 
 ## How Entra OBO Differs from RFC 8693
 
@@ -40,7 +40,7 @@ flowchart LR
 
 ## Prerequisites
 
-- Kubernetes cluster ([001](001-provision-gke.md))
+- Kubernetes cluster ([001](001-baseline-setup.md))
 - Helm 3.x
 - Enterprise license keys: `kagent-enterprise` and `enterprise-agentgateway`
 - A Microsoft Entra ID tenant with admin access
@@ -252,7 +252,7 @@ Do **not** use `/auth` — in the current enterprise UI, `/auth` is a setup rout
 
 ## Step 6 — Install Enterprise Agentgateway with Token Exchange
 
-If you already completed [025](025-install-enterprise-agentgateway.md), you can skip to the `EnterpriseAgentgatewayParameters` part — what you did in 025 already covers the controller install + STS endpoint.
+If you already completed [025](004-install-enterprise-agentgateway.md), you can skip to the `EnterpriseAgentgatewayParameters` part — what you did in 025 already covers the controller install + STS endpoint.
 
 If not, install fresh:
 
@@ -658,6 +658,49 @@ EOF
 
 `apiKeyPassthrough: true` on the `ModelConfig` tells the agent runtime to forward the incoming bearer token instead of substituting its own provider API key. The agent uses the `provider: OpenAI` API contract (because OpenAI is the broadest schema agentgateway proxies) but the `baseUrl` points at agentgateway's `/llm` route — agentgateway is the one that exchanges the token and forwards it to the proxy, which then translates the OpenAI call to an Anthropic call.
 
+## Cleanup
+
+The OBO scenario installs both kagent (direct-Helm path) and agentgateway. Tear them both down + the Entra app registrations:
+
+```bash
+# AgentHarness + OBO-specific resources
+kubectl delete enterpriseagentgatewaypolicy entra-obo-token-exchange -n agentgateway-system --ignore-not-found
+kubectl delete httproute            llm-obo-proxy                    -n agentgateway-system --ignore-not-found
+kubectl delete deployment           llm-obo-proxy                    -n agentgateway-system --ignore-not-found
+kubectl delete service              llm-obo-proxy                    -n agentgateway-system --ignore-not-found
+kubectl delete configmap            llm-obo-proxy-code               -n agentgateway-system --ignore-not-found
+kubectl delete secret               entra-obo-client-secret          -n agentgateway-system --ignore-not-found
+kubectl delete enterpriseagentgatewayparameters agentgateway-entra-testing-enterprise -n agentgateway-system --ignore-not-found
+kubectl delete gateway              agentgateway-entra-testing       -n agentgateway-system --ignore-not-found
+kubectl delete secret               kagent-ui-https-tls              -n agentgateway-system --ignore-not-found
+kubectl delete secret               anthropic-secret                 -n agentgateway-system --ignore-not-found
+
+kubectl delete agent       obo-demo-agent          -n kagent --ignore-not-found
+kubectl delete modelconfig anthropic-model-config  -n kagent --ignore-not-found
+
+# Helm uninstalls
+helm uninstall agentgateway          -n agentgateway-system 2>/dev/null || true
+helm uninstall agentgateway-crds     -n agentgateway-system 2>/dev/null || true
+helm uninstall kagent      -n kagent 2>/dev/null || true
+helm uninstall kagent-crds -n kagent 2>/dev/null || true
+helm uninstall kagent-mgmt -n kagent 2>/dev/null || true
+
+# Namespaces (only if you're done with all OBO work)
+kubectl delete namespace agentgateway-system --ignore-not-found
+kubectl delete namespace kagent              --ignore-not-found
+
+# Entra app registrations + groups
+az ad app delete --id "${KAGENT_BACKEND_CLIENT_ID}"  2>/dev/null
+az ad app delete --id "${KAGENT_FRONTEND_CLIENT_ID}" 2>/dev/null
+# (re-look up by name if the env vars aren't set:
+#   az ad app list --filter "displayName eq 'kagent-backend'" --query "[].appId" -o tsv)
+
+# Local temp files
+rm -f /tmp/management.yaml /tmp/kagent-values.yaml /tmp/agw-values.yaml       /tmp/kagent-ui-https.crt /tmp/kagent-ui-https.key
+
+unset TENANT_ID KAGENT_BACKEND_CLIENT_ID KAGENT_FRONTEND_CLIENT_ID       KAGENT_BACKEND_CLIENT_SECRET AGW_LICENSE_KEY KAGENT_LICENSE_KEY       ANTHROPIC_API_KEY MGMT_CLUSTER K8S_TOKEN_PASSTHROUGH_GROUP_ID       AGW_HTTPS_EXTERNAL_IP
+```
+
 ## Verification
 
 ### Check kagent OIDC config
@@ -719,5 +762,5 @@ kubectl logs deployment/llm-obo-proxy -n agentgateway-system
 ## Next
 
 - [099 — Cleanup](099-cleanup.md)
-- [060](060-accesspolicy-agent-to-mcp.md) / [061](061-accesspolicy-usergroup.md) — Layer `AccessPolicy` on top of OBO for runtime-level RBAC
-- [070 — Prompt Guards](070-prompt-guards.md) — add regex-based prompt guards to the same gateway
+- [060](030-accesspolicy-agent-to-mcp.md) / [061](031-accesspolicy-usergroup.md) — Layer `AccessPolicy` on top of OBO for runtime-level RBAC
+- [070 — Prompt Guards](040-prompt-guards.md) — add regex-based prompt guards to the same gateway

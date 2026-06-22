@@ -10,10 +10,7 @@ This lab is a five-minute smoke test of the kagent install. You deploy a deliber
 
 ## Prerequisites
 
-- [020 — Kagent Enterprise installed](020-install-kagent-enterprise.md)
-- The kagent UI is reachable (port-forward from [020 step 4](020-install-kagent-enterprise.md#4-work-around-the-ui-backend-bug-port-forward) if needed)
-- A `default-model-config` exists and your LLM provider is healthy
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## 1. Deploy the Broken Pod
 
 ```bash
@@ -59,10 +56,10 @@ A good run looks like this — the agent should:
 
 If the agent can suggest the fix but its tools don't include `pods_delete` / `resources_create_or_update`, you'll need to apply the corrected Pod manually — that's fine, it's still proof that the tool surface, LLM, and reasoning loop all work end-to-end.
 
-## 4. (Optional) Clean Up
+## Cleanup
 
 ```bash
-kubectl delete pod ngi14
+kubectl delete pod ngi14 --ignore-not-found
 ```
 
 ## What This Test Tells You
@@ -76,8 +73,8 @@ Running this successfully proves:
 | The agent's tools resolve | The MCP server's tool surface is mounted into the agent runtime |
 | The agent can list and read cluster state | RBAC for the agent's ServiceAccount is intact |
 
-If the agent says it has no tools, see [040](040-mcp-connection-agent-config.md) — your MCP server is probably not set up yet. If the agent errors on the LLM call, double-check `llm-api-keys` and the `ModelConfig`.
+If the agent says it has no tools, see [040](010-mcp-connection-agent-config.md) — your MCP server is probably not set up yet. If the agent errors on the LLM call, double-check `llm-api-keys` and the `ModelConfig`.
 
 ## Next
 
-- [060 — `AccessPolicy`: Agent → MCP](060-accesspolicy-agent-to-mcp.md) — restrict the tools this agent (or any other) can call
+- [060 — `AccessPolicy`: Agent → MCP](030-accesspolicy-agent-to-mcp.md) — restrict the tools this agent (or any other) can call

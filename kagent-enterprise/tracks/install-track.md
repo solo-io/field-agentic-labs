@@ -8,19 +8,19 @@ A focused path for someone who wants the canonical Solo Enterprise for kagent in
 
 ## Prerequisites
 
-- A Kubernetes cluster (GKE recommended — see [001](../001-provision-gke.md))
+- A Kubernetes cluster (GKE recommended — see [001](../001-baseline-setup.md))
 - Solo trial keys for Istio, Gloo Gateway, and Agentgateway
 - An LLM provider API key (OpenAI for the default; swap to Anthropic if you prefer)
 
 ## Order
 
-1. [001 — Provision a GKE Cluster](../001-provision-gke.md) *(skip if you have a cluster)*
-2. [010 — Licenses, Namespace, and Secrets](../010-licenses-and-secrets.md)
-3. [020 — Install Kagent Enterprise (Gloo Operator)](../020-install-kagent-enterprise.md)
-4. [030 — Gateway Access Logs](../030-access-logs.md) *(optional but recommended)*
-5. [040 — Declarative MCP Server + Agent](../040-mcp-connection-agent-config.md)
-6. [041 — Agent A2A Skills Metadata](../041-agent-skills.md)
-7. [050 — Validate Your Install (fix a broken Pod)](../050-troubleshooting-pod.md)
+1. [001 — Provision a GKE Cluster](../001-baseline-setup.md) *(skip if you have a cluster)*
+2. [010 — Licenses, Namespace, and Secrets](../002-licenses-and-secrets.md)
+3. [020 — Install Kagent Enterprise (Gloo Operator)](../003-install-kagent-enterprise.md)
+4. [030 — Gateway Access Logs](../050-access-logs.md) *(optional but recommended)*
+5. [040 — Declarative MCP Server + Agent](../010-mcp-connection-agent-config.md)
+6. [041 — Agent A2A Skills Metadata](../011-agent-skills.md)
+7. [050 — Validate Your Install (fix a broken Pod)](../020-troubleshoot-pod.md)
 8. [099 — Cleanup](../099-cleanup.md)
 
 ## What You Will Have at the End

@@ -11,9 +11,8 @@ Day-2 ops for Substrate actors. The single most common question is "why is my ac
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md)
-- [045 — `kubectl-ate` on `PATH`](045-install-kubectl-ate.md)
-- A suspended actor — easiest to set up is one of the demos from [050](050-counter-demo.md) onwards
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- A suspended actor — easiest to set up is one of the demos from [010](010-counter-demo.md)–[013](013-claude-code-multiplex.md)
 - (For the `grpcurl` path) `grpcurl` installed locally
 
 ## Why Actors Get Suspended
@@ -23,8 +22,8 @@ The whole point of Substrate is to free worker pods when actors aren't doing wor
 | Trigger | Where it happens |
 |---|---|
 | Manual `kubectl ate suspend actor <id>` | You |
-| Self-suspend (`SuspendActor` called from inside the agent process) | The agent itself — see [052](052-agent-secret-demo.md) |
-| Idle timeout (visibility linger window) | The agent in [052](052-agent-secret-demo.md); not all workloads have this |
+| Self-suspend (`SuspendActor` called from inside the agent process) | The agent itself — see [052](012-agent-secret-demo.md) |
+| Idle timeout (visibility linger window) | The agent in [052](012-agent-secret-demo.md); not all workloads have this |
 
 Once `SUSPENDED`, the actor has **no `ATEOM POD` / `ATEOM IP`** — the worker is back in the pool. The actor's snapshot lives in your GCS bucket; the row in Valkey points at it. Resuming is what hydrates that snapshot back into a worker.
 
@@ -109,7 +108,7 @@ The actor still ends up `STATUS_RUNNING`, but its in-memory counter (if it's the
 
 ## Bulk Operations
 
-If you're running a fleet (the agent-secret Wave Pulse in [052](052-agent-secret-demo.md), or a hundred kagent harnesses), the most useful loop is:
+If you're running a fleet (the agent-secret Wave Pulse in [052](012-agent-secret-demo.md), or a hundred kagent harnesses), the most useful loop is:
 
 ```bash
 # Suspend everything currently RUNNING (e.g. before cluster maintenance)
@@ -140,11 +139,17 @@ This **flushes all Actor and Worker tracking state**. Snapshots in GCS are untou
 |---|---|
 | `kubectl ate get actor` shows `STATUS_SUSPENDED` but you expected `RUNNING` | Working as intended. Send traffic or call `ResumeActor`. |
 | Actor stuck in `STATUS_RESUMING` for > 30s | `atelet` is having trouble pulling the snapshot from GCS, or the worker pod is wedged. `kubectl logs -n ate-system -l app=atelet` and check the pod that's hosting the worker. |
-| Actor stuck in `STATUS_SUSPENDING` for > 30s | `runsc` is failing to checkpoint — usually missing `--allow-connected-on-save`, see [040 troubleshooting](040-install-substrate-helm.md#3-wait-for-the-system-pods) |
+| Actor stuck in `STATUS_SUSPENDING` for > 30s | `runsc` is failing to checkpoint — usually missing `--allow-connected-on-save`, see [040 troubleshooting](003-install-substrate.md#3-wait-for-the-system-pods) |
 | `ResumeActor` returns `FailedPrecondition` | The `ActorTemplate` isn't `Ready` (golden snapshot still building). `kubectl get actortemplate <name> -A`. |
 | `DeleteActor` returns `FailedPrecondition` | Actor is not `STATUS_SUSPENDED`. Suspend first, then delete. |
 
+## Cleanup
+
+This lab is mostly read-only — `ResumeActor` / `GetActor` / `SuspendActor` change actor state but don't create any new resources. If the lab created actors of its own (e.g. you ran the bulk-suspend loop against a test fleet), clean those up with the same `kubectl ate delete actor` pattern from [010 step 4](010-counter-demo.md#4-prove-state-survives-suspendresume).
+
+If you opened a port-forward to `ate-api-server` for the `grpcurl` examples (`kubectl port-forward -n ate-system svc/api 18443:443`), just `Ctrl-C` it.
+
 ## Next
 
-- [090 — Observability](090-observability.md)
+- [040 — Observability](040-observability.md)
 - [099 — Cleanup](099-cleanup.md)

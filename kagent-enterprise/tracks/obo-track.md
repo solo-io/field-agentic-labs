@@ -2,7 +2,7 @@
 
 A focused path for someone who only wants the Microsoft Entra OBO scenario: user logs in to the kagent UI, the user's token is propagated through the agent, agentgateway exchanges it for a downstream-scoped token, the in-cluster proxy validates it, and Anthropic gets called.
 
-> **Different install model:** this track uses the direct-Helm install (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at `0.3.12`, `enterprise-agentgateway` at `v2.2.0`), **not** the Gloo Operator install in [020](../020-install-kagent-enterprise.md). They install from different chart streams — don't mix them on the same cluster.
+> **Different install model:** this track uses the direct-Helm install (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at `0.3.12`, `enterprise-agentgateway` at `v2.2.0`), **not** the Gloo Operator install in [020](../003-install-kagent-enterprise.md). They install from different chart streams — don't mix them on the same cluster.
 
 ## Estimated Time
 
@@ -10,7 +10,7 @@ A focused path for someone who only wants the Microsoft Entra OBO scenario: user
 
 ## Prerequisites
 
-- A Kubernetes cluster (GKE recommended — see [001](../001-provision-gke.md))
+- A Kubernetes cluster (GKE recommended — see [001](../001-baseline-setup.md))
 - Helm v3
 - Enterprise license keys for **kagent-enterprise** and **enterprise-agentgateway**
 - A Microsoft Entra ID tenant with admin access (you'll create three things: two app registrations + a security group)
@@ -19,8 +19,8 @@ A focused path for someone who only wants the Microsoft Entra OBO scenario: user
 
 ## Order
 
-1. [001 — Provision a GKE Cluster](../001-provision-gke.md) *(skip if you have a cluster)*
-2. [090 — Microsoft Entra ID OBO end-to-end](../090-obo-entra.md)
+1. [001 — Provision a GKE Cluster](../001-baseline-setup.md) *(skip if you have a cluster)*
+2. [090 — Microsoft Entra ID OBO end-to-end](../070-obo-entra.md)
 3. [099 — Cleanup](../099-cleanup.md) — specifically the **OBO Stack**, **Enterprise Agentgateway**, and **Kagent Enterprise — Direct-Helm Path** sections
 
 ## Key Things the Lab Walks You Through
@@ -64,4 +64,4 @@ The proxy source is in [`assets/llm-obo-proxy/app.py`](../assets/llm-obo-proxy/a
 ## Next
 
 - [policy-track](policy-track.md) — Layer `AccessPolicy` on top of the OBO setup for runtime-level RBAC
-- [070 — Prompt Guards](../070-prompt-guards.md) — Add prompt guards on the same gateway
+- [070 — Prompt Guards](../040-prompt-guards.md) — Add prompt guards on the same gateway

@@ -12,9 +12,8 @@ Before installing kagent-enterprise, the cluster needs the `kagent` namespace, t
 
 ## Prerequisites
 
-- [001 — GKE cluster (or any cluster)](001-provision-gke.md)
-- `openssl` available locally
-- Solo trial keys and an LLM API key
+- [001 — Baseline Setup](001-baseline-setup.md) completed
+- Solo trial license keys (kagent-enterprise, gloo-gateway, agentgateway) and an LLM API key (`OPENAI_API_KEY` is the workshop default; Anthropic also supported)
 
 ## 1. Export Required Environment Variables
 
@@ -58,7 +57,7 @@ stringData:
 EOF
 ```
 
-If you'll use Anthropic instead, swap the key — the [070 prompt guards lab](070-prompt-guards.md) and [090 OBO lab](090-obo-entra.md) both expect `kagent-anthropic` / `ANTHROPIC_API_KEY` Secrets and you can create those the same way:
+If you'll use Anthropic instead, swap the key — the [070 prompt guards lab](040-prompt-guards.md) and [090 OBO lab](070-obo-entra.md) both expect `kagent-anthropic` / `ANTHROPIC_API_KEY` Secrets and you can create those the same way:
 
 ```bash
 kubectl create secret generic kagent-anthropic \
@@ -99,7 +98,7 @@ kubectl create secret generic jwt -n kagent --from-file=jwt=/tmp/key.pem
 
 The Secret must be named exactly `jwt` and the key must be named exactly `jwt` — the controller looks for `jwt.jwt` to read the private key bytes.
 
-> **Important — OBO interaction:** in the [090 OBO lab](090-obo-entra.md), you set `oidc.skipOBO: true` in the kagent runtime values so **agentgateway** handles OBO instead of kagent. When `skipOBO: false`, the kagent controller mints its own JWT (signed with this key) and passes that to the agent instead of the raw Entra access token — and agentgateway's STS cannot validate that kagent-issued token against the Entra JWKS, so the token exchange fails. The `jwt` Secret is still useful even with `skipOBO: true` for other JWT-minting paths; create it now and you'll have it.
+> **Important — OBO interaction:** in the [090 OBO lab](070-obo-entra.md), you set `oidc.skipOBO: true` in the kagent runtime values so **agentgateway** handles OBO instead of kagent. When `skipOBO: false`, the kagent controller mints its own JWT (signed with this key) and passes that to the agent instead of the raw Entra access token — and agentgateway's STS cannot validate that kagent-issued token against the Entra JWKS, so the token exchange fails. The `jwt` Secret is still useful even with `skipOBO: true` for other JWT-minting paths; create it now and you'll have it.
 
 Clean up the key file on disk after the Secret is created:
 
@@ -124,5 +123,5 @@ llm-api-keys             Opaque   1      <age>
 
 ## Next
 
-- [020 — Install Kagent Enterprise (Helm)](020-install-kagent-enterprise.md) — canonical Gloo Operator install
-- If you're going straight to the OBO lab: [090 — Entra OBO end-to-end](090-obo-entra.md) (creates its own Secrets and uses a different install model)
+- [020 — Install Kagent Enterprise (Helm)](003-install-kagent-enterprise.md) — canonical Gloo Operator install
+- If you're going straight to the OBO lab: [090 — Entra OBO end-to-end](070-obo-entra.md) (creates its own Secrets and uses a different install model)

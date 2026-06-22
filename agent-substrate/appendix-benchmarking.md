@@ -14,8 +14,8 @@ This is **not part of the main workshop path** — use it when you want to push 
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md) (or [appendix-install-script-alternative](appendix-install-script-alternative.md))
-- [020 — `.ate-dev-env.sh` sourced](020-configure-env.md)
+- [040 — Substrate installed](003-install-substrate.md) (or [appendix-install-script-alternative](appendix-install-script-alternative.md))
+- [020 — `.ate-dev-env.sh` sourced](001-baseline-setup.md)
 - Python 3 + a venv for generating the Python proto clients
 - `ko` (for the Locust container image build, via `KO_DOCKER_REPO`)
 - Docker (the build pushes `locust-test:latest` to your registry)
@@ -78,7 +78,7 @@ The scale benchmarks (`kernelmem`, `sleep`, `usermem`) need the scale workload t
 
 ### Counter demo (for `LOAD_TYPE=counter`)
 
-The counter benchmark uses the counter `ActorTemplate` from [050](050-counter-demo.md):
+The counter benchmark uses the counter `ActorTemplate` from [050](010-counter-demo.md):
 
 ```bash
 ./hack/install-ate.sh --deploy-demo-counter
@@ -141,6 +141,6 @@ The upstream README explicitly calls out that running discrete load tests + stor
 
 ## Related
 
-- [090 — Observability](090-observability.md) — the standard logs / metrics / traces lab
-- [050 — Counter Demo](050-counter-demo.md) — the counter `ActorTemplate` is what `LOAD_TYPE=counter` targets
+- [090 — Observability](040-observability.md) — the standard logs / metrics / traces lab
+- [050 — Counter Demo](010-counter-demo.md) — the counter `ActorTemplate` is what `LOAD_TYPE=counter` targets
 - Upstream: [benchmarking/README.md](https://github.com/agent-substrate/substrate/blob/main/benchmarking/README.md)

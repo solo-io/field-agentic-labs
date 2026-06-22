@@ -1,6 +1,6 @@
 # Sandbox Demo
 
-A sandboxed Alpine Linux execution environment running as a Substrate actor. Demonstrates two things on top of what [050](050-counter-demo.md) already showed:
+A sandboxed Alpine Linux execution environment running as a Substrate actor. Demonstrates two things on top of what [050](010-counter-demo.md) already showed:
 
 1. An actor can host a **persistent filesystem** (writes to `/` survive suspend → snapshot → resume)
 2. A separate **REPL client** can drive the actor interactively, giving you something close to a stateful per-user shell session
@@ -15,11 +15,9 @@ A sandboxed Alpine Linux execution environment running as a Substrate actor. Dem
 
 ## Prerequisites
 
-- [040 — Substrate installed](040-install-substrate-helm.md)
-- [045 — `kubectl-ate` on `PATH`](045-install-kubectl-ate.md)
-- [020 — `.ate-dev-env.sh` sourced](020-configure-env.md)
-- `ko` (`go install github.com/google/ko@latest`)
-- Go (for building the REPL client)
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
+- `.ate-dev-env.sh` still sourced (the demo deploy reads `$BUCKET_NAME` and `$KO_DOCKER_REPO`)
+- `ko` installed (for the demo image build): `go install github.com/google/ko@latest`
 
 ## Components
 
@@ -131,7 +129,7 @@ kubectl ate delete  actor my-sandbox-1
 
 ## What This Demo Adds Over the Counter
 
-| Aspect | Counter ([050](050-counter-demo.md)) | Sandbox (this lab) |
+| Aspect | Counter ([050](010-counter-demo.md)) | Sandbox (this lab) |
 |---|---|---|
 | State preserved | In-memory counter integer | Both RAM **and** writable filesystem layer |
 | Trigger for suspend | Manual `kubectl ate suspend` | Implicit — `exit` in the REPL client |
@@ -140,5 +138,5 @@ kubectl ate delete  actor my-sandbox-1
 
 ## Next
 
-- [052 — Agent-Secret Demo (self-suspending, RAM-resident secret)](052-agent-secret-demo.md)
-- [053 — Claude Code Multiplex](053-claude-code-multiplex.md)
+- [052 — Agent-Secret Demo (self-suspending, RAM-resident secret)](012-agent-secret-demo.md)
+- [053 — Claude Code Multiplex](013-claude-code-multiplex.md)

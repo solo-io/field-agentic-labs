@@ -146,7 +146,7 @@ The bundled ClickHouse + PostgreSQL need a default `StorageClass`. On GKE this w
 
 ### UI shows "cannot connect to backend" (Gloo Operator path)
 
-The UI hard-codes `localhost:8090` for its backend. Re-run the port-forward from [020 step 4](020-install-kagent-enterprise.md#4-work-around-the-ui-backend-bug-port-forward):
+The UI hard-codes `localhost:8090` for its backend. Re-run the port-forward from [020 step 4](003-install-kagent-enterprise.md#4-work-around-the-ui-backend-bug-port-forward):
 
 ```bash
 kubectl port-forward service/kagent-enterprise-ui -n kagent 8090:8090
@@ -162,7 +162,7 @@ kubectl logs -n kagent -l app=kagent --tail=100 | grep -i oidc
 
 ### Entra: `AADSTS50011: The redirect URI ... does not match`
 
-You registered the wrong callback URI. For the OBO lab the SPA callback must be `https://<AGW_HTTPS_EXTERNAL_IP>/callback`, **not** `/auth`. See [090 step 7a](090-obo-entra.md#7a--add-https-for-the-ui-login-flow).
+You registered the wrong callback URI. For the OBO lab the SPA callback must be `https://<AGW_HTTPS_EXTERNAL_IP>/callback`, **not** `/auth`. See [090 step 7a](070-obo-entra.md#7a--add-https-for-the-ui-login-flow).
 
 ### Entra: `AADSTS500117: The reply uri specified ... isn't using a secure scheme`
 
@@ -170,7 +170,7 @@ Entra requires HTTPS for SPA redirect URIs on non-localhost. The HTTPS Gateway i
 
 ### Token exchange returns 401 / "issuer mismatch"
 
-The `subjectValidator.remoteConfig.url` on the agentgateway controller must point at the **Entra** JWKS endpoint, not at the Kubernetes API server JWKS. See [025 step 4](025-install-enterprise-agentgateway.md#4-install-the-controller).
+The `subjectValidator.remoteConfig.url` on the agentgateway controller must point at the **Entra** JWKS endpoint, not at the Kubernetes API server JWKS. See [025 step 4](004-install-enterprise-agentgateway.md#4-install-the-controller).
 
 If you used `oidc.skipOBO: false` on kagent, kagent mints its own JWT signed by the `jwt` Secret — agentgateway's STS can't validate that against the Entra JWKS, so the exchange fails. **Set `skipOBO: true`** in the kagent values for the OBO scenario.
 

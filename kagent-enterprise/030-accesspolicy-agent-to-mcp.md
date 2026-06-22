@@ -9,13 +9,11 @@ This lab covers the same flow twice — once for a `Declarative` Agent, once for
 - Stand up an MCP server (`mcp/everything` image running `@modelcontextprotocol/server-github`)
 - Create a `Declarative` Agent (`test-access-policy`) and verify all four tools are reachable
 - Apply a `DENY` policy that strips three of the four tools and verify
-- Repeat with a `BYO` Agent (`troubleshooter`) built from the [`troubleshoot-agent`](https://github.com/AdminTurnedDevOps/agentic-demo-repo/blob/main/adk/troubleshoot-agent/troubleshootagent/agent.py) ADK template, and use an `ALLOW` policy
+- Replace the `DENY` policy with an `ALLOW` policy and observe the difference in semantics
 
 ## Prerequisites
 
-- [020 — Kagent Enterprise installed](020-install-kagent-enterprise.md)
-- `default-model-config` configured
-
+- Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md)
 ## Part 1 — Declarative Agent + `DENY` Policy
 
 ### 1. Create the MCP Server
@@ -136,143 +134,57 @@ You should now see only `search_repositories` in the tool list.
 
 ---
 
-## Part 2 — BYO Agent + `ALLOW` Policy
+## Part 2 — Swap `DENY` for `ALLOW`
 
-### 1. Re-Use the Same MCP Server
+`DENY` and `ALLOW` are the two `action` values the `AccessPolicy` CRD accepts. They differ in default behavior:
 
-```bash
-# Already applied in Part 1 step 1; if you cleaned up, re-apply it.
-kubectl get mcpserver test-mcp-server -n kagent
-```
+| Action | `tools: []` empty / omitted | `tools: [X]` |
+|---|---|---|
+| `DENY` | Block **all** tools on the target | Block only tool `X` |
+| `ALLOW` | Block **all** tools on the target (empty allow-list = nothing allowed) | Allow only tool `X` |
 
-### 2. Build the BYO Agent Image
-
-`cd` into the directory where your BYO agent lives. If you don't have one, use the ADK starter at <https://github.com/AdminTurnedDevOps/agentic-demo-repo/blob/main/adk/troubleshoot-agent/troubleshootagent/agent.py>:
+Test both variants without changing the Agent. First, delete the `DENY` policy from Part 1 step 4:
 
 ```bash
-cd adk/troubleshoot-agent/
+kubectl delete accesspolicy deny-kagent-tool-server-dec -n kagent
 ```
 
-Open the agent code and confirm the MCP server URL points at the in-cluster Service for `test-mcp-server`:
+Re-prompt the agent (`What tools do you have available?`) — you should see all four tools again.
 
-```python
-tools=[
-    google_search,
-    MCPToolset(
-        connection_params=StreamableHTTPConnectionParams(
-            url=os.getenv(
-                "MCP_SERVER_URL",
-                "http://test-mcp-server.kagent.svc.cluster.local:3000",
-            ),
-        ),
-        tool_filter=[
-            'search_repositories',
-            'search_issues',
-            'search_code',
-            'search_users',
-        ],
-    ),
-]
-```
-
-Build and push the image:
-
-```bash
-docker build . -t troubleshoot:latest \
-  --platform linux/amd64 \
-  --build-arg DOCKER_REGISTRY=ghcr.io \
-  --build-arg VERSION=$VERSION
-
-docker tag troubleshoot:latest adminturneddevops/troubleshoot:v0.5
-docker push adminturneddevops/troubleshoot:v0.5
-```
-
-### 3. Create the Google API Key Secret
-
-```bash
-export GOOGLE_API_KEY=<your-google-api-key>
-
-kubectl create secret generic kagent-google \
-  -n kagent \
-  --from-literal=GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
-
-### 4. Apply the BYO Agent
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: kagent.dev/v1alpha2
-kind: Agent
-metadata:
-  name: troubleshooter
-  namespace: kagent
-spec:
-  description: k8s specialist
-  type: BYO
-  byo:
-    deployment:
-      image: adminturneddevops/troubleshoot:v0.5
-      env:
-        - name: GOOGLE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: kagent-google
-              key: GOOGLE_API_KEY
-EOF
-```
-
-In the UI, find `troubleshooter` and prompt:
-
-```
-What tools do you have available?
-```
-
-You should see all four GitHub search tools.
-
-### 5. Apply an `ALLOW` Policy
+Now apply an `ALLOW` policy listing only one tool:
 
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
 kind: AccessPolicy
 metadata:
-  name: deny-kagent-tool-server
+  name: allow-kagent-tool-server-dec
   namespace: kagent
 spec:
   from:
     subjects:
     - kind: Agent
-      name: troubleshooter
+      name: test-access-policy
       namespace: kagent
   targetRef:
     kind: MCPServer
     name: test-mcp-server
-    # if you comment out the tools parameter, the agent will say it has no tools
-    tools: ["search_repositories"]
+    tools: ["search_repositories"]   # whitelist — only this tool is allowed
   action: ALLOW
 EOF
 ```
 
-> The `tools` list under an `ALLOW` policy is the **whitelist**. Comment it out and the implicit allow set becomes empty → the agent will say it has no tools.
+Re-prompt. You should see **only `search_repositories`** — the `ALLOW` whitelist takes the agent from four tools down to one.
 
-### 6. Re-Prompt
-
-```
-What tools do you have available?
-```
-
-You should now see only `search_repositories`.
+> Comment out the `tools:` list under `ALLOW` and the agent will report it has no tools at all. An empty `ALLOW` allow-list = allow nothing.
 
 ## Cleanup
 
 ```bash
-kubectl delete accesspolicy deny-kagent-tool-server-dec -n kagent --ignore-not-found
-kubectl delete accesspolicy deny-kagent-tool-server     -n kagent --ignore-not-found
-kubectl delete agent test-access-policy -n kagent --ignore-not-found
-kubectl delete agent troubleshooter     -n kagent --ignore-not-found
-kubectl delete mcpserver test-mcp-server -n kagent --ignore-not-found
-kubectl delete secret kagent-google -n kagent --ignore-not-found
+kubectl delete accesspolicy deny-kagent-tool-server-dec  -n kagent --ignore-not-found
+kubectl delete accesspolicy allow-kagent-tool-server-dec -n kagent --ignore-not-found
+kubectl delete agent     test-access-policy              -n kagent --ignore-not-found
+kubectl delete mcpserver test-mcp-server                 -n kagent --ignore-not-found
 ```
 
 ## How It Works
@@ -283,5 +195,6 @@ kubectl delete secret kagent-google -n kagent --ignore-not-found
 
 ## Next
 
-- [061 — `AccessPolicy`: UserGroup → Agent (OIDC JWT)](061-accesspolicy-usergroup.md)
-- [070 — Prompt Guards](070-prompt-guards.md)
+- [031 — `AccessPolicy`: UserGroup → Agent (OIDC JWT)](031-accesspolicy-usergroup.md)
+- [040 — Prompt Guards](040-prompt-guards.md)
+- [041 — Platform RBAC](041-platform-rbac.md)
