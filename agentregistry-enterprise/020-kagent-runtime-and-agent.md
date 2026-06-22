@@ -1,6 +1,6 @@
 # kagent Runtime + Agent (k8shelper)
 
-Register the in-cluster **kagent** install (from [003](003-install-components.md)) as an agentregistry **Runtime**, then build + deploy the `k8shelper` BYO agent on top. The agent ships as a Python ADK package in this repo; you build the image yourself and push to a registry your cluster can pull from.
+Register an existing in-cluster **kagent Enterprise** install as an agentregistry **Runtime**, then build + deploy the `k8shelper` BYO agent on top. The agent ships as a Python ADK package in this repo; you build the image yourself and push to a registry your cluster can pull from.
 
 The lab walks through the **Anthropic / Claude** variant by default. The Gemini variant is a near-identical flow - the differences are called out in step 2.
 
@@ -15,7 +15,8 @@ The lab walks through the **Anthropic / Claude** variant by default. The Gemini 
 
 ## Prerequisites
 
-- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md). The kagent install lands in step 2 of 003.
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
+- **kagent Enterprise installed** in the `kagent` namespace. Install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - labs 001 through 003 cover the install end-to-end. Confirm with `kubectl get pods -n kagent` showing the kagent controller + UI Ready.
 - `docker buildx` configured for multi-platform builds
 - A container registry your cluster nodes can pull from (Docker Hub, GHCR, ECR, GAR, ACR, etc.). Be authenticated against it locally (`docker login`).
 - An **Anthropic API key**:
@@ -28,14 +29,14 @@ The lab walks through the **Anthropic / Claude** variant by default. The Gemini 
 
 ## 1. Enable kagent's Insecure Mode (Demo Only)
 
-Agentregistry sends requests to the kagent controller with an `X-User-Id` header. The default kagent install rejects those - enable `INSECURE_MODE=true` so kagent accepts them:
+Agentregistry sends requests to the kagent controller with an `X-User-Id` header. By default kagent Enterprise rejects unauthenticated headers - enable `INSECURE_MODE=true` so kagent accepts the forwarded identity from agentregistry:
 
 ```bash
 kubectl set env deployment/kagent-controller -n kagent INSECURE_MODE=true
 kubectl rollout status deployment/kagent-controller -n kagent --timeout=5m
 ```
 
-> **Demo / POC only.** `INSECURE_MODE=true` disables kagent controller authn/authz. For production, configure kagent and agentregistry to share a compatible OIDC audience or use a token-exchange flow.
+> **Demo / POC only.** `INSECURE_MODE=true` disables kagent controller authn/authz. For production, configure kagent Enterprise and agentregistry to share a compatible OIDC audience (both can validate the same Entra / Keycloak tokens) or use a token-exchange flow.
 
 Verify kagent now accepts the forwarded identity from the agentregistry server:
 

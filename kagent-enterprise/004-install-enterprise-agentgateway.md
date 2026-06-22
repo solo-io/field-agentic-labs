@@ -2,7 +2,7 @@
 
 Enterprise Agentgateway sits in front of LLM and MCP traffic and adds prompt guards, OBO token exchange, OIDC-fronted access, and per-route observability. The Gloo Operator install in [020](003-install-kagent-enterprise.md) sets `agentgateway.enabled: true` in the Gloo Gateway values, which gives you the **agentgateway dataplane** as part of Gloo Gateway. For the OBO scenario and the prompt-guard lab, you'll also need the **enterprise-agentgateway controller** running as its own Helm release in `agentgateway-system`.
 
-This lab installs the enterprise-agentgateway controller chart at `v2.2.0` with `tokenExchange.enabled: true` (so the same install supports both the prompt-guard lab and the OBO lab). It's the same install path the OBO lab uses; doing it here once means [090](070-obo-entra.md) just needs the OBO-specific config on top.
+This lab installs the enterprise-agentgateway controller chart at `v2026.6.1` with `tokenExchange.enabled: true` (so the same install supports both the prompt-guard lab and the OBO lab). It's the same install path the OBO lab uses; doing it here once means [090](070-obo-entra.md) just needs the OBO-specific config on top.
 
 ## Lab Objectives
 
@@ -30,7 +30,7 @@ If your cluster already has the standard Gateway API CRDs (the Gloo Operator ins
 ```bash
 helm install agentgateway-crds \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system \
  --create-namespace
 ```
@@ -77,7 +77,7 @@ envsubst < agw-values.yaml > /tmp/agw-values.rendered.yaml
 
 helm install agentgateway \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system \
  --create-namespace \
  -f /tmp/agw-values.rendered.yaml

@@ -1,20 +1,22 @@
-# Install Components: agentregistry + kagent + Enterprise Agentgateway
+# Install Components: agentregistry + Enterprise Agentgateway
 
-The third (and last) mandatory setup lab. Installs the three components every unit-of-value lab in this workshop depends on:
+The third (and last) mandatory setup lab for agentregistry. Installs two components every unit-of-value lab in this workshop depends on:
 
 1. **Agentregistry Enterprise** - the catalog + control plane (lab subject)
-2. **kagent** - the in-cluster agent runtime (lab 020 deploys agents here; lab 031 deploys MCP servers here)
-3. **Enterprise Agentgateway** - the LLM / MCP gateway (lab 032 exposes MCPs through here)
+2. **Enterprise Agentgateway** - the LLM / MCP gateway (lab 032 exposes MCPs through here)
+
+It also authenticates `arctl` against the running agentregistry server.
 
 After this lab + [001](001-baseline-setup.md) + ([002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md)), the cluster has the full **baseline** that the rest of the workshop assumes.
+
+> **kagent Enterprise is a prerequisite, not part of this lab.** The kagent-runtime lab ([020](020-kagent-runtime-and-agent.md)) and the MCP-via-kagent lab ([031](031-mcp-remote-github-copilot.md)) assume kagent Enterprise is already installed on the cluster. Install it from the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) (labs 001 - 003) before running 020 or 031. The AWS Bedrock AgentCore lab ([010](010-aws-bedrock-runtime.md)), the local-stdio MCP lab ([030](030-mcp-local-stdio.md)), and most other unit labs do **not** need kagent.
 
 ## Lab Objectives
 
 - Install agentregistry Enterprise (Helm OCI) wired to your OIDC provider from 002
-- Install kagent OSS in the `kagent` namespace
-- Install Enterprise Agentgateway in the `agentgateway-system` namespace with token-exchange disabled (you'll enable per-feature later if needed)
+- Install Enterprise Agentgateway in the `agentgateway-system` namespace
 - Authenticate `arctl` against the running agentregistry server
-- Confirm all three components are healthy
+- Confirm both components are healthy
 
 ## Prerequisites
 
@@ -22,14 +24,10 @@ After this lab + [001](001-baseline-setup.md) + ([002a](002a-setup-oidc-keycloak
 - One of:
  - [002a - Setup OIDC: Keycloak](002a-setup-oidc-keycloak.md), with `OIDC_PROVIDER=keycloak` + the variables exported, **OR**
  - [002b - Setup OIDC: Entra ID](002b-setup-oidc-entra.md), with `OIDC_PROVIDER=entra` + the variables exported
-- An LLM provider API key - `ANTHROPIC_API_KEY` is the workshop default. (kagent also accepts OpenAI / Gemini - adjust the kagent `providers.*` flags if needed.)
 
 The shell variables you need to have set going in:
 
 ```bash
-# From 001
-$AGENTREGISTRY_NAMESPACE # defaults to agentregistry-system
-
 # From 002a or 002b
 $OIDC_PROVIDER # "keycloak" or "entra"
 $OIDC_ISSUER
@@ -38,16 +36,13 @@ $BACKEND_CLIENT_SECRET
 $OIDC_PUBLIC_CLIENT # client ID used by the UI for browser login
 $ARE_CLI_CLIENT_ID # client ID used by arctl user login
 $GROUP_ADMINS # admins group object ID / GUID
-
-# This lab adds
-$ANTHROPIC_API_KEY # for kagent's model provider
 ```
 
 Sanity check:
 
 ```bash
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND BACKEND_CLIENT_SECRET \
- OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS ANTHROPIC_API_KEY; do
+ OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS; do
  if [ -z "${!V}" ]; then echo "MISSING: ${V}"; else printf ' OK %-25s %s\n' "${V}" "${!V:0:20}..."; fi
 done
 ```
@@ -142,39 +137,7 @@ echo "agentregistry UI: http://${AR_IP}:8080"
 arctl version --json # arctl_version + server_version should both populate
 ```
 
-## 2. Install kagent
-
-The kagent integration uses [its OSS Helm charts](https://github.com/kagent-dev/kagent). kagent installs into its own namespace `kagent`.
-
-```bash
-kubectl create namespace kagent
-
-# CRDs
-helm upgrade --install kagent-crds \
- oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
- --version 0.9.7 \
- -n kagent
-
-# kagent itself
-helm upgrade --install kagent \
- oci://ghcr.io/kagent-dev/kagent/helm/kagent \
- --version 0.9.7 \
- -n kagent \
- --set providers.default=anthropic \
- --set providers.anthropic.apiKey="${ANTHROPIC_API_KEY}"
-```
-
-> If you'd rather use OpenAI or Gemini, swap the last two flags - `--set providers.default=openAI --set providers.openAI.apiKey=<key>` or `--set providers.default=gemini --set providers.gemini.apiKey=<key>`.
-
-Verify:
-
-```bash
-kubectl get pods -n kagent
-```
-
-You should see `kagent-controller`, `kagent-ui`, `kagent-postgresql`, plus a handful of pre-built Agent pods (`k8s-agent`, `istio-agent`, etc.).
-
-## 3. Install Enterprise Agentgateway
+## 2. Install Enterprise Agentgateway
 
 Required for lab 032 (remote MCP through Agentgateway). Installing it now keeps the baseline complete - every subsequent unit-of-value lab can assume it's there.
 
@@ -185,18 +148,18 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # Agentgateway CRDs
 helm upgrade --install agentgateway-crds \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system \
  --create-namespace
 
 # Agentgateway controller
 helm upgrade --install agentgateway \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system
 ```
 
-> Enterprise Agentgateway is **license-gated** for some features (token exchange, OIDC enforcement, etc.). The basic install above works without a license; the licensed surface is documented in the kagent-enterprise workshop. If you have a license key, follow the agentgateway portion of [kagent-enterprise/025](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/025-install-enterprise-agentgateway.md) for the values block.
+> Enterprise Agentgateway is **license-gated** for some features (token exchange, OIDC enforcement, etc.). The basic install above works without a license; the licensed surface is documented in the kagent-enterprise workshop. If you have a license key, follow the agentgateway portion of [kagent-enterprise/004](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/004-install-enterprise-agentgateway.md) for the values block.
 
 Verify:
 
@@ -206,7 +169,7 @@ kubectl get pods -n agentgateway-system
 
 You should see the `enterprise-agentgateway` controller pod Ready.
 
-## 4. Authenticate `arctl`
+## 3. Authenticate `arctl`
 
 ### Keycloak path
 
@@ -257,23 +220,21 @@ arctl user whoami
 
 `whoami` should print the user you signed in as, with the mapped role(s) containing your admin group's identifier.
 
-## 5. Confirm the Baseline is Complete
+## 4. Confirm the Baseline is Complete
 
 ```bash
 # agentregistry
 kubectl get pods -n agentregistry-system
 arctl version --json # both versions populated
 
-# kagent
-kubectl get pods -n kagent
-kubectl get crd agents.kagent.dev agentharnesses.kagent.dev mcpservers.kagent.dev
-
 # Enterprise Agentgateway
 kubectl get pods -n agentgateway-system
 kubectl get crd | grep agentgateway
 ```
 
-If all four blocks look healthy, the baseline is in place. Any unit-of-value lab (010-070) should now work.
+If both blocks look healthy, the baseline is in place. Any unit-of-value lab that doesn't require kagent (010, 030, 032, 040, 050, 051, 060, 070) should now work.
+
+For labs that **do** require kagent (020, 031, 061), install it first from the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - run that workshop's labs 001 through 003.
 
 ## What's in Place After 001 + 002 + 003
 
@@ -281,9 +242,9 @@ If all four blocks look healthy, the baseline is in place. Any unit-of-value lab
 |---|---|---|
 | `arctl` CLI | local | Authenticated against your agentregistry server |
 | Agentregistry Enterprise | `agentregistry-system` | Catalog + control plane |
-| kagent | `kagent` | In-cluster agent runtime |
 | Enterprise Agentgateway | `agentgateway-system` | LLM / MCP gateway |
 | Keycloak **or** Entra ID | `keycloak` namespace / Microsoft cloud | OIDC backend |
+| kagent Enterprise (**user-installed prereq**) | `kagent` | In-cluster agent runtime, only required by labs 020 / 031 / 061 |
 
 Each unit-of-value lab assumes this baseline. None of them re-install these components.
 
@@ -296,9 +257,6 @@ Component-level rollback (in case the install partially failed and you want to r
 ```bash
 helm uninstall agentgateway -n agentgateway-system 2>/dev/null || true
 helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
-
-helm uninstall kagent -n kagent 2>/dev/null || true
-helm uninstall kagent-crds -n kagent 2>/dev/null || true
 
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
 
@@ -322,13 +280,13 @@ The namespaces from 001 / 002 stay - re-run this lab to reinstall.
 Every unit-of-value lab from here on is self-contained. Pick one:
 
 - [010 - AWS Bedrock AgentCore Runtime](010-aws-bedrock-runtime.md) - register AWS + deploy the demochatbot
-- [020 - kagent Runtime + Agent](020-kagent-runtime-and-agent.md) - register the kagent runtime + deploy `k8shelper`
+- [020 - kagent Runtime + Agent](020-kagent-runtime-and-agent.md) - register the kagent runtime + deploy `k8shelper` (**requires kagent Enterprise already installed**)
 - [030 - Local stdio MCP Server](030-mcp-local-stdio.md) - `demo-tools` (in-tree)
-- [031 - Remote MCP via kagent (GitHub Copilot)](031-mcp-remote-github-copilot.md)
+- [031 - Remote MCP via kagent (GitHub Copilot)](031-mcp-remote-github-copilot.md) (**requires kagent Enterprise already installed**)
 - [032 - Remote MCP through Agentgateway](032-mcp-through-agentgateway.md)
 - [040 - Prompts](040-prompts.md)
 - [050 - AccessPolicy](050-access-policies.md)
 - [051 - Approval Workflows](051-approval-workflows.md)
 - [060 - Observability / Tracing](060-observability-tracing.md)
-- [061 - Trace Fan-Out (kagent)](061-trace-fanout.md)
+- [061 - Trace Fan-Out (kagent)](061-trace-fanout.md) (**requires kagent Enterprise already installed**)
 - [070 - GitOps with GitLab CI](070-gitops-gitlab-ci.md)

@@ -2,7 +2,7 @@
 
 End-to-end **On-Behalf-Of** token exchange with Microsoft Entra ID. The user logs into the kagent UI, the user's token is propagated through the agent (`KAGENT_PROPAGATE_TOKEN`), and when the agent calls the gateway-fronted LLM endpoint, **enterprise-agentgateway** exchanges that token for a new one scoped to the downstream backend (here, an in-cluster Python proxy) before forwarding. The proxy validates the exchanged Entra token, then calls Anthropic with a provider API key.
 
-> **Heads-up - this lab uses a different install of kagent than [020](003-install-kagent-enterprise.md).** The OBO scenario was authored against the direct-Helm pattern (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at chart `0.3.12`, `enterprise-agentgateway` at `v2.2.0`). Pick this lab **or** the Gloo Operator install - they install from different upstream chart streams and shouldn't be mixed on the same cluster.
+> **Heads-up - this lab uses a different install of kagent than [020](003-install-kagent-enterprise.md).** The OBO scenario was authored against the direct-Helm pattern (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at chart `0.3.12`, `enterprise-agentgateway` at `v2026.6.1`). Pick this lab **or** the Gloo Operator install - they install from different upstream chart streams and shouldn't be mixed on the same cluster.
 
 ## How Entra OBO Differs from RFC 8693
 
@@ -263,7 +263,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # Enterprise agentgateway CRDs
 helm install agentgateway-crds \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system --create-namespace
 
 # License Secret
@@ -304,7 +304,7 @@ envsubst < agw-values.yaml > /tmp/agw-values.rendered.yaml
 
 helm install agentgateway \
  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
- --version v2.2.0 \
+ --version v2026.6.1 \
  --namespace agentgateway-system --create-namespace \
  -f /tmp/agw-values.rendered.yaml
 ```

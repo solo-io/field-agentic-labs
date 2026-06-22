@@ -2,7 +2,9 @@
 
 Tear down everything the workshop installed. Run this when you're done.
 
-Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[070](070-gitops-gitlab-ci.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / kagent / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
+Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[070](070-gitops-gitlab-ci.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
+
+> **kagent Enterprise is not torn down by this lab.** It's a separate workshop / install - if you also want to remove it, follow the cleanup steps in the [kagent-enterprise workshop's 099](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/099-cleanup.md).
 
 > **Always run each unit-of-value lab's own cleanup first.** Some labs create AWS / external resources (IAM roles, CloudFormation stacks, image pushes) that won't get cleaned up by the cluster-side teardown below. The teardown chain matters because Helm releases own Secrets / ConfigMaps / CRD instances - if you delete the namespace before `helm uninstall`, you'll leave finalizer-stuck resources behind.
 
@@ -26,7 +28,7 @@ arctl get deployments
 
 Every list should be empty (or contain only items you intentionally left for another reason). If anything is still there, find which lab created it and run that lab's Cleanup section.
 
-## 2. Uninstall the Three Component Helm Releases
+## 2. Uninstall the Component Helm Releases
 
 Order matters - uninstall in reverse install order to avoid dependency issues:
 
@@ -34,10 +36,6 @@ Order matters - uninstall in reverse install order to avoid dependency issues:
 # Enterprise Agentgateway
 helm uninstall agentgateway -n agentgateway-system 2>/dev/null || true
 helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
-
-# kagent
-helm uninstall kagent -n kagent 2>/dev/null || true
-helm uninstall kagent-crds -n kagent 2>/dev/null || true
 
 # agentregistry Enterprise
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
@@ -50,7 +48,6 @@ Some CRDs (ClickHouse, PostgreSQL) have finalizers. Give them a minute, then che
 ```bash
 sleep 30
 kubectl get all -n agentregistry-system 2>/dev/null
-kubectl get all -n kagent 2>/dev/null
 kubectl get all -n agentgateway-system 2>/dev/null
 ```
 
@@ -62,13 +59,14 @@ kubectl get <kind> <name> -n <namespace> -o json \
  | kubectl replace --raw "/api/v1/namespaces/<namespace>/<kind>/<name>/finalize" -f -
 ```
 
-## 4. Delete the Three Component Namespaces
+## 4. Delete the Component Namespaces
 
 ```bash
 kubectl delete namespace agentregistry-system --ignore-not-found
-kubectl delete namespace kagent --ignore-not-found
 kubectl delete namespace agentgateway-system --ignore-not-found
 ```
+
+> The `kagent` namespace is left alone - that's the kagent-enterprise workshop's responsibility. If you want to remove it, run that workshop's [099](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/099-cleanup.md).
 
 ## 5. Tear Down the OIDC Backend
 

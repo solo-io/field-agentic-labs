@@ -11,6 +11,7 @@ Register the GitHub Copilot MCP as a **remote streamable-HTTP** MCP server with 
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
+- **kagent Enterprise installed** in the `kagent` namespace via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise)
 - **kagent registered as an agentregistry Runtime.** If you haven't done [020](020-kagent-runtime-and-agent.md), do at least step 3 of it (`arctl apply -f /tmp/kagent-runtime.yaml`) to register `Runtime: kagent`. You don't need to deploy `k8shelper` itself.
 - A GitHub Copilot MCP access token:
 

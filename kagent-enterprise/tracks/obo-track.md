@@ -2,7 +2,7 @@
 
 A focused path for someone who only wants the Microsoft Entra OBO scenario: user logs in to the kagent UI, the user's token is propagated through the agent, agentgateway exchanges it for a downstream-scoped token, the in-cluster proxy validates it, and Anthropic gets called.
 
-> **Different install model:** this track uses the direct-Helm install (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at `0.3.12`, `enterprise-agentgateway` at `v2.2.0`), **not** the Gloo Operator install in [020](../003-install-kagent-enterprise.md). They install from different chart streams - don't mix them on the same cluster.
+> **Different install model:** this track uses the direct-Helm install (`kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at `0.3.12`, `enterprise-agentgateway` at `v2026.6.1`), **not** the Gloo Operator install in [020](../003-install-kagent-enterprise.md). They install from different chart streams - don't mix them on the same cluster.
 
 ## Estimated Time
 
@@ -32,7 +32,7 @@ A focused path for someone who only wants the Microsoft Entra OBO scenario: user
 | 3 | `kagent-enterprise-oidc-secret` + `kagent-anthropic` + `enterprise-kagent-license` Secrets |
 | 4 | Direct Helm install of `kagent-mgmt` + `kagent-crds` + `kagent-enterprise` at `0.3.12` with `skipOBO: true` so agentgateway handles OBO instead of kagent |
 | 5 | Locate `solo-enterprise-ui` (HTTP-only) and confirm the callback URI you'll register on the SPA app |
-| 6 | Install `enterprise-agentgateway` at `v2.2.0` with `tokenExchange.enabled: true` and Entra JWKS as the `subjectValidator` |
+| 6 | Install `enterprise-agentgateway` at `v2026.6.1` with `tokenExchange.enabled: true` and Entra JWKS as the `subjectValidator` |
 | 7 | Gateway + HTTPS listener (self-signed) for SPA login → in-cluster Python `llm-obo-proxy` Deployment + Service → `EnterpriseAgentgatewayPolicy` with `entra` block in `ExchangeOnly` mode |
 | 8 | Apply a `ModelConfig` with `apiKeyPassthrough: true` and a `KAGENT_PROPAGATE_TOKEN=true` Agent |
 

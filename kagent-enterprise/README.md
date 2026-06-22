@@ -136,7 +136,7 @@ Curated paths under [`tracks/`](tracks/):
 | Gloo Gateway (GatewayController) | `2.0.0` | [003](003-install-kagent-enterprise.md) |
 | Kagent (Enterprise) controller | `0.1.5` | [003](003-install-kagent-enterprise.md) |
 | Kagent / management / CRDs charts (OBO direct-Helm path) | `0.3.12` | [070](070-obo-entra.md) |
-| enterprise-agentgateway | `v2.2.0` | [004](004-install-enterprise-agentgateway.md), [070](070-obo-entra.md) |
+| enterprise-agentgateway | `v2026.6.1` | [004](004-install-enterprise-agentgateway.md), [070](070-obo-entra.md) |
 | Kubernetes Gateway API CRDs | `v1.5.0` | [004](004-install-enterprise-agentgateway.md), [070](070-obo-entra.md) |
 | Keycloak image | `quay.io/keycloak/keycloak:26.0` | [060](060-pinniped-keycloak.md) |
 | Pinniped Concierge | `latest` (from `get.pinniped.dev/latest`) | [060](060-pinniped-keycloak.md) |

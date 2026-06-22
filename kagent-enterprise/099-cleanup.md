@@ -204,7 +204,7 @@ terraform plan
 | Solo Istio (Ambient) | `1.27.1` |
 | Gloo Gateway | `2.0.0` |
 | Kagent (direct-Helm) charts | `oci://us-docker.pkg.dev/solo-public/solo-enterprise-helm/charts/management`, `kagent-enterprise-helm/charts/kagent-enterprise-crds`, `kagent-enterprise-helm/charts/kagent-enterprise` - `0.3.12` |
-| Enterprise Agentgateway | `oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway[-crds]` - `v2.2.0` |
+| Enterprise Agentgateway | `oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway[-crds]` - `v2026.6.1` |
 | Gateway API CRDs | `v1.5.0` |
 | Anthropic OBO model | `claude-haiku-4-5-20251001` |
 | Keycloak image | `quay.io/keycloak/keycloak:26.0` |

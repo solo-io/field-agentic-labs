@@ -4,7 +4,7 @@ A hands-on lab series for **Solo.io agentregistry Enterprise** (`arctl` + `ar.de
 
 The workshop is built around two ideas:
 
-1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + kagent + Enterprise Agentgateway). You only run setup once.
+1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + Enterprise Agentgateway). You only run setup once. Some unit labs (020, 031, 061) additionally require **kagent Enterprise** - install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) before running those.
 
 2. **Independent unit-of-value labs.** Every lab numbered 010 and up is standalone - it states what it needs from the baseline, walks through one capability, and has its own `## Cleanup` section that returns the cluster to the post-baseline state. Run them in any order, run cleanup, move on.
 
@@ -116,7 +116,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 - Agentregistry Enterprise chart `v2026.5.4`
 - `arctl` `v2026.5.4`
 - Kagent OSS chart `0.9.7`
-- Enterprise Agentgateway `v2.2.0`
+- Enterprise Agentgateway `v2026.6.1`
 - Keycloak `quay.io/keycloak/keycloak:26.0`
 - Kubernetes 1.29+
 - AWS Bedrock AgentCore (us-east-1)

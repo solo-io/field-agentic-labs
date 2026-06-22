@@ -27,7 +27,7 @@ This lab is the fan-out option.
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
-- An existing kagent install with the `solo-enterprise-telemetry-collector` StatefulSet in the `kagent` namespace
+- **kagent Enterprise installed** in the `kagent` namespace via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise), with the `solo-enterprise-telemetry-collector` StatefulSet running in the `kagent` namespace
 - [020 - kagent Runtime registered](020-kagent-runtime-and-agent.md)
 
 ## How the Patch Works
