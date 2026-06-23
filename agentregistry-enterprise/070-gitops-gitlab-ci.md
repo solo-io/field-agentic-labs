@@ -42,7 +42,7 @@ stages:
   - register
 
 variables:
-  ARCTL_VERSION: "v2026.05.0"
+  ARCTL_VERSION: "v2026.6.1"
 
 # ---------------------------------------------------------------------
 # 1. Install tools (arctl, kubectl, awscli)

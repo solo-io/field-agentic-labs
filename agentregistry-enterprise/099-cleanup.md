@@ -34,8 +34,8 @@ Order matters - uninstall in reverse install order to avoid dependency issues:
 
 ```bash
 # Enterprise Agentgateway
-helm uninstall agentgateway -n agentgateway-system 2>/dev/null || true
-helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
+helm uninstall enterprise-agentgateway -n agentgateway-system 2>/dev/null || true
+helm uninstall agentgateway-crds       -n agentgateway-system 2>/dev/null || true
 
 # agentregistry Enterprise
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
@@ -110,6 +110,7 @@ unset OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
  GROUP_ADMINS GROUP_READERS GROUP_WRITERS \
  AR_IP ARCTL_API_BASE_URL ARCTL_API_TOKEN \
  AWS_ACCOUNT_ID AWS_REGION AWS_ROLE_ARN AWS_EXTERNAL_ID \
+ AGENTGATEWAY_LICENSE_KEY \
  K8SHELPER_IMAGE ANTHROPIC_API_KEY GITHUB_COPILOT_MCP_TOKEN \
  KC_IP KC_TOKEN
 ```

@@ -53,7 +53,7 @@ kubectl create namespace agentregistry-system
 ## 3. Install the Enterprise `arctl` CLI
 
 ```bash
-export ARCTL_VERSION=v2026.5.4
+export ARCTL_VERSION=v2026.6.1
 curl -sSL https://storage.googleapis.com/agentregistry-enterprise/install.sh \
   | ARCTL_VERSION=$ARCTL_VERSION sh
 export PATH=$HOME/.arctl/bin:$PATH

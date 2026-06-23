@@ -15,6 +15,7 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 - A running Kubernetes cluster (≥ 1.29) with a default `StorageClass` and a working `LoadBalancer` Service controller
 - `kubectl`, `helm` v3, `openssl`, `envsubst`, `jq`
 - An OIDC provider - Keycloak (in-cluster, [002a](002a-setup-oidc-keycloak.md)) or Microsoft Entra ID ([002b](002b-setup-oidc-entra.md))
+- A Solo Enterprise for agentgateway license key (used by [003](003-install-components.md))
 - An LLM provider API key - Anthropic / OpenAI / Gemini (used by kagent)
 - (Optional) AWS account for the AWS Bedrock AgentCore lab ([010](010-aws-bedrock-runtime.md))
 - (Optional) `docker buildx` + a container registry for the BYO-agent lab ([020](020-kagent-runtime-and-agent.md))
@@ -113,8 +114,8 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 ## Validated On
 
-- Agentregistry Enterprise chart `v2026.5.4`
-- `arctl` `v2026.5.4`
+- Agentregistry Enterprise chart `v2026.6.1`
+- `arctl` `v2026.6.1`
 - Kagent OSS chart `0.9.7`
 - Enterprise Agentgateway `v2026.6.1`
 - Keycloak `quay.io/keycloak/keycloak:26.0`

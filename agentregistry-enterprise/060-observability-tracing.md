@@ -52,7 +52,7 @@ Apply to an existing install:
 ```bash
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
+  --version 2026.6.1 \
   -n agentregistry-system \
   --reuse-values \
   --set telemetry.service.type=LoadBalancer \
@@ -271,7 +271,7 @@ Return the cluster to the post-baseline state:
 # Revert the collector Service to ClusterIP (if you flipped it to LoadBalancer in step 1)
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
+  --version 2026.6.1 \
   -n agentregistry-system \
   --reuse-values \
   --set telemetry.service.type=ClusterIP \

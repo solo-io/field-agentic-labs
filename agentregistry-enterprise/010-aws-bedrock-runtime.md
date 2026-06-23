@@ -107,7 +107,7 @@ The Deployment moves through `deploying` → `deployed`. If `status.conditions` 
 | Failure | Fix |
 |---|---|
 | `IAM role not assumable` | Re-check `External ID` matches what's in the role's trust policy (step 2) |
-| `image build failed` | Check the agentregistry server logs: `kubectl logs -n agentregistry-system deploy/agentregistry-enterprise --tail=100` |
+| `image build failed` | Check the agentregistry server logs: `kubectl logs -n agentregistry-system deploy/agentregistry-enterprise-server --tail=100` |
 
 ## 6. Locate the CloudWatch Log Group
 

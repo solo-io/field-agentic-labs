@@ -26,7 +26,7 @@ The Helm value is `config.requireCreateApproval` on the `agentregistry-enterpris
 ```bash
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
+  --version 2026.6.1 \
   --namespace agentregistry-system \
   --reuse-values \
   --set config.requireCreateApproval=true
@@ -47,7 +47,7 @@ Expected:
 true
 ```
 
-If you see nothing or `false`, the `helm upgrade` didn't reach the controller - confirm the release name + namespace, then `kubectl rollout status -n agentregistry-system deploy/agentregistry-enterprise`.
+If you see nothing or `false`, the `helm upgrade` didn't reach the controller - confirm the release name + namespace, then `kubectl rollout status -n agentregistry-system deploy/agentregistry-enterprise-server`.
 
 ## 3. Grant a Non-Admin Group Writer Access
 
@@ -240,7 +240,7 @@ arctl delete accesspolicy writers-group-catalog-write
 # release queued requests; clear those with reject first)
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
+  --version 2026.6.1 \
   --namespace agentregistry-system \
   --reuse-values \
   --set config.requireCreateApproval=false
@@ -250,7 +250,7 @@ helm upgrade --install agentregistry-enterprise \
 
 | Symptom | Fix |
 |---|---|
-| `REQUIRE_CREATE_APPROVAL` is still empty after `helm upgrade` | Wrong release name or namespace. Confirm with `helm list -n agentregistry-system`. Then `kubectl rollout status -n agentregistry-system deploy/agentregistry-enterprise`. |
+| `REQUIRE_CREATE_APPROVAL` is still empty after `helm upgrade` | Wrong release name or namespace. Confirm with `helm list -n agentregistry-system`. Then `kubectl rollout status -n agentregistry-system deploy/agentregistry-enterprise-server`. |
 | Non-admin user can still commit directly to the catalog | They're in `oidc.superuserRole`. `arctl user whoami` and double-check the mapped roles. Admins bypass the approval queue. |
 | `/v0/approve` returns 401 | Token expired. Re-run `arctl user login` and re-export `ARCTL_API_TOKEN`. |
 | `/v0/approve` returns 403 | You're authenticated but not an admin. Approve requires `oidc.superuserRole`. |

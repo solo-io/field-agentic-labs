@@ -14,7 +14,7 @@ After this lab + [001](001-baseline-setup.md) + ([002a](002a-setup-oidc-keycloak
 ## Lab Objectives
 
 - Install agentregistry Enterprise (Helm OCI) wired to your OIDC provider from 002
-- Install Enterprise Agentgateway in the `agentgateway-system` namespace
+- Install Enterprise Agentgateway in the `agentgateway-system` namespace with your license key
 - Authenticate `arctl` against the running agentregistry server
 - Confirm both components are healthy
 
@@ -36,32 +36,35 @@ $BACKEND_CLIENT_SECRET
 $OIDC_PUBLIC_CLIENT     # client ID used by the UI for browser login
 $ARE_CLI_CLIENT_ID      # client ID used by arctl user login
 $GROUP_ADMINS           # admins group object ID / GUID
+$AGENTGATEWAY_LICENSE_KEY # Solo Enterprise for agentgateway license key
 ```
 
 Sanity check:
 
 ```bash
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND BACKEND_CLIENT_SECRET \
-         OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS; do
+         OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS AGENTGATEWAY_LICENSE_KEY; do
   eval "VALUE=\${${V}:-}"
   if [ -z "${VALUE}" ]; then
     echo "MISSING: ${V}"
+  elif [ "${V}" = "AGENTGATEWAY_LICENSE_KEY" ]; then
+    printf '  OK  %-25s %s\n' "${V}" "set"
   else
     printf '  OK  %-25s %.20s...\n' "${V}" "${VALUE}"
   fi
 done
 ```
 
-Every line should print `OK`. If any prints `MISSING`, go back to 002a or 002b.
+Every line should print `OK`. If any OIDC variable prints `MISSING`, go back to 002a or 002b. If `AGENTGATEWAY_LICENSE_KEY` prints `MISSING`, export your Solo Enterprise for agentgateway license key before continuing.
 
 ## 1. Install agentregistry Enterprise
 
-Build the Helm values from your OIDC variables. **Do not commit this file** - it contains secrets:
+Build the Helm values from your OIDC variables. The script appends the Entra-only `additionalScopes` setting when `OIDC_PROVIDER=entra`. **Do not commit this file** - it contains secrets:
 
 ```bash
-cat > /tmp/are-values.yaml <<EOF
+cat > /tmp/are-values.yaml.tpl <<'EOF'
 image:
-  tag: v2026.5.4
+  tag: v2026.6.1
 
 service:
   type: LoadBalancer
@@ -76,19 +79,17 @@ oidc:
   insecureSkipVerify: false
 EOF
 
-# Entra path needs additionalScopes; Keycloak doesn't.
 if [ "${OIDC_PROVIDER}" = "entra" ]; then
-  cat >> /tmp/are-values.yaml <<EOF
+  cat >> /tmp/are-values.yaml.tpl <<'EOF'
   additionalScopes: "offline_access api://${OIDC_BACKEND}/agentregistry"
 EOF
 fi
 
-cat >> /tmp/are-values.yaml <<EOF
+cat >> /tmp/are-values.yaml.tpl <<'EOF'
 
 database:
   postgres:
-    bundled:
-      enabled: true
+    type: bundled
 
 clickhouse:
   enabled: true
@@ -102,6 +103,9 @@ extraEnvVars:
   - name: OTEL_SERVICE_NAME
     value: "agentregistry-enterprise"
 EOF
+
+envsubst < /tmp/are-values.yaml.tpl > /tmp/are-values.yaml
+rm -f /tmp/are-values.yaml.tpl
 ```
 
 Install:
@@ -109,7 +113,7 @@ Install:
 ```bash
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.5.4 \
+  --version 2026.6.1 \
   --namespace agentregistry-system \
   -f /tmp/are-values.yaml \
   --wait --timeout 5m
@@ -118,13 +122,13 @@ helm upgrade --install agentregistry-enterprise \
 Verify (all pods 1/1 Running):
 
 ```bash
-kubectl get pods -n agentregistry-system
+kubectl get pods -n agentregistry-system -w
 ```
 
 Expected:
 
 ```
-agentregistry-enterprise-<hash>                       1/1 Running
+agentregistry-enterprise-server-<hash>                1/1 Running
 agentregistry-enterprise-clickhouse-shard0-0          1/1 Running
 agentregistry-enterprise-postgresql-<hash>            1/1 Running
 agentregistry-enterprise-telemetry-collector-<hash>   1/1 Running
@@ -133,38 +137,46 @@ agentregistry-enterprise-telemetry-collector-<hash>   1/1 Running
 Grab the external IP and confirm the API responds:
 
 ```bash
-export AR_IP=$(kubectl get svc agentregistry-enterprise -n agentregistry-system \
+export AR_IP=$(kubectl get svc agentregistry-enterprise-server -n agentregistry-system \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
-export ARCTL_API_BASE_URL="http://${AR_IP}:8080"
+export ARCTL_API_BASE_URL="http://${AR_IP}:12121"
 echo "agentregistry API: ${ARCTL_API_BASE_URL}"
-echo "agentregistry UI:  http://${AR_IP}:8080"
+echo "agentregistry UI:  http://${AR_IP}:12121"
 
 arctl version --json   # arctl_version + server_version should both populate
 ```
 
 ## 2. Install Enterprise Agentgateway
 
-Required for lab 032 (remote MCP through Agentgateway). Installing it now keeps the baseline complete - every subsequent unit-of-value lab can assume it's there.
+Required for lab 032 (remote MCP through agentgateway). Installing it now keeps the baseline complete - every subsequent unit-of-value lab can assume it's there.
 
 ```bash
-# Kubernetes Gateway API CRDs (idempotent; skip if already installed by another chart)
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml
+export AGENTGATEWAY_LICENSE_KEY=<agentgateway-license-key>
+```
 
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml
+```
+
+```bash
 # Agentgateway CRDs
 helm upgrade --install agentgateway-crds \
   oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
   --version v2026.6.1 \
   --namespace agentgateway-system \
   --create-namespace
-
-# Agentgateway controller
-helm upgrade --install agentgateway \
-  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
-  --version v2026.6.1 \
-  --namespace agentgateway-system
 ```
 
-> Enterprise Agentgateway is **license-gated** for some features (token exchange, OIDC enforcement, etc.). The basic install above works without a license; the licensed surface is documented in the kagent-enterprise workshop. If you have a license key, follow the agentgateway portion of [kagent-enterprise/004](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/004-install-enterprise-agentgateway.md) for the values block.
+```bash
+# Agentgateway controller
+helm upgrade --install enterprise-agentgateway \
+  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
+  --version v2026.6.1 \
+  --namespace agentgateway-system \
+  --set-string licensing.licenseKey="${AGENTGATEWAY_LICENSE_KEY}"
+```
+
+> Enterprise Agentgateway requires a Solo Enterprise for agentgateway license key. If you do not have one, contact your Solo account representative before running this step.
 
 Verify:
 
@@ -222,6 +234,11 @@ done
 ### Verify either path
 
 ```bash
+# Re-export in case you opened a new shell or still have an old :8080 value.
+export AR_IP=$(kubectl get svc agentregistry-enterprise-server -n agentregistry-system \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
+export ARCTL_API_BASE_URL="http://${AR_IP}:12121"
+
 arctl version --json
 arctl get providers   # empty list is fine - runtimes are registered in 010 / 020
 arctl user whoami
@@ -264,12 +281,13 @@ This lab installs the baseline that every unit-of-value lab relies on. Don't cle
 Component-level rollback (in case the install partially failed and you want to redo):
 
 ```bash
-helm uninstall agentgateway      -n agentgateway-system 2>/dev/null || true
-helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
+helm uninstall enterprise-agentgateway -n agentgateway-system 2>/dev/null || true
+helm uninstall agentgateway-crds       -n agentgateway-system 2>/dev/null || true
 
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
 
 rm -f /tmp/are-values.yaml
+unset AGENTGATEWAY_LICENSE_KEY
 ```
 
 The namespaces from 001 / 002 stay - re-run this lab to reinstall.
@@ -279,10 +297,11 @@ The namespaces from 001 / 002 stay - re-run this lab to reinstall.
 | Symptom | Fix |
 |---|---|
 | Agentregistry pods stuck in `Pending` on storage | No default `StorageClass`. Go back to [001 step 1](001-baseline-setup.md#1-confirm-the-cluster-is-ready). |
-| `arctl version --json` shows empty `server_version` | `ARCTL_API_BASE_URL` is unset or wrong. `export ARCTL_API_BASE_URL=http://${AR_IP}:8080`. |
+| `arctl version --json` shows empty `server_version` | `ARCTL_API_BASE_URL` is unset or wrong. `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`. |
+| `arctl user whoami` shows local token info only and `registry unreachable` | Your OIDC login worked, but `ARCTL_API_BASE_URL` is stale or wrong. Re-export it with `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`; do not use `:8080` for the `2026.6.1` Service. |
 | `arctl user login` hangs on Entra | The current CLI doesn't pass `scope`. Use the manual device-code flow above. |
 | UI shows "no mapped roles" after login | The `groups` claim is missing or the GUID doesn't match `${GROUP_ADMINS}`. Decode your token at <https://jwt.io> and confirm. Re-run 002a/002b if the realm/app-reg config drifted. |
-| Agentgateway controller `CrashLoopBackOff` | Usually a license issue when a licensed feature flag is on. For the bare install above, no license is needed. |
+| Agentgateway controller `CrashLoopBackOff` | Check that `AGENTGATEWAY_LICENSE_KEY` was set and passed with `--set-string licensing.licenseKey=...`. |
 
 ## Next
 
