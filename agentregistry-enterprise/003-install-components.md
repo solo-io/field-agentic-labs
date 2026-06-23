@@ -22,28 +22,32 @@ After this lab + [001](001-baseline-setup.md) + ([002a](002a-setup-oidc-keycloak
 
 - [001 - Baseline Setup](001-baseline-setup.md) completed (cluster, `arctl`, namespace, tools)
 - One of:
- - [002a - Setup OIDC: Keycloak](002a-setup-oidc-keycloak.md), with `OIDC_PROVIDER=keycloak` + the variables exported, **OR**
- - [002b - Setup OIDC: Entra ID](002b-setup-oidc-entra.md), with `OIDC_PROVIDER=entra` + the variables exported
+  - [002a - Setup OIDC: Keycloak](002a-setup-oidc-keycloak.md), with `OIDC_PROVIDER=keycloak` + the variables exported, **OR**
+  - [002b - Setup OIDC: Entra ID](002b-setup-oidc-entra.md), with `OIDC_PROVIDER=entra` + the variables exported
 
 The shell variables you need to have set going in:
 
 ```bash
 # From 002a or 002b
-$OIDC_PROVIDER # "keycloak" or "entra"
+$OIDC_PROVIDER          # "keycloak" or "entra"
 $OIDC_ISSUER
-$OIDC_BACKEND # client ID (Entra GUID, or "are-backend" for Keycloak)
+$OIDC_BACKEND           # client ID (Entra GUID, or "are-backend" for Keycloak)
 $BACKEND_CLIENT_SECRET
-$OIDC_PUBLIC_CLIENT # client ID used by the UI for browser login
-$ARE_CLI_CLIENT_ID # client ID used by arctl user login
-$GROUP_ADMINS # admins group object ID / GUID
+$OIDC_PUBLIC_CLIENT     # client ID used by the UI for browser login
+$ARE_CLI_CLIENT_ID      # client ID used by arctl user login
+$GROUP_ADMINS           # admins group object ID / GUID
 ```
 
 Sanity check:
 
 ```bash
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND BACKEND_CLIENT_SECRET \
- OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS; do
- if [ -z "${!V}" ]; then echo "MISSING: ${V}"; else printf ' OK %-25s %s\n' "${V}" "${!V:0:20}..."; fi
+         OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS; do
+  if [ -z "${!V}" ]; then
+    echo "MISSING: ${V}"
+  else
+    printf '  OK  %-25s %s\n' "${V}" "${!V:0:20}..."
+  fi
 done
 ```
 
@@ -56,46 +60,46 @@ Build the Helm values from your OIDC variables. **Do not commit this file** - it
 ```bash
 cat > /tmp/are-values.yaml <<EOF
 image:
- tag: v2026.5.4
+  tag: v2026.5.4
 
 service:
- type: LoadBalancer
+  type: LoadBalancer
 
 oidc:
- issuer: "${OIDC_ISSUER}"
- clientId: "${OIDC_BACKEND}"
- publicClientId: "${OIDC_PUBLIC_CLIENT}"
- clientSecret: "${BACKEND_CLIENT_SECRET}"
- roleClaim: "groups"
- superuserRole: "${GROUP_ADMINS}"
- insecureSkipVerify: false
+  issuer: "${OIDC_ISSUER}"
+  clientId: "${OIDC_BACKEND}"
+  publicClientId: "${OIDC_PUBLIC_CLIENT}"
+  clientSecret: "${BACKEND_CLIENT_SECRET}"
+  roleClaim: "groups"
+  superuserRole: "${GROUP_ADMINS}"
+  insecureSkipVerify: false
 EOF
 
 # Entra path needs additionalScopes; Keycloak doesn't.
 if [ "${OIDC_PROVIDER}" = "entra" ]; then
- cat >> /tmp/are-values.yaml <<EOF
- additionalScopes: "offline_access api://${OIDC_BACKEND}/agentregistry"
+  cat >> /tmp/are-values.yaml <<EOF
+  additionalScopes: "offline_access api://${OIDC_BACKEND}/agentregistry"
 EOF
 fi
 
 cat >> /tmp/are-values.yaml <<EOF
 
 database:
- postgres:
- bundled:
- enabled: true
+  postgres:
+    bundled:
+      enabled: true
 
 clickhouse:
- enabled: true
+  enabled: true
 
 telemetry:
- enabled: true
+  enabled: true
 
 extraEnvVars:
- - name: OTEL_EXPORTER_OTLP_ENDPOINT
- value: "http://agentregistry-enterprise-telemetry-collector:4317"
- - name: OTEL_SERVICE_NAME
- value: "agentregistry-enterprise"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://agentregistry-enterprise-telemetry-collector:4317"
+  - name: OTEL_SERVICE_NAME
+    value: "agentregistry-enterprise"
 EOF
 ```
 
@@ -103,11 +107,11 @@ Install:
 
 ```bash
 helm upgrade --install agentregistry-enterprise \
- oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
- --version 2026.5.4 \
- --namespace agentregistry-system \
- -f /tmp/are-values.yaml \
- --wait --timeout 5m
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  --namespace agentregistry-system \
+  -f /tmp/are-values.yaml \
+  --wait --timeout 5m
 ```
 
 Verify (all pods 1/1 Running):
@@ -119,22 +123,22 @@ kubectl get pods -n agentregistry-system
 Expected:
 
 ```
-agentregistry-enterprise-<hash> 1/1 Running
-agentregistry-enterprise-clickhouse-shard0-0 1/1 Running
-agentregistry-enterprise-postgresql-<hash> 1/1 Running
-agentregistry-enterprise-telemetry-collector-<hash> 1/1 Running
+agentregistry-enterprise-<hash>                       1/1 Running
+agentregistry-enterprise-clickhouse-shard0-0          1/1 Running
+agentregistry-enterprise-postgresql-<hash>            1/1 Running
+agentregistry-enterprise-telemetry-collector-<hash>   1/1 Running
 ```
 
 Grab the external IP and confirm the API responds:
 
 ```bash
 export AR_IP=$(kubectl get svc agentregistry-enterprise -n agentregistry-system \
- -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
 export ARCTL_API_BASE_URL="http://${AR_IP}:8080"
 echo "agentregistry API: ${ARCTL_API_BASE_URL}"
-echo "agentregistry UI: http://${AR_IP}:8080"
+echo "agentregistry UI:  http://${AR_IP}:8080"
 
-arctl version --json # arctl_version + server_version should both populate
+arctl version --json   # arctl_version + server_version should both populate
 ```
 
 ## 2. Install Enterprise Agentgateway
@@ -147,16 +151,16 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 
 # Agentgateway CRDs
 helm upgrade --install agentgateway-crds \
- oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
- --version v2026.6.1 \
- --namespace agentgateway-system \
- --create-namespace
+  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
+  --version v2026.6.1 \
+  --namespace agentgateway-system \
+  --create-namespace
 
 # Agentgateway controller
 helm upgrade --install agentgateway \
- oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
- --version v2026.6.1 \
- --namespace agentgateway-system
+  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
+  --version v2026.6.1 \
+  --namespace agentgateway-system
 ```
 
 > Enterprise Agentgateway is **license-gated** for some features (token exchange, OIDC enforcement, etc.). The basic install above works without a license; the licensed surface is documented in the kagent-enterprise workshop. If you have a license key, follow the agentgateway portion of [kagent-enterprise/004](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/004-install-enterprise-agentgateway.md) for the values block.
@@ -175,8 +179,8 @@ You should see the `enterprise-agentgateway` controller pod Ready.
 
 ```bash
 arctl user login \
- --oidc-issuer-url "${OIDC_ISSUER}" \
- --oidc-client-id "${ARE_CLI_CLIENT_ID}"
+  --oidc-issuer-url "${OIDC_ISSUER}" \
+  --oidc-client-id "${ARE_CLI_CLIENT_ID}"
 ```
 
 This opens a browser to Keycloak; sign in as `admin` / `admin`. The token is cached in your OS keychain and `arctl` refreshes it automatically.
@@ -187,26 +191,30 @@ The current `arctl user login` doesn't pass a `scope` parameter, which Entra req
 
 ```bash
 DEVICE=$(curl -s -X POST \
- "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/devicecode" \
- -H "Content-Type: application/x-www-form-urlencoded" \
- -d "client_id=${ARE_CLI_CLIENT_ID}&scope=openid+api://${ARE_BACKEND_CLIENT_ID}/agentregistry")
+  "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/devicecode" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=${ARE_CLI_CLIENT_ID}&scope=openid+api://${ARE_BACKEND_CLIENT_ID}/agentregistry")
 echo "${DEVICE}" | jq
 
 # Open the URL + enter the code in your browser, then:
 DEVICE_CODE=$(echo "${DEVICE}" | jq -r .device_code)
 
 while true; do
- RESP=$(curl -s -X POST \
- "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
- -H "Content-Type: application/x-www-form-urlencoded" \
- -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=${ARE_CLI_CLIENT_ID}&device_code=${DEVICE_CODE}")
- ERR=$(echo "${RESP}" | jq -r '.error // "none"')
- if [ "${ERR}" = "none" ]; then
- export ARCTL_API_TOKEN=$(echo "${RESP}" | jq -r '.access_token')
- echo "Token obtained"; break
- elif [ "${ERR}" = "authorization_pending" ]; then sleep 5
- else echo "${RESP}" | jq; break
- fi
+  RESP=$(curl -s -X POST \
+    "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=${ARE_CLI_CLIENT_ID}&device_code=${DEVICE_CODE}")
+  ERR=$(echo "${RESP}" | jq -r '.error // "none"')
+  if [ "${ERR}" = "none" ]; then
+    export ARCTL_API_TOKEN=$(echo "${RESP}" | jq -r '.access_token')
+    echo "Token obtained"
+    break
+  elif [ "${ERR}" = "authorization_pending" ]; then
+    sleep 5
+  else
+    echo "${RESP}" | jq
+    break
+  fi
 done
 ```
 
@@ -214,7 +222,7 @@ done
 
 ```bash
 arctl version --json
-arctl get providers # empty list is fine - runtimes are registered in 010 / 020
+arctl get providers   # empty list is fine - runtimes are registered in 010 / 020
 arctl user whoami
 ```
 
@@ -225,7 +233,7 @@ arctl user whoami
 ```bash
 # agentregistry
 kubectl get pods -n agentregistry-system
-arctl version --json # both versions populated
+arctl version --json   # both versions populated
 
 # Enterprise Agentgateway
 kubectl get pods -n agentgateway-system
@@ -255,7 +263,7 @@ This lab installs the baseline that every unit-of-value lab relies on. Don't cle
 Component-level rollback (in case the install partially failed and you want to redo):
 
 ```bash
-helm uninstall agentgateway -n agentgateway-system 2>/dev/null || true
+helm uninstall agentgateway      -n agentgateway-system 2>/dev/null || true
 helm uninstall agentgateway-crds -n agentgateway-system 2>/dev/null || true
 
 helm uninstall agentregistry-enterprise -n agentregistry-system 2>/dev/null || true
