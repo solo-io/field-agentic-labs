@@ -8,6 +8,7 @@ The first of two mandatory setup labs. This lab takes you from "I have a Kuberne
 - Create the `agentregistry-system` namespace
 - Install the Enterprise `arctl` CLI
 - Make sure your shell has the tools the rest of the workshop expects (`kubectl`, `helm`, `openssl`, `envsubst`)
+- Confirm a `LoadBalancer` Service can actually get an external address (managed clusters: yes; bare-metal: install MetalLB / kube-vip first; `kind`: use `cloud-provider-kind`). The reason why is for your OIDC providers redirect to log into agentregistry with said OIDC provider.
 
 ## What This Lab Does **Not** Do
 
@@ -37,24 +38,11 @@ kubectl get nodes
 kubectl get storageclass
 ```
 
-You need at least one `StorageClass` with `(default)` in the output - agentregistry's bundled PostgreSQL and ClickHouse both request PVs. If none is marked default, mark one before continuing:
+You need at least one `StorageClass` with `(default)` in the output as agentregistry's bundled PostgreSQL and ClickHouse both request PVs. If none is marked default, mark one before continuing:
 
 ```bash
 kubectl annotate storageclass <name> storageclass.kubernetes.io/is-default-class=true
 ```
-
-Confirm a `LoadBalancer` Service can actually get an external address (managed clusters: yes; bare-metal: install MetalLB / kube-vip first; `kind`: use `cloud-provider-kind`):
-
-```bash
-kubectl create deployment lb-smoke --image=nginx
-kubectl expose deployment lb-smoke --port=80 --type=LoadBalancer
-kubectl get svc lb-smoke -w
-# Wait for EXTERNAL-IP to be set, then:
-kubectl delete deployment lb-smoke
-kubectl delete svc        lb-smoke
-```
-
-If `EXTERNAL-IP` stays `<pending>` indefinitely, fix your `LoadBalancer` controller before continuing. The workshop assumes this works.
 
 ## 2. Create the agentregistry Namespace
 

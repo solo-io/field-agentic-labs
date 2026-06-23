@@ -43,10 +43,11 @@ Sanity check:
 ```bash
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND BACKEND_CLIENT_SECRET \
          OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID GROUP_ADMINS; do
-  if [ -z "${!V}" ]; then
+  eval "VALUE=\${${V}:-}"
+  if [ -z "${VALUE}" ]; then
     echo "MISSING: ${V}"
   else
-    printf '  OK  %-25s %s\n' "${V}" "${!V:0:20}..."
+    printf '  OK  %-25s %.20s...\n' "${V}" "${VALUE}"
   fi
 done
 ```

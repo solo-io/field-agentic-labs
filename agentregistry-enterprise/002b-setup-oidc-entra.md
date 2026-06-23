@@ -165,7 +165,8 @@ for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
          TENANT_ID ARE_BACKEND_CLIENT_ID ARE_CLI_CLIENT_ID ARE_UI_CLIENT_ID \
          BACKEND_CLIENT_SECRET SCOPE_ID \
          GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
-  printf '%-25s %s\n' "${V}=" "${!V}"
+  eval "VALUE=\${${V}:-}"
+  printf '%-25s %s\n' "${V}=" "${VALUE}"
 done
 ```
 

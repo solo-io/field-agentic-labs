@@ -35,7 +35,7 @@ What's in the manifest:
 - A `Deployment` running `quay.io/keycloak/keycloak:26.0` in `start-dev` mode (HTTP only, relaxed hostname checks) with admin credentials `admin` / `admin123`
 - A `Service` of type `LoadBalancer` on port `8080`
 
-> The default admin password `admin123` is for a POC. Rotate it (`kubectl set env deployment/keycloak -n keycloak KEYCLOAK_ADMIN_PASSWORD=<new>`) before exposing this to anyone.
+> The default admin password `admin123` is for a POC. Rotate it (`kubectl set env deployment/keycloak -n keycloak KEYCLOAK_ADMIN_PASSWORD=<new>`) if your security team requires it.
 
 ## 3. Wait for the External IP
 
@@ -121,7 +121,8 @@ Confirm:
 ```bash
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID \
          BACKEND_CLIENT_SECRET GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
-  printf '%-25s %s\n' "${V}=" "${!V}"
+  eval "VALUE=\${${V}:-}"
+  printf '%-25s %s\n' "${V}=" "${VALUE}"
 done
 ```
 
