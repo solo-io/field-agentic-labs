@@ -2,7 +2,7 @@
 # HTTPRoutes agentregistry creates in its install namespace.
 #
 # The `agentregistry.solo.io/runtime` label binds these Kubernetes resources
-# to an agentregistry `Virtual` runtime. Used by 073-remote-mcp-through-agentgateway.md.
+# to an agentregistry `Virtual` runtime. Used by 032-mcp-through-agentgateway.md.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:

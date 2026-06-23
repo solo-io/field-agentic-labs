@@ -1,6 +1,6 @@
 # The Virtual runtime is seeded automatically by an agentregistry install.
 # Apply this only if `arctl get runtime virtual-default` returns NotFound.
-# Used by 073-remote-mcp-through-agentgateway.md.
+# Used by 032-mcp-through-agentgateway.md.
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:

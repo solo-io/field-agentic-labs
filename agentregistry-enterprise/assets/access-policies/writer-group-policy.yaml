@@ -1,5 +1,5 @@
 # Grants registry write actions to a non-admin group so members can stage
-# new catalog assets for admin approval (used by 081-approval-workflows.md).
+# new catalog assets for admin approval (used by 051-approval-workflows.md).
 #
 # Set GROUP_GUID to the OIDC principal you want to grant write access to:
 #
