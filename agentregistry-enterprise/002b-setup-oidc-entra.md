@@ -239,4 +239,4 @@ Full workshop teardown is in [099 - Cleanup](099-cleanup.md).
 
 ## Next
 
-- [003 - Install Components](003-install-components.md) (agentregistry + kagent + Enterprise Agentgateway)
+- [003 - Install Components](003-install-components.md) (agentregistry + Enterprise Agentgateway)
