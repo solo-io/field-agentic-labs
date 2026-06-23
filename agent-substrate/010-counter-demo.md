@@ -36,7 +36,7 @@ Wait for the golden snapshot:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/counter \
- -n ate-demo-counter --timeout=5m
+  -n ate-demo-counter --timeout=5m
 ```
 
 What got created:
@@ -78,7 +78,7 @@ kubectl port-forward -n ate-system svc/atenet-router 8000:80
 
 ```bash
 curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
- http://localhost:8000
+  http://localhost:8000
 ```
 
 The first request is the most interesting one - the router pauses traffic, the control plane claims a warm worker from the `counter` `WorkerPool`, `atelet` + `ateom` restore the snapshot into the sandbox, and the request is forwarded to the (now-resumed) actor.
@@ -104,7 +104,7 @@ Send another request:
 
 ```bash
 curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
- http://localhost:8000
+  http://localhost:8000
 ```
 
 The router resumes the actor from the snapshot - **possibly on a different worker pod** - and the counter **continues** from where it left off instead of resetting. That's the entire point of Substrate.
@@ -134,8 +134,8 @@ You'll see the `Count` log lines preserve their value across the suspend/resume 
 Delete the actor (only suspended actors can be deleted):
 
 ```bash
-kubectl ate suspend actor my-counter-1 # if still running
-kubectl ate delete actor my-counter-1
+kubectl ate suspend actor my-counter-1   # if still running
+kubectl ate delete  actor my-counter-1
 ```
 
 Remove the demo resources (namespace, `WorkerPool`, `ActorTemplate`):

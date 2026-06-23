@@ -19,7 +19,7 @@ Register AWS Bedrock AgentCore as an agentregistry **Runtime** and deploy the in
 
 ```bash
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export AWS_REGION=us-east-1 # adjust if you want a different region
+export AWS_REGION=us-east-1   # adjust if you want a different region
 ```
 
 ## 1. Generate the IAM CloudFormation Template
@@ -36,26 +36,26 @@ Note the **External ID** and **Role Name** printed at the bottom of the template
 
 ```bash
 aws cloudformation create-stack \
- --stack-name agentregistry-access-role \
- --template-body file:///tmp/agentregistry-cf.yaml \
- --capabilities CAPABILITY_NAMED_IAM \
- --region "${AWS_REGION}"
+  --stack-name agentregistry-access-role \
+  --template-body file:///tmp/agentregistry-cf.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region "${AWS_REGION}"
 
 aws cloudformation wait stack-create-complete \
- --stack-name agentregistry-access-role \
- --region "${AWS_REGION}"
+  --stack-name agentregistry-access-role \
+  --region "${AWS_REGION}"
 ```
 
 Capture the outputs:
 
 ```bash
 export AWS_ROLE_ARN=$(aws cloudformation describe-stacks \
- --stack-name agentregistry-access-role --region "${AWS_REGION}" \
- --query "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue" --output text)
+  --stack-name agentregistry-access-role --region "${AWS_REGION}" \
+  --query "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue" --output text)
 
 export AWS_EXTERNAL_ID=$(aws cloudformation describe-stacks \
- --stack-name agentregistry-access-role --region "${AWS_REGION}" \
- --query "Stacks[0].Outputs[?OutputKey=='ExternalId'].OutputValue" --output text)
+  --stack-name agentregistry-access-role --region "${AWS_REGION}" \
+  --query "Stacks[0].Outputs[?OutputKey=='ExternalId'].OutputValue" --output text)
 
 echo "AWS_ROLE_ARN=${AWS_ROLE_ARN}"
 echo "AWS_EXTERNAL_ID=${AWS_EXTERNAL_ID}"
@@ -68,13 +68,13 @@ cat > /tmp/aws-runtime.yaml <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
- name: AWS
+  name: AWS
 spec:
- type: BedrockAgentCore
- config:
- roleArn: "${AWS_ROLE_ARN}"
- externalId: "${AWS_EXTERNAL_ID}"
- region: "${AWS_REGION}"
+  type: BedrockAgentCore
+  config:
+    roleArn: "${AWS_ROLE_ARN}"
+    externalId: "${AWS_EXTERNAL_ID}"
+    region: "${AWS_REGION}"
 EOF
 
 arctl apply -f /tmp/aws-runtime.yaml
@@ -115,12 +115,12 @@ AgentCore writes to a log group named `/aws/bedrock-agentcore/runtimes/<runtime-
 
 ```bash
 aws logs describe-log-groups \
- --region "${AWS_REGION}" \
- --log-group-name-prefix /aws/bedrock-agentcore/runtimes/
+  --region "${AWS_REGION}" \
+  --log-group-name-prefix /aws/bedrock-agentcore/runtimes/
 
 # Tail the active group:
 aws logs tail "/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT" \
- --region "${AWS_REGION}" --follow
+  --region "${AWS_REGION}" --follow
 ```
 
 ## Cleanup
@@ -130,17 +130,17 @@ Return the cluster + AWS account to the baseline:
 ```bash
 # agentregistry side: delete the deployment + agent + runtime
 arctl delete deployment demochatbot
-arctl delete agent demochatbot --version 1.0.4
-arctl delete runtime AWS
+arctl delete agent      demochatbot --version 1.0.4
+arctl delete runtime    AWS
 
 # AWS side: delete the CloudFormation stack (removes the IAM role)
 aws cloudformation delete-stack \
- --stack-name agentregistry-access-role \
- --region "${AWS_REGION}"
+  --stack-name agentregistry-access-role \
+  --region "${AWS_REGION}"
 
 aws cloudformation wait stack-delete-complete \
- --stack-name agentregistry-access-role \
- --region "${AWS_REGION}"
+  --stack-name agentregistry-access-role \
+  --region "${AWS_REGION}"
 
 # Local temp files
 rm -f /tmp/agentregistry-cf.yaml /tmp/aws-runtime.yaml

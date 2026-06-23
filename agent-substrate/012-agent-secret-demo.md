@@ -28,7 +28,7 @@ Wait for the template:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/agent-secret \
- -n ate-demo-secret-agent-v2 --timeout=5m
+  -n ate-demo-secret-agent-v2 --timeout=5m
 ```
 
 ## 2. Scale the Worker Pool to 8
@@ -37,7 +37,7 @@ To make multiplexing visible later, scale the physical pool up:
 
 ```bash
 kubectl patch workerpool agent-secret -n ate-demo-secret-agent-v2 \
- --type='merge' -p '{"spec":{"replicas":8}}'
+  --type='merge' -p '{"spec":{"replicas":8}}'
 ```
 
 Wait for the warm pods to land:
@@ -89,7 +89,7 @@ Create 23 more actors:
 
 ```bash
 for i in {001..023}; do
- kubectl ate create actor session-$i --template ate-demo-secret-agent-v2/agent-secret
+  kubectl ate create actor session-$i --template ate-demo-secret-agent-v2/agent-secret
 done
 ```
 
@@ -97,12 +97,12 @@ Now pulse traffic at them in three waves of 8 (one wave per `WorkerPool` capacit
 
 ```bash
 for wave in 0 1 2; do
- echo "Triggering Wave $((wave + 1))..."
- for i in {1..8}; do
- num=$(printf "%03d" $((wave * 8 + i)))
- curl -s -H "Host: session-$num.actors.resources.substrate.k8s.io" http://localhost:8000 &
- done
- sleep 8 # 7s linger + 1s buffer
+  echo "Triggering Wave $((wave + 1))..."
+  for i in {1..8}; do
+    num=$(printf "%03d" $((wave * 8 + i)))
+    curl -s -H "Host: session-$num.actors.resources.substrate.k8s.io" http://localhost:8000 &
+  done
+  sleep 8   # 7s linger + 1s buffer
 done
 ```
 
@@ -115,11 +115,11 @@ With this pattern you can scale the **logical** actor count to thousands (try th
 ```bash
 # Delete the 24 actors
 for i in {001..023}; do
- kubectl ate suspend actor session-$i 2>/dev/null
- kubectl ate delete actor session-$i 2>/dev/null
+  kubectl ate suspend actor session-$i 2>/dev/null
+  kubectl ate delete  actor session-$i 2>/dev/null
 done
 kubectl ate suspend actor my-agent
-kubectl ate delete actor my-agent
+kubectl ate delete  actor my-agent
 
 # Remove the demo
 ./hack/install-ate.sh --delete-demo-agent-secret

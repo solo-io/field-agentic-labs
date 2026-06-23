@@ -2,8 +2,8 @@
 #
 # Set GITHUB_COPILOT_MCP_TOKEN and apply with envsubst:
 #
-# export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
-# envsubst < assets/mcp/agentgateway/github-copilot-remote-mcp.yaml | arctl apply -f -
+#   export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
+#   envsubst < assets/mcp/agentgateway/github-copilot-remote-mcp.yaml | arctl apply -f -
 #
 # For demos, rendering the token directly into the catalog entry is fine.
 # For production, use the secret mechanism supported by your agentregistry

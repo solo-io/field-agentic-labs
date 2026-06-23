@@ -37,8 +37,8 @@ GKE has a supported knob for exactly this: `--enable-kubernetes-unstable-apis`. 
 
 ```bash
 gcloud container clusters update "$CLUSTER_NAME" \
- --location="$CLUSTER_LOCATION" --project="$PROJECT_ID" \
- --enable-kubernetes-unstable-apis=certificates.k8s.io/v1beta1/podcertificaterequests,certificates.k8s.io/v1beta1/clustertrustbundles
+  --location="$CLUSTER_LOCATION" --project="$PROJECT_ID" \
+  --enable-kubernetes-unstable-apis=certificates.k8s.io/v1beta1/podcertificaterequests,certificates.k8s.io/v1beta1/clustertrustbundles
 ```
 
 This is what makes GKE the **supported managed path** for Substrate today.

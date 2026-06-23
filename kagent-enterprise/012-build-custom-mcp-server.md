@@ -48,12 +48,12 @@ Configure Claude Desktop to use it. On macOS edit `~/Library/Application Support
 
 ```json
 {
- "mcpServers": {
- "pharma-server": {
- "command": "python",
- "args": ["/absolute/path/to/assets/mcp-server-example/pharma_mcp_server.py"]
- }
- }
+  "mcpServers": {
+    "pharma-server": {
+      "command": "python",
+      "args": ["/absolute/path/to/assets/mcp-server-example/pharma_mcp_server.py"]
+    }
+  }
 }
 ```
 
@@ -97,22 +97,22 @@ This is the same pattern the OBO lab uses for [`llm-obo-proxy/deployment.yaml`](
 apiVersion: kagent.dev/v1alpha2
 kind: MCPServer
 metadata:
- name: pharma-mcp-server
- namespace: kagent
+  name: pharma-mcp-server
+  namespace: kagent
 spec:
- deployment:
- image: python:3.13-slim
- cmd: /bin/sh
- args:
- - -c
- - "cd /app && pip install --no-cache-dir mcp && python pharma_mcp_server.py"
- volumes:
- - name: code
- configMap: { name: pharma-mcp-code }
- volumeMounts:
- - { name: code, mountPath: /app }
- stdioTransport: {}
- transportType: stdio
+  deployment:
+    image: python:3.13-slim
+    cmd: /bin/sh
+    args:
+      - -c
+      - "cd /app && pip install --no-cache-dir mcp && python pharma_mcp_server.py"
+    volumes:
+      - name: code
+        configMap: { name: pharma-mcp-code }
+    volumeMounts:
+      - { name: code, mountPath: /app }
+  stdioTransport: {}
+  transportType: stdio
 ```
 
 …and you'd `kubectl create configmap pharma-mcp-code --from-file=...` ahead of time.
@@ -133,20 +133,20 @@ Build, push, and reference it:
 
 ```bash
 docker buildx build --platform linux/amd64 \
- -t <your-registry>/pharma-mcp:0.1.0 \
- --push assets/mcp-server-example/
+  -t <your-registry>/pharma-mcp:0.1.0 \
+  --push assets/mcp-server-example/
 
 kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: MCPServer
 metadata:
- name: pharma-mcp-server
- namespace: kagent
+  name: pharma-mcp-server
+  namespace: kagent
 spec:
- deployment:
- image: <your-registry>/pharma-mcp:0.1.0
- stdioTransport: {}
- transportType: stdio
+  deployment:
+    image: <your-registry>/pharma-mcp:0.1.0
+  stdioTransport: {}
+  transportType: stdio
 EOF
 ```
 
@@ -155,13 +155,13 @@ Then point any `Declarative` Agent at it the same way [040](010-mcp-connection-a
 ```yaml
 tools:
 - type: McpServer
- mcpServer:
- name: pharma-mcp-server
- kind: MCPServer
- toolNames:
- - check_drug_interactions
- - get_medication_info
- - search_clinical_trials
+  mcpServer:
+    name: pharma-mcp-server
+    kind: MCPServer
+    toolNames:
+    - check_drug_interactions
+    - get_medication_info
+    - search_clinical_trials
 ```
 
 ## Cleanup
@@ -171,7 +171,7 @@ If you deployed the pharma server as an MCPServer (step 3, Option A or B):
 ```bash
 kubectl delete mcpserver pharma-mcp-server -n kagent --ignore-not-found
 # If you used Option A (ConfigMap), also:
-kubectl delete configmap pharma-mcp-code -n kagent --ignore-not-found
+kubectl delete configmap pharma-mcp-code   -n kagent --ignore-not-found
 ```
 
 If you only ran the local Claude Desktop integration in step 2, there's nothing to clean up on the cluster. Just remove the `pharma-server` entry from `~/Library/Application Support/Claude/claude_desktop_config.json` and restart Claude Desktop.

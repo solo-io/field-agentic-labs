@@ -7,14 +7,14 @@ This appendix walks through deploying the OSS kagent build from the `eitanya/ope
 ## Architecture
 
 ```
-OpenShell Gateway (NVIDIA) ── StatefulSet in `openshell` ns
- │
- │ gRPC :8080 (must be reachable before kagent starts)
- ▼
-Agent Sandbox Controller ── StatefulSet in `agent-sandbox-system` ns
- │ (reconciles sandboxes.agents.x-k8s.io CRs)
- ▼
-Kagent (with OpenShell integration) ── kagent controller + UI + agents in `kagent` ns
+OpenShell Gateway (NVIDIA)            ── StatefulSet in `openshell` ns
+  │
+  │ gRPC :8080 (must be reachable before kagent starts)
+  ▼
+Agent Sandbox Controller              ── StatefulSet in `agent-sandbox-system` ns
+  │  (reconciles sandboxes.agents.x-k8s.io CRs)
+  ▼
+Kagent (with OpenShell integration)   ── kagent controller + UI + agents in `kagent` ns
 ```
 
 The OpenShell gateway **must** be deployed before kagent. The kagent controller will `CrashLoopBackOff` if it can't reach `openshell.openshell.svc.cluster.local:8080` on startup.
@@ -64,13 +64,13 @@ export OPENSHELL_REGISTRY=us-docker.pkg.dev/<YOUR_PROJECT>/<YOUR_REPO>/openshell
 
 ```bash
 gcloud container clusters describe <CLUSTER_NAME> --region <REGION> \
- --format="json(nodePools[].config.serviceAccount)"
+  --format="json(nodePools[].config.serviceAccount)"
 
 gcloud artifacts repositories add-iam-policy-binding <REPO_NAME> \
- --location=<LOCATION> \
- --member="serviceAccount:<SA_EMAIL>" \
- --role="roles/artifactregistry.reader" \
- --project=<PROJECT>
+  --location=<LOCATION> \
+  --member="serviceAccount:<SA_EMAIL>" \
+  --role="roles/artifactregistry.reader" \
+  --project=<PROJECT>
 ```
 
 > If your node pool uses the `default` compute SA with `devstorage.read_only` (common default), the IAM binding alone is insufficient - you need an `imagePullSecret` (see [Troubleshooting](#imagepullbackoff-403-forbidden)).
@@ -85,13 +85,13 @@ make controller-manifests
 DOCKER_REGISTRY=$DOCKER_REGISTRY \
 DOCKER_REPO=$DOCKER_REPO \
 DOCKER_BUILD_ARGS="--push --platform linux/amd64" \
- make build-controller build-ui build-kagent-adk build-skills-init
+  make build-controller build-ui build-kagent-adk build-skills-init
 
-# app image depends on kagent-adk - must run after
+# app image depends on kagent-adk — must run after
 DOCKER_REGISTRY=$DOCKER_REGISTRY \
 DOCKER_REPO=$DOCKER_REPO \
 DOCKER_BUILD_ARGS="--push --platform linux/amd64" \
- make build-app
+  make build-app
 
 export VERSION=$(git describe --tags --always)
 echo "Image tag: $VERSION"
@@ -112,11 +112,11 @@ cd OpenShell
 export OPENSHELL_TAG=$(git rev-parse --short HEAD)
 
 for COMP in gateway supervisor; do
- DOCKER_PLATFORM=linux/amd64 \
- DOCKER_PUSH=1 \
- IMAGE_REGISTRY=$OPENSHELL_REGISTRY \
- IMAGE_TAG=$OPENSHELL_TAG \
- tasks/scripts/docker-build-image.sh $COMP
+  DOCKER_PLATFORM=linux/amd64 \
+  DOCKER_PUSH=1 \
+  IMAGE_REGISTRY=$OPENSHELL_REGISTRY \
+  IMAGE_TAG=$OPENSHELL_TAG \
+    tasks/scripts/docker-build-image.sh $COMP
 done
 ```
 
@@ -124,24 +124,24 @@ done
 
 ```bash
 helm upgrade --install openshell deploy/helm/openshell \
- -n openshell --create-namespace \
- --set server.disableTls=true \
- --set server.disableGatewayAuth=true \
- --set service.type=ClusterIP \
- --set service.metricsPort=0 \
- --set image.repository=${OPENSHELL_REGISTRY}/gateway \
- --set image.tag=${OPENSHELL_TAG} \
- --set image.pullPolicy=Always \
- --set supervisor.image.repository=${OPENSHELL_REGISTRY}/supervisor \
- --set supervisor.image.tag=${OPENSHELL_TAG} \
- --set server.sandboxImagePullPolicy=IfNotPresent
+  -n openshell --create-namespace \
+  --set server.disableTls=true \
+  --set server.disableGatewayAuth=true \
+  --set service.type=ClusterIP \
+  --set service.metricsPort=0 \
+  --set image.repository=${OPENSHELL_REGISTRY}/gateway \
+  --set image.tag=${OPENSHELL_TAG} \
+  --set image.pullPolicy=Always \
+  --set supervisor.image.repository=${OPENSHELL_REGISTRY}/supervisor \
+  --set supervisor.image.tag=${OPENSHELL_TAG} \
+  --set server.sandboxImagePullPolicy=IfNotPresent
 ```
 
 ### Create the SSH Handshake Secret
 
 ```bash
 kubectl -n openshell create secret generic openshell-ssh-handshake \
- --from-literal=secret=$(openssl rand -hex 32)
+  --from-literal=secret=$(openssl rand -hex 32)
 ```
 
 ### Apply the Sandbox CRD
@@ -164,12 +164,12 @@ Expected:
 
 ```
 # openshell namespace
-NAME READY STATUS RESTARTS AGE
-openshell-0 1/1 Running 0 60s
+NAME          READY   STATUS    RESTARTS   AGE
+openshell-0   1/1     Running   0          60s
 
 # agent-sandbox-system namespace
-NAME READY STATUS RESTARTS AGE
-agent-sandbox-controller-0 1/1 Running 0 45s
+NAME                         READY   STATUS    RESTARTS   AGE
+agent-sandbox-controller-0   1/1     Running   0          45s
 ```
 
 ## 4. Install Kagent OSS
@@ -178,20 +178,20 @@ agent-sandbox-controller-0 1/1 Running 0 45s
 cd kagent
 
 helm install kagent-crds ./helm/kagent-crds/ \
- --namespace kagent --create-namespace \
- --wait --timeout 5m
+  --namespace kagent --create-namespace \
+  --wait --timeout 5m
 
 helm install kagent ./helm/kagent/ \
- --namespace kagent --create-namespace \
- --timeout 5m --wait \
- --set registry=$DOCKER_REGISTRY \
- --set tag=$VERSION \
- --set imagePullPolicy=Always \
- --set controller.image.pullPolicy=Always \
- --set ui.image.pullPolicy=Always \
- --set ui.service.type=LoadBalancer \
- --set providers.default=anthropic \
- --set providers.anthropic.apiKey=<YOUR_ANTHROPIC_API_KEY>
+  --namespace kagent --create-namespace \
+  --timeout 5m --wait \
+  --set registry=$DOCKER_REGISTRY \
+  --set tag=$VERSION \
+  --set imagePullPolicy=Always \
+  --set controller.image.pullPolicy=Always \
+  --set ui.image.pullPolicy=Always \
+  --set ui.service.type=LoadBalancer \
+  --set providers.default=anthropic \
+  --set providers.anthropic.apiKey=<YOUR_ANTHROPIC_API_KEY>
 ```
 
 Per-provider flags:
@@ -212,24 +212,24 @@ kubectl get pods -n kagent
 Expected (all 1/1):
 
 ```
-NAME READY STATUS
-kagent-controller-<hash> 1/1 Running
-kagent-ui-<hash> 1/1 Running
-kagent-kmcp-controller-manager-<hash> 1/1 Running
-kagent-postgresql-<hash> 1/1 Running
-kagent-grafana-mcp-<hash> 1/1 Running
-kagent-querydoc-<hash> 1/1 Running
-kagent-tools-<hash> 1/1 Running
-k8s-agent-<hash> 1/1 Running
-istio-agent-<hash> 1/1 Running
-kgateway-agent-<hash> 1/1 Running
-promql-agent-<hash> 1/1 Running
-observability-agent-<hash> 1/1 Running
-helm-agent-<hash> 1/1 Running
-argo-rollouts-conversion-agent-<hash> 1/1 Running
-cilium-policy-agent-<hash> 1/1 Running
-cilium-manager-agent-<hash> 1/1 Running
-cilium-debug-agent-<hash> 1/1 Running
+NAME                                              READY   STATUS
+kagent-controller-<hash>                          1/1     Running
+kagent-ui-<hash>                                  1/1     Running
+kagent-kmcp-controller-manager-<hash>             1/1     Running
+kagent-postgresql-<hash>                          1/1     Running
+kagent-grafana-mcp-<hash>                         1/1     Running
+kagent-querydoc-<hash>                            1/1     Running
+kagent-tools-<hash>                               1/1     Running
+k8s-agent-<hash>                                  1/1     Running
+istio-agent-<hash>                                1/1     Running
+kgateway-agent-<hash>                             1/1     Running
+promql-agent-<hash>                               1/1     Running
+observability-agent-<hash>                        1/1     Running
+helm-agent-<hash>                                 1/1     Running
+argo-rollouts-conversion-agent-<hash>             1/1     Running
+cilium-policy-agent-<hash>                        1/1     Running
+cilium-manager-agent-<hash>                       1/1     Running
+cilium-debug-agent-<hash>                         1/1     Running
 ```
 
 Controller logs:
@@ -275,13 +275,13 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: AgentHarness
 metadata:
- name: my-sandbox
- namespace: kagent
+  name: my-sandbox
+  namespace: kagent
 spec:
- backend: openclaw
- image: ${OPENCLAW_SANDBOX_IMAGE}
- modelConfigRef: default-model-config
- description: "my openclaw agent"
+  backend: openclaw
+  image: ${OPENCLAW_SANDBOX_IMAGE}
+  modelConfigRef: default-model-config
+  description: "my openclaw agent"
 EOF
 
 kubectl get sandboxes -n kagent
@@ -293,10 +293,10 @@ On GKE amd64 nodes, the OpenShell supervisor may need privileged access to creat
 
 ```bash
 kubectl patch sandboxes.agents.x-k8s.io kagent-my-sandbox -n openshell --type=json \
- -p='[
- {"op":"add","path":"/spec/podTemplate/spec/containers/0/securityContext/privileged","value":true},
- {"op":"add","path":"/spec/podTemplate/spec/containers/0/securityContext/allowPrivilegeEscalation","value":true}
- ]'
+  -p='[
+    {"op":"add","path":"/spec/podTemplate/spec/containers/0/securityContext/privileged","value":true},
+    {"op":"add","path":"/spec/podTemplate/spec/containers/0/securityContext/allowPrivilegeEscalation","value":true}
+  ]'
 
 kubectl delete pod kagent-my-sandbox -n openshell --wait=false
 ```
@@ -314,8 +314,8 @@ Channels (Telegram, Discord, Slack) only work with the `openclaw` or `nemoclaw` 
 
 ```bash
 kubectl -n kagent create secret generic telegram-credentials \
- --from-literal=bot-token='<your-bot-token>' \
- --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=bot-token='<your-bot-token>' \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 #### Create the Sandbox
@@ -325,24 +325,24 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: Sandbox
 metadata:
- name: my-claw
- namespace: kagent
+  name: my-claw
+  namespace: kagent
 spec:
- backend: openclaw
- image: ${OPENCLAW_SANDBOX_IMAGE}
- modelConfigRef: default-model-config
- description: "my openclaw agent"
- channels:
- - name: telegram
- type: telegram
- telegram:
- allowedUserIDs:
- - "your-telegram-chat-id"
- botToken:
- valueFrom:
- type: Secret
- name: telegram-credentials
- key: bot-token
+  backend: openclaw
+  image: ${OPENCLAW_SANDBOX_IMAGE}
+  modelConfigRef: default-model-config
+  description: "my openclaw agent"
+  channels:
+  - name: telegram
+    type: telegram
+    telegram:
+      allowedUserIDs:
+      - "your-telegram-chat-id"
+      botToken:
+        valueFrom:
+          type: Secret
+          name: telegram-credentials
+          key: bot-token
 EOF
 ```
 
@@ -370,10 +370,10 @@ EOF
 kubectl get pods -n openshell
 
 kubectl run -it --rm debug --image=busybox --restart=Never -- \
- nslookup openshell.openshell.svc.cluster.local
+  nslookup openshell.openshell.svc.cluster.local
 
 kubectl run -it --rm debug --image=busybox --restart=Never -- \
- wget -qO- --timeout=5 http://openshell.openshell.svc.cluster.local:8080/healthz
+  wget -qO- --timeout=5 http://openshell.openshell.svc.cluster.local:8080/healthz
 ```
 
 If OpenShell was deployed *after* kagent, restart the controller:
@@ -390,16 +390,16 @@ The GKE nodes can't pull from your registry. Two fixes:
 
 ```bash
 kubectl create secret docker-registry gar-pull-secret \
- --namespace kagent \
- --docker-server=us-docker.pkg.dev \
- --docker-username=oauth2accesstoken \
- --docker-password="$(gcloud auth print-access-token)"
+  --namespace kagent \
+  --docker-server=us-docker.pkg.dev \
+  --docker-username=oauth2accesstoken \
+  --docker-password="$(gcloud auth print-access-token)"
 
 kubectl create secret docker-registry gar-pull-secret \
- --namespace openshell \
- --docker-server=us-docker.pkg.dev \
- --docker-username=oauth2accesstoken \
- --docker-password="$(gcloud auth print-access-token)"
+  --namespace openshell \
+  --docker-server=us-docker.pkg.dev \
+  --docker-username=oauth2accesstoken \
+  --docker-password="$(gcloud auth print-access-token)"
 ```
 
 Then add `--set 'imagePullSecrets[0].name=gar-pull-secret'` to the kagent and OpenShell `helm install/upgrade` commands.
@@ -410,10 +410,10 @@ Then add `--set 'imagePullSecrets[0].name=gar-pull-secret'` to the kagent and Op
 
 ```bash
 gcloud artifacts repositories add-iam-policy-binding <REPO> \
- --location=<LOCATION> \
- --member="serviceAccount:<NODE_SA_EMAIL>" \
- --role="roles/artifactregistry.reader" \
- --project=<PROJECT>
+  --location=<LOCATION> \
+  --member="serviceAccount:<NODE_SA_EMAIL>" \
+  --role="roles/artifactregistry.reader" \
+  --project=<PROJECT>
 ```
 
 ### Agent pods stuck at 0/1
@@ -427,8 +427,8 @@ kubectl logs -n kagent <agent-pod-name>
 ## Cleanup
 
 ```bash
-helm uninstall kagent -n kagent 2>/dev/null || true
-helm uninstall kagent-crds -n kagent 2>/dev/null || true
+helm uninstall kagent       -n kagent 2>/dev/null || true
+helm uninstall kagent-crds  -n kagent 2>/dev/null || true
 kubectl delete namespace kagent 2>/dev/null || true
 
 helm uninstall openshell -n openshell 2>/dev/null || true

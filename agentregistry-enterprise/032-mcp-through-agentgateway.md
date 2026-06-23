@@ -12,17 +12,17 @@ This is the right pattern when:
 
 ```
 client
- │
- │ MCP request
- ▼
+  │
+  │ MCP request
+  ▼
 [ Agentgateway Gateway (agentgateway-system) ]
- │
- │ parent HTTPRoute ──▶ delegates /registry to children
- ▼
-[ child HTTPRoute (agentregistry-system) ] ← created by agentregistry
- │
- │ AgentgatewayBackend ← created by agentregistry
- ▼
+  │
+  │ parent HTTPRoute  ──▶  delegates /registry to children
+  ▼
+[ child HTTPRoute (agentregistry-system) ]   ← created by agentregistry
+  │
+  │ AgentgatewayBackend                      ← created by agentregistry
+  ▼
 remote MCP server (https://api.githubcopilot.com/mcp)
 ```
 
@@ -49,9 +49,9 @@ The `agentregistry.solo.io/runtime` label on the parent `Gateway` + parent `HTTP
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md). Step 3 of 003 installs Enterprise Agentgateway with `GatewayClass: enterprise-agentgateway` + the Kubernetes Gateway API CRDs - both required by this lab.
 - A GitHub Copilot MCP access token:
 
- ```bash
- export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
- ```
+  ```bash
+  export GITHUB_COPILOT_MCP_TOKEN="<github-token>"
+  ```
 
 ## 1. Create the Parent Gateway and Route
 
@@ -82,9 +82,9 @@ Expected shape:
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
- name: virtual-default
+  name: virtual-default
 spec:
- type: Virtual
+  type: Virtual
 ```
 
 If it's missing, the seed step didn't run (older installs, fresh installs from before the seed landed, etc.). Apply the asset:
@@ -186,8 +186,8 @@ If the parent route has `hostnames` configured (this lab's doesn't), include the
 
 ```bash
 curl -i \
- -H "Host: mcp.example.com" \
- "http://${AGW_ADDRESS}/registry/github-copilot"
+  -H "Host: mcp.example.com" \
+  "http://${AGW_ADDRESS}/registry/github-copilot"
 ```
 
 ## How This Compares to [031](031-mcp-remote-github-copilot.md)

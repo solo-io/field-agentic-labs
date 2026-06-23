@@ -56,19 +56,19 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
- name: are-admins-read-catalog
+  name: are-admins-read-catalog
 spec:
- description: "Catalog read access for the are-admins group"
- principals:
- - kind: Role
- name: "${GROUP_ADMINS}"
- rules:
- - actions:
- - "registry:read"
- resources:
- - { kind: skill, name: "*" }
- - { kind: server, name: "*" }
- - { kind: prompt, name: "*" }
+  description: "Catalog read access for the are-admins group"
+  principals:
+    - kind: Role
+      name: "${GROUP_ADMINS}"
+  rules:
+    - actions:
+        - "registry:read"
+      resources:
+        - { kind: skill,  name: "*" }
+        - { kind: server, name: "*" }
+        - { kind: prompt, name: "*" }
 EOF
 ```
 
@@ -79,21 +79,21 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
- name: are-admins-catalog-write
+  name: are-admins-catalog-write
 spec:
- description: "Catalog read, publish, and edit access for the are-admins group"
- principals:
- - kind: Role
- name: "${GROUP_ADMINS}"
- rules:
- - actions:
- - "registry:read"
- - "registry:publish"
- - "registry:edit"
- resources:
- - { kind: agent, name: "*" }
- - { kind: server, name: "*" }
- - { kind: runtime, name: "*" }
+  description: "Catalog read, publish, and edit access for the are-admins group"
+  principals:
+    - kind: Role
+      name: "${GROUP_ADMINS}"
+  rules:
+    - actions:
+        - "registry:read"
+        - "registry:publish"
+        - "registry:edit"
+      resources:
+        - { kind: agent,   name: "*" }
+        - { kind: server,  name: "*" }
+        - { kind: runtime, name: "*" }
 EOF
 ```
 
@@ -106,17 +106,17 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
- name: are-admins-k8shelper-chat
+  name: are-admins-k8shelper-chat
 spec:
- description: "Allow are-admins users to invoke the k8shelper agent"
- principals:
- - kind: Role
- name: "${GROUP_ADMINS}"
- rules:
- - actions:
- - "runtime:invoke"
- resources:
- - { kind: agent, name: k8shelper }
+  description: "Allow are-admins users to invoke the k8shelper agent"
+  principals:
+    - kind: Role
+      name: "${GROUP_ADMINS}"
+  rules:
+    - actions:
+        - "runtime:invoke"
+      resources:
+        - { kind: agent, name: k8shelper }
 EOF
 ```
 
@@ -133,17 +133,17 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
- name: k8shelper-github-copilot-tools
+  name: k8shelper-github-copilot-tools
 spec:
- description: "Allow the k8shelper deployment to invoke GitHub Copilot MCP tools"
- principals:
- - kind: Deployment
- name: k8shelper-kagent
- rules:
- - actions:
- - "runtime:invoke"
- resources:
- - { kind: server, name: github-copilot-mcp-server }
+  description: "Allow the k8shelper deployment to invoke GitHub Copilot MCP tools"
+  principals:
+    - kind: Deployment
+      name: k8shelper-kagent
+  rules:
+    - actions:
+        - "runtime:invoke"
+      resources:
+        - { kind: server, name: github-copilot-mcp-server }
 EOF
 ```
 
@@ -154,20 +154,20 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: AccessPolicy
 metadata:
- name: k8shelper-github-copilot-create-issue
+  name: k8shelper-github-copilot-create-issue
 spec:
- description: "Allow the k8shelper deployment to invoke only selected GitHub Copilot MCP tools"
- principals:
- - kind: Deployment
- name: k8shelper-kagent
- rules:
- - actions:
- - "runtime:invoke"
- resources:
- - kind: server
- name: github-copilot-mcp-server
- subresources:
- - tool/create_issue
+  description: "Allow the k8shelper deployment to invoke only selected GitHub Copilot MCP tools"
+  principals:
+    - kind: Deployment
+      name: k8shelper-kagent
+  rules:
+    - actions:
+        - "runtime:invoke"
+      resources:
+        - kind: server
+          name: github-copilot-mcp-server
+          subresources:
+            - tool/create_issue
 EOF
 ```
 
@@ -200,10 +200,10 @@ arctl get runtimes
 Remove any policies you applied above:
 
 ```bash
-arctl delete accesspolicy are-admins-read-catalog 2>/dev/null || true
-arctl delete accesspolicy are-admins-catalog-write 2>/dev/null || true
-arctl delete accesspolicy are-admins-k8shelper-chat 2>/dev/null || true
-arctl delete accesspolicy k8shelper-github-copilot-tools 2>/dev/null || true
+arctl delete accesspolicy are-admins-read-catalog            2>/dev/null || true
+arctl delete accesspolicy are-admins-catalog-write           2>/dev/null || true
+arctl delete accesspolicy are-admins-k8shelper-chat          2>/dev/null || true
+arctl delete accesspolicy k8shelper-github-copilot-tools     2>/dev/null || true
 arctl delete accesspolicy k8shelper-github-copilot-create-issue 2>/dev/null || true
 ```
 

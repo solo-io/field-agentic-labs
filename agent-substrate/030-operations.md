@@ -38,9 +38,9 @@ kubectl ate get actor my-counter-1
 # Wake it up
 kubectl ate resume actor my-counter-1
 
-# Or just send traffic - the atenet router resumes on first request
+# Or just send traffic — the atenet router resumes on first request
 curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
- http://localhost:8000
+  http://localhost:8000
 ```
 
 `resume` returns once the actor is `RUNNING` and bound to a worker IP. From there, `kubectl ate get actor my-counter-1` will show `STATUS_RUNNING`, the `ATEOM POD`, and the `ATEOM IP`.
@@ -61,16 +61,16 @@ Then call `ResumeActor`:
 
 ```bash
 grpcurl -insecure \
- -d '{"actor_id":"<YOUR_ACTOR_ID>"}' \
- localhost:18443 ateapi.Control/ResumeActor
+  -d '{"actor_id":"<YOUR_ACTOR_ID>"}' \
+  localhost:18443 ateapi.Control/ResumeActor
 ```
 
 Check state:
 
 ```bash
 grpcurl -insecure \
- -d '{"actor_id":"<YOUR_ACTOR_ID>"}' \
- localhost:18443 ateapi.Control/GetActor
+  -d '{"actor_id":"<YOUR_ACTOR_ID>"}' \
+  localhost:18443 ateapi.Control/GetActor
 ```
 
 > Replace `<YOUR_ACTOR_ID>` with the actual actor ID - e.g. `my-counter-1`, or for the kagent integration, `ahr-kagent-<your-harness-name>`.
@@ -100,8 +100,8 @@ Full surface is documented in [docs/api-guide.md §5](https://github.com/agent-s
 
 ```bash
 grpcurl -insecure \
- -d '{"actor_id":"my-counter-1","boot":true}' \
- localhost:18443 ateapi.Control/ResumeActor
+  -d '{"actor_id":"my-counter-1","boot":true}' \
+  localhost:18443 ateapi.Control/ResumeActor
 ```
 
 The actor still ends up `STATUS_RUNNING`, but its in-memory counter (if it's the counter demo) is back to zero - because there was no snapshot to restore from.
@@ -113,10 +113,10 @@ If you're running a fleet (the agent-secret Wave Pulse in [052](012-agent-secret
 ```bash
 # Suspend everything currently RUNNING (e.g. before cluster maintenance)
 kubectl ate get actors -o json \
- | jq -r '.items[] | select(.status=="STATUS_RUNNING") | .id' \
- | while read id; do
- kubectl ate suspend actor "$id"
- done
+  | jq -r '.items[] | select(.status=="STATUS_RUNNING") | .id' \
+  | while read id; do
+      kubectl ate suspend actor "$id"
+    done
 ```
 
 > Verify the JSON shape on your version with `kubectl ate get actors -o json | jq '.items[0]'` - field names may differ across releases.

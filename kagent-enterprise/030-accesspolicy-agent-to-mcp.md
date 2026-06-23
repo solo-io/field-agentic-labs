@@ -23,19 +23,19 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha1
 kind: MCPServer
 metadata:
- name: test-mcp-server
- namespace: kagent
- labels:
- kagent.solo.io/waypoint: "true"
+  name: test-mcp-server
+  namespace: kagent
+  labels:
+    kagent.solo.io/waypoint: "true"
 spec:
- deployment:
- image: mcp/everything
- port: 3000
- cmd: npx
- args:
- - "-y"
- - "@modelcontextprotocol/server-github"
- transportType: stdio
+  deployment:
+    image: mcp/everything
+    port: 3000
+    cmd: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-github"
+  transportType: stdio
 EOF
 ```
 
@@ -48,40 +48,40 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
- name: test-access-policy
- namespace: kagent
+  name: test-access-policy
+  namespace: kagent
 spec:
- description: This agent can use a single tool to expand it's Kubernetes knowledge for troubleshooting and deployment
- type: Declarative
- declarative:
- deployment:
- env:
- - name: LOG_LEVEL
- value: debug
- modelConfig: default-model-config
- systemMessage: |-
- You're a friendly and helpful agent that uses the Kubernetes tool to help troubleshooting and deploy environments
+  description: This agent can use a single tool to expand it's Kubernetes knowledge for troubleshooting and deployment
+  type: Declarative
+  declarative:
+    deployment:
+      env:
+        - name: LOG_LEVEL
+          value: debug
+    modelConfig: default-model-config
+    systemMessage: |-
+      You're a friendly and helpful agent that uses the Kubernetes tool to help troubleshooting and deploy environments
 
- # Instructions
+      # Instructions
 
- - If user question is unclear, ask for clarification before running any tools
- - Always be helpful and friendly
- - If you don't know how to answer the question DO NOT make things up
- respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
+      - If user question is unclear, ask for clarification before running any tools
+      - Always be helpful and friendly
+      - If you don't know how to answer the question DO NOT make things up
+        respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
 
- # Response format
- - ALWAYS format your response as Markdown
- - Your response will include a summary of actions you took and an explanation of the result
- tools:
- - type: McpServer
- mcpServer:
- name: test-mcp-server
- kind: MCPServer
- toolNames:
- - search_repositories
- - search_issues
- - search_code
- - search_users
+      # Response format
+      - ALWAYS format your response as Markdown
+      - Your response will include a summary of actions you took and an explanation of the result
+    tools:
+    - type: McpServer
+      mcpServer:
+        name: test-mcp-server
+        kind: MCPServer
+        toolNames:
+        - search_repositories
+        - search_issues
+        - search_code
+        - search_users
 EOF
 ```
 
@@ -106,19 +106,19 @@ kubectl apply -f - <<EOF
 apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
 kind: AccessPolicy
 metadata:
- name: deny-kagent-tool-server-dec
- namespace: kagent
+  name: deny-kagent-tool-server-dec
+  namespace: kagent
 spec:
- from:
- subjects:
- - kind: Agent
- name: test-access-policy
- namespace: kagent
- targetRef:
- kind: MCPServer
- name: test-mcp-server
- tools: ["search_repositories"]
- action: DENY
+  from:
+    subjects:
+    - kind: Agent
+      name: test-access-policy
+      namespace: kagent
+  targetRef:
+    kind: MCPServer
+    name: test-mcp-server
+    tools: ["search_repositories"]
+  action: DENY
 EOF
 ```
 
@@ -158,19 +158,19 @@ kubectl apply -f - <<EOF
 apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
 kind: AccessPolicy
 metadata:
- name: allow-kagent-tool-server-dec
- namespace: kagent
+  name: allow-kagent-tool-server-dec
+  namespace: kagent
 spec:
- from:
- subjects:
- - kind: Agent
- name: test-access-policy
- namespace: kagent
- targetRef:
- kind: MCPServer
- name: test-mcp-server
- tools: ["search_repositories"] # whitelist - only this tool is allowed
- action: ALLOW
+  from:
+    subjects:
+    - kind: Agent
+      name: test-access-policy
+      namespace: kagent
+  targetRef:
+    kind: MCPServer
+    name: test-mcp-server
+    tools: ["search_repositories"]   # whitelist — only this tool is allowed
+  action: ALLOW
 EOF
 ```
 
@@ -181,10 +181,10 @@ Re-prompt. You should see **only `search_repositories`** - the `ALLOW` whitelist
 ## Cleanup
 
 ```bash
-kubectl delete accesspolicy deny-kagent-tool-server-dec -n kagent --ignore-not-found
+kubectl delete accesspolicy deny-kagent-tool-server-dec  -n kagent --ignore-not-found
 kubectl delete accesspolicy allow-kagent-tool-server-dec -n kagent --ignore-not-found
-kubectl delete agent test-access-policy -n kagent --ignore-not-found
-kubectl delete mcpserver test-mcp-server -n kagent --ignore-not-found
+kubectl delete agent     test-access-policy              -n kagent --ignore-not-found
+kubectl delete mcpserver test-mcp-server                 -n kagent --ignore-not-found
 ```
 
 ## How It Works

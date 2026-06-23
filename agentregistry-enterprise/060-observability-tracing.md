@@ -32,39 +32,39 @@ The values from [003](003-install-components.md) already include:
 
 ```yaml
 clickhouse:
- enabled: true
+  enabled: true
 
 telemetry:
- enabled: true
+  enabled: true
 ```
 
 For **external** runtimes such as AWS AgentCore, expose the collector with a `LoadBalancer`:
 
 ```yaml
 telemetry:
- enabled: true
- service:
- type: LoadBalancer
+  enabled: true
+  service:
+    type: LoadBalancer
 ```
 
 Apply to an existing install:
 
 ```bash
 helm upgrade agentregistry-enterprise \
- oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
- --version 2026.5.4 \
- -n agentregistry-system \
- --reuse-values \
- --set telemetry.service.type=LoadBalancer \
- --wait --timeout 10m
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  -n agentregistry-system \
+  --reuse-values \
+  --set telemetry.service.type=LoadBalancer \
+  --wait --timeout 10m
 ```
 
 Get the external OTLP endpoint:
 
 ```bash
 export OTEL_COLLECTOR_HOST=$(kubectl get svc agentregistry-enterprise-telemetry-collector \
- -n agentregistry-system \
- -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
+  -n agentregistry-system \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
 
 export OTEL_HTTP_ENDPOINT="http://${OTEL_COLLECTOR_HOST}:4318"
 echo "${OTEL_HTTP_ENDPOINT}"
@@ -92,14 +92,14 @@ cat > /tmp/aws-runtime.yaml <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
- name: AWS
+  name: AWS
 spec:
- type: BedrockAgentCore
- telemetryEndpoint: "${OTEL_HTTP_ENDPOINT}"
- config:
- region: "${AWS_REGION}"
- roleArn: "${AWS_ROLE_ARN}"
- externalId: "${AWS_EXTERNAL_ID}"
+  type: BedrockAgentCore
+  telemetryEndpoint: "${OTEL_HTTP_ENDPOINT}"
+  config:
+    region: "${AWS_REGION}"
+    roleArn: "${AWS_ROLE_ARN}"
+    externalId: "${AWS_EXTERNAL_ID}"
 EOF
 
 arctl apply -f /tmp/aws-runtime.yaml
@@ -112,18 +112,18 @@ Existing deployments **do not** automatically restart when the runtime changes. 
 apiVersion: ar.dev/v1alpha1
 kind: Deployment
 metadata:
- name: demochatbot
+  name: demochatbot
 spec:
- targetRef:
- kind: Agent
- name: demochatbot
- tag: "1.0.4"
- runtimeRef:
- kind: Runtime
- name: AWS
- runtimeConfig:
- region: us-east-1
- workdir: agentregistry-enterprise/demochatbot-a2a
+  targetRef:
+    kind: Agent
+    name: demochatbot
+    tag: "1.0.4"
+  runtimeRef:
+    kind: Runtime
+    name: AWS
+  runtimeConfig:
+    region: us-east-1
+    workdir: agentregistry-enterprise/demochatbot-a2a
 ```
 
 ### kagent Runtime
@@ -134,13 +134,13 @@ kagent runs in the same cluster, so use the service DNS:
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
- name: kagent
+  name: kagent
 spec:
- type: Kagent
- telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
- config:
- kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
- namespace: kagent
+  type: Kagent
+  telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
+  config:
+    kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
+    namespace: kagent
 ```
 
 Agentregistry injects `OTEL_EXPORTER_OTLP_ENDPOINT` into kagent BYO agents from this value.
@@ -153,7 +153,7 @@ Check the current values:
 
 ```bash
 kubectl get configmap kagent-controller -n kagent \
- -o jsonpath='{.data.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}{"\n"}{.data.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL}{"\n"}{.data.OTEL_TRACING_ENABLED}{"\n"}'
+  -o jsonpath='{.data.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}{"\n"}{.data.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL}{"\n"}{.data.OTEL_TRACING_ENABLED}{"\n"}'
 ```
 
 If it points at kagent's collector (e.g., `solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317`), repoint it.
@@ -162,25 +162,25 @@ If it points at kagent's collector (e.g., `solo-enterprise-telemetry-collector.k
 
 ```bash
 helm upgrade kagent <chart> \
- -n kagent \
- --reuse-values \
- --set otel.tracing.enabled=true \
- --set otel.tracing.exporter.otlp.endpoint=agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317 \
- --set otel.tracing.exporter.otlp.protocol=grpc \
- --set otel.tracing.exporter.otlp.insecure=true \
- --wait --timeout 5m
+  -n kagent \
+  --reuse-values \
+  --set otel.tracing.enabled=true \
+  --set otel.tracing.exporter.otlp.endpoint=agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317 \
+  --set otel.tracing.exporter.otlp.protocol=grpc \
+  --set otel.tracing.exporter.otlp.insecure=true \
+  --wait --timeout 5m
 ```
 
 **Temporary - direct ConfigMap patch.** Use this only if you cannot run a Helm upgrade right now. Persist the same values in Helm so the next `helm upgrade` does not revert them:
 
 ```bash
 kubectl patch configmap kagent-controller -n kagent --type merge -p '{
- "data": {
- "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317",
- "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "grpc",
- "OTEL_EXPORTER_OTLP_TRACES_INSECURE": "true",
- "OTEL_TRACING_ENABLED": "true"
- }
+  "data": {
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317",
+    "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_TRACES_INSECURE": "true",
+    "OTEL_TRACING_ENABLED": "true"
+  }
 }'
 
 kubectl rollout restart deployment/kagent-controller -n kagent
@@ -191,7 +191,7 @@ The injected env only applies when kagent regenerates an Agent Deployment. Force
 
 ```bash
 kubectl annotate agent <agent-name> -n kagent \
- tracing.agentregistry.dev/restarted-at="$(date -u +%Y%m%d%H%M%S)" --overwrite
+  tracing.agentregistry.dev/restarted-at="$(date -u +%Y%m%d%H%M%S)" --overwrite
 
 kubectl rollout status deployment/<agent-name> -n kagent --timeout=5m
 ```
@@ -200,7 +200,7 @@ Verify:
 
 ```bash
 kubectl get deploy <agent-name> -n kagent \
- -o jsonpath='{range .spec.template.spec.containers[0].env[?(@.name=="OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")]}{.value}{"\n"}{end}'
+  -o jsonpath='{range .spec.template.spec.containers[0].env[?(@.name=="OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")]}{.value}{"\n"}{end}'
 ```
 
 > **Tip:** only real agent invocations (chats / tool calls) emit spans. Fetching `/.well-known/agent-card.json` does not, so the trace table stays empty until you send a real prompt.
@@ -216,13 +216,13 @@ kubectl get pods -n agentregistry-system -l app.kubernetes.io/component=telemetr
 
 # ClickHouse tables
 kubectl exec -n agentregistry-system statefulset/agentregistry-enterprise-clickhouse-shard0 -- \
- clickhouse-client --user default --password password \
- --query 'SHOW TABLES FROM agentregistry'
+  clickhouse-client --user default --password password \
+  --query 'SHOW TABLES FROM agentregistry'
 
 # Trace count (should grow as you invoke agents)
 kubectl exec -n agentregistry-system statefulset/agentregistry-enterprise-clickhouse-shard0 -- \
- clickhouse-client --user default --password password \
- --query 'SELECT count() FROM agentregistry.otel_traces_json'
+  clickhouse-client --user default --password password \
+  --query 'SELECT count() FROM agentregistry.otel_traces_json'
 ```
 
 ## 4. Open the UI
@@ -270,12 +270,12 @@ Return the cluster to the post-baseline state:
 ```bash
 # Revert the collector Service to ClusterIP (if you flipped it to LoadBalancer in step 1)
 helm upgrade agentregistry-enterprise \
- oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
- --version 2026.5.4 \
- -n agentregistry-system \
- --reuse-values \
- --set telemetry.service.type=ClusterIP \
- --wait --timeout 5m
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  -n agentregistry-system \
+  --reuse-values \
+  --set telemetry.service.type=ClusterIP \
+  --wait --timeout 5m
 
 # Revert the kagent-controller ConfigMap patch (if you applied step 2 → "Repoint kagent's Injected Trace Endpoint")
 kubectl rollout restart deployment/kagent-controller -n kagent 2>/dev/null || true

@@ -41,7 +41,7 @@ Wait for the template to be ready:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/sandbox-template \
- -n ate-demo-sandbox --timeout=5m
+  -n ate-demo-sandbox --timeout=5m
 ```
 
 ## 2. Create an Actor
@@ -74,9 +74,9 @@ In a third terminal, from the cloned `substrate/` repo:
 go build -o bin/sandbox-client ./demos/sandbox/client
 
 ./bin/sandbox-client \
- --ateapi=localhost:8080 \
- --atenet=localhost:8000 \
- --id=my-sandbox-1
+  --ateapi=localhost:8080 \
+  --atenet=localhost:8000 \
+  --id=my-sandbox-1
 ```
 
 Once you see the `sandbox>` prompt, you have an interactive shell **inside the actor**:
@@ -104,9 +104,9 @@ Now re-open the REPL - same actor ID, same args:
 
 ```bash
 ./bin/sandbox-client \
- --ateapi=localhost:8080 \
- --atenet=localhost:8000 \
- --id=my-sandbox-1
+  --ateapi=localhost:8080 \
+  --atenet=localhost:8000 \
+  --id=my-sandbox-1
 ```
 
 Your file is still there (possibly on a **different** worker pod):
@@ -121,8 +121,8 @@ This is the disk-side analog of the counter demo's RAM-side state preservation.
 ## Cleanup
 
 ```bash
-kubectl ate suspend actor my-sandbox-1 # if still running
-kubectl ate delete actor my-sandbox-1
+kubectl ate suspend actor my-sandbox-1   # if still running
+kubectl ate delete  actor my-sandbox-1
 
 ./hack/install-ate.sh --delete-demo-sandbox
 ```

@@ -64,8 +64,8 @@ terraform init
 terraform apply
 
 gcloud container clusters get-credentials \
- $(terraform output -raw cluster_name) \
- --region $(terraform output -raw cluster_location)
+  $(terraform output -raw cluster_name) \
+  --region $(terraform output -raw cluster_location)
 
 kubectl get nodes
 cd ../..
@@ -79,8 +79,8 @@ The Terraform creates a regional cluster with autoscaling (1-3 `c3-standard-4` n
 
 ```bash
 for cmd in kubectl helm openssl jq envsubst; do
- printf '%-12s ' "$cmd"
- command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
+  printf '%-12s ' "$cmd"
+  command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
 done
 ```
 

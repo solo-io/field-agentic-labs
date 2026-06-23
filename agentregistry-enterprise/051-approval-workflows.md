@@ -25,11 +25,11 @@ The Helm value is `config.requireCreateApproval` on the `agentregistry-enterpris
 
 ```bash
 helm upgrade --install agentregistry-enterprise \
- oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
- --version 2026.5.4 \
- --namespace agentregistry-system \
- --reuse-values \
- --set config.requireCreateApproval=true
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  --namespace agentregistry-system \
+  --reuse-values \
+  --set config.requireCreateApproval=true
 ```
 
 > **`--reuse-values` preserves your OIDC, telemetry, and chart-image settings from [003](003-install-components.md).** If `/tmp/are-values.yaml` from 003 is still on disk, you can use `-f /tmp/are-values.yaml --set config.requireCreateApproval=true` instead - same result.
@@ -38,7 +38,7 @@ helm upgrade --install agentregistry-enterprise \
 
 ```bash
 kubectl -n agentregistry-system get configmap agentregistry-enterprise \
- -o jsonpath='{.data.REQUIRE_CREATE_APPROVAL}{"\n"}'
+  -o jsonpath='{.data.REQUIRE_CREATE_APPROVAL}{"\n"}'
 ```
 
 Expected:
@@ -58,7 +58,7 @@ Approval workflows are only interesting if you have a non-admin user who can *su
 The parameterized manifest is at [`assets/access-policies/writer-group-policy.yaml`](assets/access-policies/writer-group-policy.yaml):
 
 ```bash
-export GROUP_GUID="${GROUP_READERS}" # or GROUP_WRITERS - any non-admin group works
+export GROUP_GUID="${GROUP_READERS}"   # or GROUP_WRITERS — any non-admin group works
 envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
 ```
 
@@ -90,8 +90,8 @@ The CLI flow exercises the same gate. Approval gating works for catalog assets -
 ```bash
 # Make sure you're logged in as the NON-admin user
 arctl user login \
- --oidc-issuer-url "$OIDC_ISSUER" \
- --oidc-client-id "$OIDC_CLIENT_ID"
+  --oidc-issuer-url "$OIDC_ISSUER" \
+  --oidc-client-id "$OIDC_CLIENT_ID"
 
 arctl user whoami
 ```
@@ -103,15 +103,15 @@ arctl apply -f - <<EOF
 apiVersion: ar.dev/v1alpha1
 kind: Agent
 metadata:
- name: approval-test-agent
- tag: "1.0.0"
+  name: approval-test-agent
+  tag: "1.0.0"
 spec:
- title: approval-test-agent
- description: "Test agent for approval workflow validation"
- modelProvider: anthropic
- modelName: claude-sonnet-4-6
- source:
- image: docker.io/python:3.13-slim
+  title: approval-test-agent
+  description: "Test agent for approval workflow validation"
+  modelProvider: anthropic
+  modelName: claude-sonnet-4-6
+  source:
+    image: docker.io/python:3.13-slim
 EOF
 ```
 
@@ -135,8 +135,8 @@ Use the `/v0/approve` HTTP API with the bearer token from your CLI login.
 export ARCTL_API_TOKEN=$(arctl user info --show-tokens | jq -r .access_token)
 
 curl -s \
- -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
- "${ARCTL_API_BASE_URL}/v0/approve" | jq .
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  "${ARCTL_API_BASE_URL}/v0/approve" | jq .
 ```
 
 Expected response - a pending request for:
@@ -168,8 +168,8 @@ Re-authenticate as the admin and refresh the token:
 
 ```bash
 arctl user login \
- --oidc-issuer-url "$OIDC_ISSUER" \
- --oidc-client-id "$OIDC_CLIENT_ID"
+  --oidc-issuer-url "$OIDC_ISSUER" \
+  --oidc-client-id "$OIDC_CLIENT_ID"
 
 arctl user whoami
 export ARCTL_API_TOKEN=$(arctl user info --show-tokens | jq -r .access_token)
@@ -179,15 +179,15 @@ Approve the request - the `items[*]` tuple must match what `GET /v0/approve` ret
 
 ```bash
 curl -s -X POST \
- -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
- -H "Content-Type: application/json" \
- -d '{
- "action": "approve",
- "items": [
- {"kind":"Agent","namespace":"default","name":"approval-test-agent","tag":"1.0.0"}
- ]
- }' \
- "${ARCTL_API_BASE_URL}/v0/approve" | jq .
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "action": "approve",
+        "items": [
+          {"kind":"Agent","namespace":"default","name":"approval-test-agent","tag":"1.0.0"}
+        ]
+      }' \
+  "${ARCTL_API_BASE_URL}/v0/approve" | jq .
 ```
 
 `action` accepts `approve` or `reject`. Reject removes the request from the queue without committing.
@@ -223,27 +223,27 @@ arctl delete agent approval-test-agent --tag 1.0.0
 # Or reject any still-pending request from step 4
 export ARCTL_API_TOKEN=$(arctl user info --show-tokens | jq -r .access_token)
 curl -s -X POST \
- -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
- -H "Content-Type: application/json" \
- -d '{
- "action": "reject",
- "items": [
- {"kind":"Agent","namespace":"default","name":"approval-test-agent","tag":"1.0.0"}
- ]
- }' \
- "${ARCTL_API_BASE_URL}/v0/approve" | jq .
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "action": "reject",
+        "items": [
+          {"kind":"Agent","namespace":"default","name":"approval-test-agent","tag":"1.0.0"}
+        ]
+      }' \
+  "${ARCTL_API_BASE_URL}/v0/approve" | jq .
 
 # Remove the writer-group policy
 arctl delete accesspolicy writers-group-catalog-write
 
-# Disable the feature flag (optional - flipping it off does not retroactively
+# Disable the feature flag (optional — flipping it off does not retroactively
 # release queued requests; clear those with reject first)
 helm upgrade --install agentregistry-enterprise \
- oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
- --version 2026.5.4 \
- --namespace agentregistry-system \
- --reuse-values \
- --set config.requireCreateApproval=false
+  oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
+  --version 2026.5.4 \
+  --namespace agentregistry-system \
+  --reuse-values \
+  --set config.requireCreateApproval=false
 ```
 
 ## Troubleshooting

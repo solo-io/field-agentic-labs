@@ -27,7 +27,7 @@ This lab is the fan-out option.
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
-- **kagent Enterprise installed** in the `kagent` namespace via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise), with the `solo-enterprise-telemetry-collector` StatefulSet running in the `kagent` namespace
+- An existing kagent install with the `solo-enterprise-telemetry-collector` StatefulSet in the `kagent` namespace
 - [020 - kagent Runtime registered](020-kagent-runtime-and-agent.md)
 
 ## How the Patch Works
@@ -36,22 +36,22 @@ Inside the kagent collector ConfigMap, add a new `otlp/agentregistry` exporter a
 
 ```yaml
 exporters:
- otlp/agentregistry: # ADDED
- endpoint: agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317
- tls:
- insecure: true
- retry_on_failure:
- enabled: true
- initial_interval: 5s
- max_interval: 30s
- max_elapsed_time: 300s
+  otlp/agentregistry:                     # ADDED
+    endpoint: agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4317
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
 
 service:
- pipelines:
- traces/genai:
- exporters:
- - clickhouse/telemetry # existing - kagent UI
- - otlp/agentregistry # ADDED - agentregistry dashboard
+  pipelines:
+    traces/genai:
+      exporters:
+        - clickhouse/telemetry             # existing — kagent UI
+        - otlp/agentregistry               # ADDED — agentregistry dashboard
 ```
 
 Only `traces/genai` is forwarded (not `traces/istio`) so the agentregistry dashboard isn't polluted with mesh spans.
@@ -66,7 +66,7 @@ The patched and the original ConfigMaps are checked in as assets:
 ```bash
 kubectl apply -f assets/observability/solo-enterprise-telemetry-collector-config.patched.yaml
 kubectl -n kagent rollout restart statefulset solo-enterprise-telemetry-collector
-kubectl -n kagent rollout status statefulset solo-enterprise-telemetry-collector --timeout=5m
+kubectl -n kagent rollout status  statefulset solo-enterprise-telemetry-collector --timeout=5m
 ```
 
 ## Verify
@@ -76,11 +76,11 @@ Both ClickHouses should report a growing count while you invoke agents:
 ```bash
 # agentregistry ClickHouse (the new path)
 kubectl -n agentregistry-system exec agentregistry-enterprise-clickhouse-shard0-0 -- \
- clickhouse-client -q "SELECT count(), max(Timestamp) FROM agentregistry.otel_traces_json"
+  clickhouse-client -q "SELECT count(), max(Timestamp) FROM agentregistry.otel_traces_json"
 
-# kagent ClickHouse (should still receive - unchanged)
+# kagent ClickHouse (should still receive — unchanged)
 kubectl -n kagent exec kagent-mgmt-clickhouse-shard0-0 -- \
- clickhouse-client -q "SELECT count(), max(Timestamp) FROM platformdb.otel_traces_json"
+  clickhouse-client -q "SELECT count(), max(Timestamp) FROM platformdb.otel_traces_json"
 ```
 
 If you don't see the agentregistry count moving, send a real chat to a kagent agent - card fetches alone do not emit spans.

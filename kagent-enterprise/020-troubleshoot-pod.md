@@ -18,13 +18,13 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
- name: ngi14
+  name: ngi14
 spec:
- containers:
- - name: nginx
- image: nginx:latesttttt
- ports:
- - containerPort: 80
+  containers:
+  - name: nginx
+    image: nginx:latesttttt
+    ports:
+    - containerPort: 80
 EOF
 ```
 

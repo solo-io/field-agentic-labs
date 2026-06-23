@@ -1,7 +1,7 @@
 # Example Prompt catalog asset (used by 075-prompt-quickstart.md).
 #
 # Apply with:
-# arctl apply -f assets/prompts/kubernetes-triage-system-prompt.yaml
+#   arctl apply -f assets/prompts/kubernetes-triage-system-prompt.yaml
 #
 # If approval workflows are enabled (see 081-approval-workflows.md) and you
 # are not an admin, this asset will be staged for approval instead of being

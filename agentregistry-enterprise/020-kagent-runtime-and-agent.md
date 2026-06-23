@@ -1,6 +1,6 @@
 # kagent Runtime + Agent (k8shelper)
 
-Register an existing in-cluster **kagent Enterprise** install as an agentregistry **Runtime**, then build + deploy the `k8shelper` BYO agent on top. The agent ships as a Python ADK package in this repo; you build the image yourself and push to a registry your cluster can pull from.
+Register the in-cluster **kagent** install (from [003](003-install-components.md)) as an agentregistry **Runtime**, then build + deploy the `k8shelper` BYO agent on top. The agent ships as a Python ADK package in this repo; you build the image yourself and push to a registry your cluster can pull from.
 
 The lab walks through the **Anthropic / Claude** variant by default. The Gemini variant is a near-identical flow - the differences are called out in step 2.
 
@@ -15,35 +15,34 @@ The lab walks through the **Anthropic / Claude** variant by default. The Gemini 
 
 ## Prerequisites
 
-- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
-- **kagent Enterprise installed** in the `kagent` namespace. Install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - labs 001 through 003 cover the install end-to-end. Confirm with `kubectl get pods -n kagent` showing the kagent controller + UI Ready.
+- Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md). The kagent install lands in step 2 of 003.
 - `docker buildx` configured for multi-platform builds
 - A container registry your cluster nodes can pull from (Docker Hub, GHCR, ECR, GAR, ACR, etc.). Be authenticated against it locally (`docker login`).
 - An **Anthropic API key**:
 
- ```bash
- export ANTHROPIC_API_KEY=<your-anthropic-api-key>
- ```
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
 
 > **For the Gemini variant**, swap `assets/k8shelper-anthropic/` for `assets/k8shelper-gemini/` everywhere below, and use `GOOGLE_API_KEY` + the Secret name `k8shelper-google` instead of `k8shelper-anthropic`. The rest is identical.
 
 ## 1. Enable kagent's Insecure Mode (Demo Only)
 
-Agentregistry sends requests to the kagent controller with an `X-User-Id` header. By default kagent Enterprise rejects unauthenticated headers - enable `INSECURE_MODE=true` so kagent accepts the forwarded identity from agentregistry:
+Agentregistry sends requests to the kagent controller with an `X-User-Id` header. The default kagent install rejects those - enable `INSECURE_MODE=true` so kagent accepts them:
 
 ```bash
 kubectl set env deployment/kagent-controller -n kagent INSECURE_MODE=true
 kubectl rollout status deployment/kagent-controller -n kagent --timeout=5m
 ```
 
-> **Demo / POC only.** `INSECURE_MODE=true` disables kagent controller authn/authz. For production, configure kagent Enterprise and agentregistry to share a compatible OIDC audience (both can validate the same Entra / Keycloak tokens) or use a token-exchange flow.
+> **Demo / POC only.** `INSECURE_MODE=true` disables kagent controller authn/authz. For production, configure kagent and agentregistry to share a compatible OIDC audience or use a token-exchange flow.
 
 Verify kagent now accepts the forwarded identity from the agentregistry server:
 
 ```bash
 kubectl exec -n agentregistry-system deployment/agentregistry-enterprise-server -- \
- curl -i -H 'X-User-Id: admin@kagent.dev' \
- 'http://kagent-controller.kagent.svc.cluster.local:8083/api/agents?namespace=kagent'
+  curl -i -H 'X-User-Id: admin@kagent.dev' \
+  'http://kagent-controller.kagent.svc.cluster.local:8083/api/agents?namespace=kagent'
 ```
 
 Expected: `HTTP/1.1 200 OK`.
@@ -56,13 +55,13 @@ From the workshop root:
 cd agentregistry-enterprise/assets/k8shelper-anthropic
 
 # Pick where to push. Examples:
-# GHCR: ghcr.io/<your-user>/k8shelper-anthropic:1.0.0
-# Docker Hub: docker.io/<your-user>/k8shelper-anthropic:1.0.0
-# GAR: <region>-docker.pkg.dev/<project>/<repo>/k8shelper-anthropic:1.0.0
+#   GHCR:        ghcr.io/<your-user>/k8shelper-anthropic:1.0.0
+#   Docker Hub:  docker.io/<your-user>/k8shelper-anthropic:1.0.0
+#   GAR:         <region>-docker.pkg.dev/<project>/<repo>/k8shelper-anthropic:1.0.0
 export K8SHELPER_IMAGE="<your-registry>/<your-repo>/k8shelper-anthropic:1.0.0"
 
 docker buildx build --platform linux/amd64 \
- -t "${K8SHELPER_IMAGE}" --push .
+  -t "${K8SHELPER_IMAGE}" --push .
 
 cd ../../..
 echo "K8SHELPER_IMAGE=${K8SHELPER_IMAGE}"
@@ -77,13 +76,13 @@ cat > /tmp/kagent-runtime.yaml <<'EOF'
 apiVersion: ar.dev/v1alpha1
 kind: Runtime
 metadata:
- name: kagent
+  name: kagent
 spec:
- type: Kagent
- telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
- config:
- kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
- namespace: kagent
+  type: Kagent
+  telemetryEndpoint: http://agentregistry-enterprise-telemetry-collector.agentregistry-system.svc.cluster.local:4318
+  config:
+    kagentUrl: http://kagent-controller.kagent.svc.cluster.local:8083
+    namespace: kagent
 EOF
 
 arctl apply -f /tmp/kagent-runtime.yaml
@@ -98,9 +97,9 @@ Expected: a `Runtime/kagent` with `type: Kagent`.
 
 ```bash
 kubectl create secret generic k8shelper-anthropic \
- -n kagent \
- --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
- --dry-run=client -o yaml | kubectl apply -f -
+  -n kagent \
+  --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 ## 5. Register the Agent
@@ -136,7 +135,7 @@ Agentregistry's `Deployment.spec.env` accepts literal values only. Secret refere
 
 ```bash
 kubectl patch agent k8shelperanthropic -n kagent --type='json' -p='[
- {"op":"add","path":"/spec/byo/deployment/env/-","value":{"name":"ANTHROPIC_API_KEY","valueFrom":{"secretKeyRef":{"name":"k8shelper-anthropic","key":"ANTHROPIC_API_KEY"}}}}
+  {"op":"add","path":"/spec/byo/deployment/env/-","value":{"name":"ANTHROPIC_API_KEY","valueFrom":{"secretKeyRef":{"name":"k8shelper-anthropic","key":"ANTHROPIC_API_KEY"}}}}
 ]'
 
 kubectl rollout status deployment/k8shelperanthropic -n kagent --timeout=5m
@@ -147,11 +146,11 @@ kubectl rollout status deployment/k8shelperanthropic -n kagent --timeout=5m
 ## 8. Verify
 
 ```bash
-kubectl get agents.kagent.dev -n kagent k8shelperanthropic -o yaml
-kubectl get pods -n kagent -l kagent=k8shelperanthropic
-kubectl get svc -n kagent -l kagent=k8shelperanthropic
+kubectl get agents.kagent.dev   -n kagent k8shelperanthropic -o yaml
+kubectl get pods                -n kagent -l kagent=k8shelperanthropic
+kubectl get svc                 -n kagent -l kagent=k8shelperanthropic
 kubectl get deploy k8shelperanthropic -n kagent -o yaml \
- | grep -E 'MODEL_NAME|MODEL_PROVIDER|ANTHROPIC_API_KEY|image:'
+  | grep -E 'MODEL_NAME|MODEL_PROVIDER|ANTHROPIC_API_KEY|image:'
 ```
 
 Expected: `MODEL_PROVIDER=anthropic`, `MODEL_NAME=claude-sonnet-4-6`, the Secret reference, and your image.
@@ -165,8 +164,8 @@ The agent uses Google ADK with LiteLLM for Anthropic, so it calls Anthropic **di
 ```bash
 # agentregistry side
 arctl delete deployment k8shelperanthropic-kagent
-arctl delete agent k8shelperanthropic --tag 1.0.0
-arctl delete runtime kagent
+arctl delete agent      k8shelperanthropic --tag 1.0.0
+arctl delete runtime    kagent
 
 # Kubernetes side: the Secret + the patched kagent CR
 kubectl delete secret k8shelper-anthropic -n kagent

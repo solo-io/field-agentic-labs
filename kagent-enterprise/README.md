@@ -147,32 +147,32 @@ Curated paths under [`tracks/`](tracks/):
 
 ```
 kagent-enterprise/
-├── README.md # this file
-├── 001-baseline-setup.md # cluster prereqs + tools + (optional) GKE
-├── 002-licenses-and-secrets.md # licenses + namespace + Secrets + jwt key
-├── 003-install-kagent-enterprise.md # Gloo Operator install
+├── README.md                            # this file
+├── 001-baseline-setup.md                # cluster prereqs + tools + (optional) GKE
+├── 002-licenses-and-secrets.md          # licenses + namespace + Secrets + jwt key
+├── 003-install-kagent-enterprise.md     # Gloo Operator install
 ├── 004-install-enterprise-agentgateway.md
-├── 010-mcp-connection-agent-config.md # declarative MCPServer + Agent
-├── 011-agent-skills.md # A2A skills metadata
-├── 012-build-custom-mcp-server.md # Pharma MCP server (Python)
-├── 020-troubleshoot-pod.md # k8s-agent fixes a broken Pod
-├── 030-accesspolicy-agent-to-mcp.md # AccessPolicy w/ Agent subject
-├── 031-accesspolicy-usergroup.md # AccessPolicy w/ UserGroup subject
-├── 040-prompt-guards.md # EnterpriseAgentgatewayPolicy.promptGuard
-├── 041-platform-rbac.md # K8s RBAC for kagent CRDs
-├── 050-access-logs.md # gateway access-log HTTPListenerPolicy
-├── 060-pinniped-keycloak.md # K8s OIDC via Keycloak + Pinniped (standalone)
-├── 070-obo-entra.md # Entra OBO end-to-end (different install model)
-├── 099-cleanup.md # full teardown
-├── appendix-nemoclaw-oss.md # OSS kagent + OpenShell/NemoClaw
+├── 010-mcp-connection-agent-config.md   # declarative MCPServer + Agent
+├── 011-agent-skills.md                  # A2A skills metadata
+├── 012-build-custom-mcp-server.md       # Pharma MCP server (Python)
+├── 020-troubleshoot-pod.md              # k8s-agent fixes a broken Pod
+├── 030-accesspolicy-agent-to-mcp.md     # AccessPolicy w/ Agent subject
+├── 031-accesspolicy-usergroup.md        # AccessPolicy w/ UserGroup subject
+├── 040-prompt-guards.md                 # EnterpriseAgentgatewayPolicy.promptGuard
+├── 041-platform-rbac.md                 # K8s RBAC for kagent CRDs
+├── 050-access-logs.md                   # gateway access-log HTTPListenerPolicy
+├── 060-pinniped-keycloak.md             # K8s OIDC via Keycloak + Pinniped (standalone)
+├── 070-obo-entra.md                     # Entra OBO end-to-end (different install model)
+├── 099-cleanup.md                       # full teardown
+├── appendix-nemoclaw-oss.md             # OSS kagent + OpenShell/NemoClaw
 ├── tracks/
-│ ├── install-track.md
-│ ├── policy-track.md
-│ └── obo-track.md
+│   ├── install-track.md
+│   ├── policy-track.md
+│   └── obo-track.md
 └── assets/
- ├── gke-terraform/ # main.tf, variables.tf, terraform.tfvars.example
- ├── llm-obo-proxy/ # FastAPI proxy for OBO (app.py, deployment.yaml)
- ├── mcp-server-example/ # pharma_mcp_server.py
- ├── obo/ # ui-https-gateway.yaml
- └── observability/ # access-logs HTTPListenerPolicy
+    ├── gke-terraform/                   # main.tf, variables.tf, terraform.tfvars.example
+    ├── llm-obo-proxy/                   # FastAPI proxy for OBO (app.py, deployment.yaml)
+    ├── mcp-server-example/              # pharma_mcp_server.py
+    ├── obo/                             # ui-https-gateway.yaml
+    └── observability/                   # access-logs HTTPListenerPolicy
 ```

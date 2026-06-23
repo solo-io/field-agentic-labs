@@ -58,7 +58,7 @@ Wait:
 
 ```bash
 kubectl wait --for=condition=Ready actortemplate/counter \
- -n ate-demo-counter --timeout=5m
+  -n ate-demo-counter --timeout=5m
 ```
 
 ## 4. Install `kubectl-ate` and Create an Actor
@@ -80,7 +80,7 @@ kubectl port-forward -n ate-system svc/atenet-router 8000:80
 ```bash
 # Terminal 2
 curl -X POST -H "Host: my-counter-1.actors.resources.substrate.ate.dev" \
- -i http://localhost:8000/
+  -i http://localhost:8000/
 ```
 
 Repeat, suspend, repeat - same proof-of-state-survival as the GKE counter lab in [050](010-counter-demo.md).

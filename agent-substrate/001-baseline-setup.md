@@ -21,11 +21,11 @@ If you're not on GKE, the local-dev escape hatch is `kind` - see [appendix-kind-
 - A GCP project with billing enabled (used for the snapshot bucket in [002](002-gcp-iam-and-bucket.md), even if the cluster is elsewhere)
 - `gcloud` authenticated three ways:
 
- ```bash
- gcloud auth login
- gcloud auth application-default login --project=<your-project-id>
- gcloud auth configure-docker gcr.io
- ```
+  ```bash
+  gcloud auth login
+  gcloud auth application-default login --project=<your-project-id>
+  gcloud auth configure-docker gcr.io
+  ```
 
 ## 1. Confirm Local Tools
 
@@ -42,8 +42,8 @@ Quick check loop:
 
 ```bash
 for cmd in git go kubectl helm gcloud openssl; do
- printf '%-10s ' "$cmd"
- command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
+  printf '%-10s ' "$cmd"
+  command -v "$cmd" >/dev/null && echo "OK" || echo "MISSING"
 done
 ```
 
@@ -60,8 +60,8 @@ Verify it's a Standard (not Autopilot) GKE cluster - Autopilot won't accept Subs
 
 ```bash
 gcloud container clusters describe <cluster> \
- --location=<region-or-zone> --project=<project> \
- --format='value(autopilot.enabled)'
+  --location=<region-or-zone> --project=<project> \
+  --format='value(autopilot.enabled)'
 # Expected: empty (Standard). "True" = Autopilot, will not work.
 ```
 
@@ -69,8 +69,8 @@ If you haven't yet enabled the Pod Certificate beta APIs on the cluster, do that
 
 ```bash
 gcloud container clusters update <cluster> \
- --location=<location> --project=<project> \
- --enable-kubernetes-unstable-apis=certificates.k8s.io/v1beta1/podcertificaterequests,certificates.k8s.io/v1beta1/clustertrustbundles
+  --location=<location> --project=<project> \
+  --enable-kubernetes-unstable-apis=certificates.k8s.io/v1beta1/podcertificaterequests,certificates.k8s.io/v1beta1/clustertrustbundles
 ```
 
 > Existing nodes don't always honor the kubelet feature for `podCertificate` volumes - only nodes created after the feature was enabled do. If [003 step 1](003-install-substrate.md#1-install-substrate-helm) shows `ate-api-server` / `atenet-router` / `valkey` stuck failing to mount the cert volume, create a fresh node pool: `gcloud container node-pools create new-pool --cluster=<cluster> --machine-type=c3-standard-4 --workload-metadata=GKE_METADATA --num-nodes=2`.
@@ -121,7 +121,7 @@ Confirm the values:
 
 ```bash
 for V in PROJECT_ID PROJECT_NUMBER GCE_REGION CLUSTER_LOCATION CLUSTER_NAME BUCKET_NAME KO_DOCKER_REPO; do
- printf '%-20s %s\n' "$V" "${!V}"
+  printf '%-20s %s\n' "$V" "${!V}"
 done
 ```
 
@@ -150,7 +150,7 @@ rm -rf substrate
 
 # Unset env vars
 unset PROJECT_ID PROJECT_NUMBER GCE_REGION CLUSTER_LOCATION CLUSTER_NAME \
- BUCKET_NAME KO_DOCKER_REPO NODE_POOL_NAME GVISOR_NODE_MACHINE_TYPE
+      BUCKET_NAME KO_DOCKER_REPO NODE_POOL_NAME GVISOR_NODE_MACHINE_TYPE
 ```
 
 The cluster mutation (`--enable-kubernetes-unstable-apis`) cannot be undone - see [appendix-why-gke.md](appendix-why-gke.md). If you want a pristine cluster, delete and recreate it.

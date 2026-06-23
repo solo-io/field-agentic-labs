@@ -19,8 +19,8 @@ This is the simplest MCP lab - it's catalog-only. No deployment to a runtime. To
 
 ```
 assets/mcp/demo-mcp/
-├── mcpserver.yaml # the agentregistry MCPServer manifest
-└── server.py # a ~120-line Python MCP server over stdio JSON-RPC
+├── mcpserver.yaml    # the agentregistry MCPServer manifest
+└── server.py         # a ~120-line Python MCP server over stdio JSON-RPC
 ```
 
 [`mcpserver.yaml`](assets/mcp/demo-mcp/mcpserver.yaml):
@@ -29,23 +29,23 @@ assets/mcp/demo-mcp/
 apiVersion: ar.dev/v1alpha1
 kind: MCPServer
 metadata:
- name: demo-tools
- version: "1.0.0"
+  name: demo-tools
+  version: "1.0.0"
 spec:
- description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
- transport: stdio
- command: "python3 server.py"
- source:
- repository:
- url: "https://github.com/solo-io/field-agentic-labs"
- subfolder: "agentregistry-enterprise/assets/mcp/demo-mcp"
- tools:
- - name: get_time
- description: "Get the current UTC time"
- - name: random_number
- description: "Generate a random number between min and max"
- - name: reverse_string
- description: "Reverse a string"
+  description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
+  transport: stdio
+  command: "python3 server.py"
+  source:
+    repository:
+      url: "https://github.com/solo-io/field-agentic-labs"
+      subfolder: "agentregistry-enterprise/assets/mcp/demo-mcp"
+  tools:
+    - name: get_time
+      description: "Get the current UTC time"
+    - name: random_number
+      description: "Generate a random number between min and max"
+    - name: reverse_string
+      description: "Reverse a string"
 ```
 
 ## 2. Register the MCP Server
@@ -63,8 +63,8 @@ arctl get mcps
 Expected:
 
 ```
-NAME VERSION DESCRIPTION
-demo-tools 1.0.0 A minimal MCP server with simple tools: get_time, random_...
+NAME         VERSION   DESCRIPTION
+demo-tools   1.0.0     A minimal MCP server with simple tools: get_time, random_...
 ```
 
 Inspect the full record:

@@ -28,7 +28,7 @@ Don't mix them on the same cluster.
 
 ```bash
 for V in PROJECT_ID CLUSTER_NAME BUCKET_NAME KO_DOCKER_REPO; do
- if [ -z "${!V}" ]; then echo "MISSING: $V"; fi
+  if [ -z "${!V}" ]; then echo "MISSING: $V"; fi
 done
 ```
 
@@ -38,7 +38,7 @@ done
 
 ```bash
 helm upgrade --install substrate-crds \
- oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
+  oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
 ```
 
 Verify:
@@ -51,8 +51,8 @@ kubectl get crd actortemplates.ate.dev workerpools.ate.dev
 
 ```bash
 helm upgrade --install substrate \
- oci://ghcr.io/kagent-dev/substrate/helm/substrate \
- --namespace ate-system --create-namespace
+  oci://ghcr.io/kagent-dev/substrate/helm/substrate \
+  --namespace ate-system --create-namespace
 ```
 
 > Upstream publishes floating OCI tags. For reproducibility, pin with `--version <X.Y.Z>` - the workshop was authored against the tag listed in the README's "Validated On" section.
@@ -61,10 +61,10 @@ helm upgrade --install substrate \
 >
 > ```bash
 > helm upgrade --install substrate \
-> oci://ghcr.io/kagent-dev/substrate/helm/substrate \
-> --namespace ate-system --create-namespace \
-> --set auth.jwt.issuer=<your-cluster-oidc-issuer-url> \
-> --set auth.jwt.audience=api.ate-system.svc
+>   oci://ghcr.io/kagent-dev/substrate/helm/substrate \
+>   --namespace ate-system --create-namespace \
+>   --set auth.jwt.issuer=<your-cluster-oidc-issuer-url> \
+>   --set auth.jwt.audience=api.ate-system.svc
 > ```
 
 ## 2. Wait for the System Pods
@@ -145,8 +145,8 @@ This is the **baseline**. Every unit-of-value lab from 010 onwards assumes it's 
 This lab installs the baseline that every unit-of-value lab relies on. Don't clean this up until you're done with the workshop. Full teardown is in [099](099-cleanup.md). Component-level rollback in case the install partially failed and you want to redo:
 
 ```bash
-helm uninstall substrate -n ate-system 2>/dev/null || true
-helm uninstall substrate-crds 2>/dev/null || true
+helm uninstall substrate      -n ate-system 2>/dev/null || true
+helm uninstall substrate-crds                2>/dev/null || true
 kubectl delete namespace ate-system --ignore-not-found
 
 rm -f "$(go env GOPATH)/bin/kubectl-ate"

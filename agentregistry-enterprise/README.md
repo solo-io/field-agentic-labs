@@ -4,7 +4,7 @@ A hands-on lab series for **Solo.io agentregistry Enterprise** (`arctl` + `ar.de
 
 The workshop is built around two ideas:
 
-1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + Enterprise Agentgateway). You only run setup once. Some unit labs (020, 031, 061) additionally require **kagent Enterprise** - install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) before running those.
+1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + kagent + Enterprise Agentgateway). You only run setup once.
 
 2. **Independent unit-of-value labs.** Every lab numbered 010 and up is standalone - it states what it needs from the baseline, walks through one capability, and has its own `## Cleanup` section that returns the cluster to the post-baseline state. Run them in any order, run cleanup, move on.
 
@@ -38,8 +38,8 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 
 - [001 - Baseline Setup](001-baseline-setup.md) - cluster prereqs check + `arctl` install + namespace
 - **Pick one OIDC path:**
- - [002a - Setup OIDC: Keycloak (in-cluster)](002a-setup-oidc-keycloak.md) - recommended for a self-contained POC; no cloud account needed
- - [002b - Setup OIDC: Entra ID](002b-setup-oidc-entra.md) - if you already have a Microsoft Entra tenant
+  - [002a - Setup OIDC: Keycloak (in-cluster)](002a-setup-oidc-keycloak.md) - recommended for a self-contained POC; no cloud account needed
+  - [002b - Setup OIDC: Entra ID](002b-setup-oidc-entra.md) - if you already have a Microsoft Entra tenant
 - [003 - Install Components](003-install-components.md) - agentregistry + kagent + Enterprise Agentgateway
 
 ---
@@ -125,38 +125,38 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 ```
 agentregistry-enterprise/
-├── README.md # this file
-├── 001-baseline-setup.md # cluster prereqs + arctl + namespace
-├── 002a-setup-oidc-keycloak.md # OIDC path A: in-cluster Keycloak
-├── 002b-setup-oidc-entra.md # OIDC path B: Microsoft Entra ID
-├── 003-install-components.md # agentregistry + kagent + Enterprise Agentgateway
-├── 010-aws-bedrock-runtime.md # AWS Runtime + demochatbot
-├── 020-kagent-runtime-and-agent.md # kagent Runtime + k8shelper
-├── 030-mcp-local-stdio.md # in-tree stdio MCP
-├── 031-mcp-remote-github-copilot.md # GitHub Copilot MCP via kagent
-├── 032-mcp-through-agentgateway.md # MCP via Virtual runtime + Agentgateway
-├── 040-prompts.md # Prompt CRUD
-├── 050-access-policies.md # AccessPolicy patterns
-├── 051-approval-workflows.md # requireCreateApproval feature
-├── 060-observability-tracing.md # tracing setup
-├── 061-trace-fanout.md # kagent collector fan-out
-├── 070-gitops-gitlab-ci.md # CI/CD pipeline
-├── 099-cleanup.md # full teardown
+├── README.md                            # this file
+├── 001-baseline-setup.md                # cluster prereqs + arctl + namespace
+├── 002a-setup-oidc-keycloak.md          # OIDC path A: in-cluster Keycloak
+├── 002b-setup-oidc-entra.md             # OIDC path B: Microsoft Entra ID
+├── 003-install-components.md            # agentregistry + kagent + Enterprise Agentgateway
+├── 010-aws-bedrock-runtime.md           # AWS Runtime + demochatbot
+├── 020-kagent-runtime-and-agent.md      # kagent Runtime + k8shelper
+├── 030-mcp-local-stdio.md               # in-tree stdio MCP
+├── 031-mcp-remote-github-copilot.md     # GitHub Copilot MCP via kagent
+├── 032-mcp-through-agentgateway.md      # MCP via Virtual runtime + Agentgateway
+├── 040-prompts.md                       # Prompt CRUD
+├── 050-access-policies.md               # AccessPolicy patterns
+├── 051-approval-workflows.md            # requireCreateApproval feature
+├── 060-observability-tracing.md         # tracing setup
+├── 061-trace-fanout.md                  # kagent collector fan-out
+├── 070-gitops-gitlab-ci.md              # CI/CD pipeline
+├── 099-cleanup.md                       # full teardown
 ├── tracks/
-│ ├── aws-track.md
-│ └── kagent-track.md
-└── assets/ # YAML, agent source, Terraform, ConfigMap patches
- ├── access-policies/
- ├── demochatbot-a2a/ # ADK agent source for the AWS lab
- ├── k8shelper-anthropic/ # BYO image source for the kagent lab (Claude)
- ├── k8shelper-gemini/ # BYO image source for the kagent lab (Gemini)
- ├── mcp/
- │ ├── demo-mcp/ # stdio MCP server source (Python)
- │ ├── github-copilot-mcpserver.yaml
- │ ├── github-copilot-mcp-deploy.yaml
- │ └── agentgateway/ # parent Gateway + Route + Virtual runtime + MCP for lab 032
- ├── observability/ # ConfigMap patches for lab 061
- ├── private-eks/ # Terraform reference (not used by the main flow)
- ├── prompts/
- └── providers/kagent/ # k8shelper Agent + Deployment manifests
+│   ├── aws-track.md
+│   └── kagent-track.md
+└── assets/                              # YAML, agent source, Terraform, ConfigMap patches
+    ├── access-policies/
+    ├── demochatbot-a2a/                 # ADK agent source for the AWS lab
+    ├── k8shelper-anthropic/             # BYO image source for the kagent lab (Claude)
+    ├── k8shelper-gemini/                # BYO image source for the kagent lab (Gemini)
+    ├── mcp/
+    │   ├── demo-mcp/                    # stdio MCP server source (Python)
+    │   ├── github-copilot-mcpserver.yaml
+    │   ├── github-copilot-mcp-deploy.yaml
+    │   └── agentgateway/                # parent Gateway + Route + Virtual runtime + MCP for lab 032
+    ├── observability/                   # ConfigMap patches for lab 061
+    ├── private-eks/                     # Terraform reference (not used by the main flow)
+    ├── prompts/
+    └── providers/kagent/                # k8shelper Agent + Deployment manifests
 ```

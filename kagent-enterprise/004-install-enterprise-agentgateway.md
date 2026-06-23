@@ -29,18 +29,18 @@ If your cluster already has the standard Gateway API CRDs (the Gloo Operator ins
 
 ```bash
 helm install agentgateway-crds \
- oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
- --version v2026.6.1 \
- --namespace agentgateway-system \
- --create-namespace
+  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds \
+  --version v2026.6.1 \
+  --namespace agentgateway-system \
+  --create-namespace
 ```
 
 ## 3. License Secret
 
 ```bash
 kubectl create secret generic enterprise-agentgateway-license \
- -n agentgateway-system \
- --from-literal=enterprise-agentgateway-license-key="${AGW_LICENSE_KEY}"
+  -n agentgateway-system \
+  --from-literal=enterprise-agentgateway-license-key="${AGW_LICENSE_KEY}"
 ```
 
 ## 4. Install the Controller
@@ -49,25 +49,25 @@ Create `agw-values.yaml`:
 
 ```yaml
 tokenExchange:
- enabled: true
- issuer: "http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777"
- subjectValidator:
- validatorType: "remote"
- remoteConfig:
- url: "https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys"
- apiValidator:
- validatorType: "k8s"
- actorValidator:
- validatorType: "k8s"
+  enabled: true
+  issuer: "http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777"
+  subjectValidator:
+    validatorType: "remote"
+    remoteConfig:
+      url: "https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys"
+  apiValidator:
+    validatorType: "k8s"
+  actorValidator:
+    validatorType: "k8s"
 
 controller:
- service:
- ports:
- tokenExchange: 7777
+  service:
+    ports:
+      tokenExchange: 7777
 
 licensing:
- createSecret: false
- secretName: "enterprise-agentgateway-license"
+  createSecret: false
+  secretName: "enterprise-agentgateway-license"
 ```
 
 For the OBO scenario, the **subject** token is the user's Entra access token, so the subject validator must use the Entra JWKS endpoint (`login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`) rather than the Kubernetes API server JWKS. If you don't intend to use Entra OBO at all, you can drop the `subjectValidator` block now and add it later before running [090](070-obo-entra.md).
@@ -76,11 +76,11 @@ For the OBO scenario, the **subject** token is the user's Entra access token, so
 envsubst < agw-values.yaml > /tmp/agw-values.rendered.yaml
 
 helm install agentgateway \
- oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
- --version v2026.6.1 \
- --namespace agentgateway-system \
- --create-namespace \
- -f /tmp/agw-values.rendered.yaml
+  oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
+  --version v2026.6.1 \
+  --namespace agentgateway-system \
+  --create-namespace \
+  -f /tmp/agw-values.rendered.yaml
 ```
 
 ## 5. Wire the Dataplane to the STS Endpoint
@@ -92,16 +92,16 @@ kubectl apply -f - <<EOF
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayParameters
 metadata:
- name: agentgateway-entra-testing-enterprise
- namespace: agentgateway-system
+  name: agentgateway-entra-testing-enterprise
+  namespace: agentgateway-system
 spec:
- logging:
- level: debug
- env:
- - name: STS_URI
- value: "http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777/token"
- - name: STS_AUTH_TOKEN
- value: "/var/run/secrets/xds-tokens/xds-token"
+  logging:
+    level: debug
+  env:
+    - name: STS_URI
+      value: "http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777/token"
+    - name: STS_AUTH_TOKEN
+      value: "/var/run/secrets/xds-tokens/xds-token"
 EOF
 ```
 

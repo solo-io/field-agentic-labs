@@ -31,15 +31,15 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: MCPServer
 metadata:
- name: mcp-kubernetes-server
- namespace: kagent
+  name: mcp-kubernetes-server
+  namespace: kagent
 spec:
- deployment:
- args:
- - kubernetes-mcp-server@latest
- cmd: npx
- stdioTransport: {}
- transportType: stdio
+  deployment:
+    args:
+    - kubernetes-mcp-server@latest
+    cmd: npx
+  stdioTransport: {}
+  transportType: stdio
 EOF
 ```
 
@@ -61,45 +61,45 @@ kubectl apply -f - <<EOF
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
- name: kubernetes-mcp-agent
- namespace: kagent
+  name: kubernetes-mcp-agent
+  namespace: kagent
 spec:
- description: This agent can use a single tool to expand it's Kubernetes knowledge for troubleshooting and deployment
- type: Declarative
- declarative:
- modelConfig: default-model-config
- systemMessage: |-
- You're a friendly and helpful agent that uses the Kubernetes tool to help troubleshooting and deploy environments
+  description: This agent can use a single tool to expand it's Kubernetes knowledge for troubleshooting and deployment
+  type: Declarative
+  declarative:
+    modelConfig: default-model-config
+    systemMessage: |-
+      You're a friendly and helpful agent that uses the Kubernetes tool to help troubleshooting and deploy environments
 
- # Instructions
+      # Instructions
 
- - If user question is unclear, ask for clarification before running any tools
- - Always be helpful and friendly
- - If you don't know how to answer the question DO NOT make things up
- respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
+      - If user question is unclear, ask for clarification before running any tools
+      - Always be helpful and friendly
+      - If you don't know how to answer the question DO NOT make things up
+        respond with "Sorry, I don't know how to answer that" and ask the user to further clarify the question
 
- # Response format
- - ALWAYS format your response as Markdown
- - Your response will include a summary of actions you took and an explanation of the result
- tools:
- - type: McpServer
- mcpServer:
- name: mcp-kubernetes-server
- kind: MCPServer
- toolNames:
- - events_list
- - namespaces_list
- - pods_list
- - pods_list_in_namespace
- - pods_get
- - pods_delete
- - pods_log
- - pods_exec
- - pods_run
- - resources_list
- - resources_get
- - resources_create_or_update
- - resources_delete
+      # Response format
+      - ALWAYS format your response as Markdown
+      - Your response will include a summary of actions you took and an explanation of the result
+    tools:
+    - type: McpServer
+      mcpServer:
+        name: mcp-kubernetes-server
+        kind: MCPServer
+        toolNames:
+        - events_list
+        - namespaces_list
+        - pods_list
+        - pods_list_in_namespace
+        - pods_get
+        - pods_delete
+        - pods_log
+        - pods_exec
+        - pods_run
+        - resources_list
+        - resources_get
+        - resources_create_or_update
+        - resources_delete
 EOF
 ```
 
@@ -112,8 +112,8 @@ kubectl get agents -n kagent
 Wait until both `READY` and `ACCEPTED` are `True`:
 
 ```
-NAME READY ACCEPTED AGE
-kubernetes-mcp-agent True True 45s
+NAME                    READY   ACCEPTED   AGE
+kubernetes-mcp-agent    True    True       45s
 ```
 
 ## 4. Peek Under the Hood
@@ -151,7 +151,7 @@ It should call `pods_list_in_namespace` and return a Markdown table.
 
 ```bash
 # Agent + MCP server created in steps 1-2
-kubectl delete agent kubernetes-mcp-agent -n kagent --ignore-not-found
+kubectl delete agent     kubernetes-mcp-agent  -n kagent --ignore-not-found
 kubectl delete mcpserver mcp-kubernetes-server -n kagent --ignore-not-found
 ```
 

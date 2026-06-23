@@ -11,12 +11,10 @@ The first of two mandatory setup labs. This lab takes you from "I have a Kuberne
 
 ## What This Lab Does **Not** Do
 
-This lab is on purpose minimal. It does not install Keycloak, agentregistry, or Enterprise Agentgateway. Those come next:
+This lab is on purpose minimal. It does not install Keycloak, agentregistry, kagent, or Enterprise Agentgateway. Those come next:
 
 - **OIDC** ([002a](002a-setup-oidc-keycloak.md) Keycloak **or** [002b](002b-setup-oidc-entra.md) Entra ID)
-- **Components** ([003](003-install-components.md): agentregistry + Enterprise Agentgateway)
-
-Some later unit labs (020, 031, 061) also need **kagent Enterprise** installed on the cluster. That's a prereq the user satisfies separately via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - it isn't installed by 003.
+- **Components** ([003](003-install-components.md): agentregistry + kagent + Enterprise Agentgateway)
 
 After **001 → 002a/b → 003**, you have the baseline that every unit-of-value lab (010+) assumes.
 
@@ -51,7 +49,7 @@ kubectl expose deployment lb-smoke --port=80 --type=LoadBalancer
 kubectl get svc lb-smoke -w
 # Wait for EXTERNAL-IP to be set, then:
 kubectl delete deployment lb-smoke
-kubectl delete svc lb-smoke
+kubectl delete svc        lb-smoke
 ```
 
 If `EXTERNAL-IP` stays `<pending>` indefinitely, fix your `LoadBalancer` controller before continuing. The workshop assumes this works.
@@ -67,14 +65,14 @@ kubectl create namespace agentregistry-system
 ```bash
 export ARCTL_VERSION=v2026.5.4
 curl -sSL https://storage.googleapis.com/agentregistry-enterprise/install.sh \
- | ARCTL_VERSION=$ARCTL_VERSION sh
+  | ARCTL_VERSION=$ARCTL_VERSION sh
 export PATH=$HOME/.arctl/bin:$PATH
 ```
 
 Persist the `PATH` change in your shell profile:
 
 ```bash
-echo 'export PATH="$HOME/.arctl/bin:$PATH"' >> ~/.zshrc # adjust for bash / fish
+echo 'export PATH="$HOME/.arctl/bin:$PATH"' >> ~/.zshrc   # adjust for bash / fish
 ```
 
 Verify:
@@ -91,8 +89,8 @@ If you also have the OSS `arctl` on `PATH` (e.g., `/usr/local/bin/arctl`), make 
 
 ```bash
 which -a arctl
-# /Users/you/.arctl/bin/arctl ← Enterprise, want this first
-# /usr/local/bin/arctl ← OSS
+# /Users/you/.arctl/bin/arctl   ← Enterprise, want this first
+# /usr/local/bin/arctl          ← OSS
 ```
 
 The Enterprise CLI has `arctl user login`, `arctl apply`, `arctl provider setup aws`, and the approval-workflow API surface that the OSS one lacks.
@@ -100,12 +98,12 @@ The Enterprise CLI has `arctl user login`, `arctl apply`, `arctl provider setup 
 ## 4. Sanity-Check Your Shell Has Everything
 
 ```bash
-command -v kubectl && kubectl version --client | head -1
-command -v helm && helm version --short
-command -v openssl && openssl version
-command -v envsubst && echo "envsubst found"
-command -v arctl && arctl version --json
-command -v jq && jq --version
+command -v kubectl   && kubectl   version --client | head -1
+command -v helm      && helm      version --short
+command -v openssl   && openssl   version
+command -v envsubst  && echo "envsubst found"
+command -v arctl     && arctl     version --json
+command -v jq        && jq        --version
 ```
 
 Every line should print a version or "found." If `envsubst` is missing on macOS:

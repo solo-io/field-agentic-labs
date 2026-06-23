@@ -35,14 +35,14 @@ The manifest is at [`assets/prompts/kubernetes-triage-system-prompt.yaml`](asset
 apiVersion: ar.dev/v1alpha1
 kind: Prompt
 metadata:
- name: kubernetes-triage-system-prompt
- tag: "1.0.0"
+  name: kubernetes-triage-system-prompt
+  tag: "1.0.0"
 spec:
- description: "System prompt for Kubernetes troubleshooting agents"
- content: |
- You are a Kubernetes troubleshooting assistant.
- Be concise, ask for missing context, and prioritize evidence from kubectl output.
- When diagnosing failures, check resource status, events, logs, and recent changes before recommending fixes.
+  description: "System prompt for Kubernetes troubleshooting agents"
+  content: |
+    You are a Kubernetes troubleshooting assistant.
+    Be concise, ask for missing context, and prioritize evidence from kubectl output.
+    When diagnosing failures, check resource status, events, logs, and recent changes before recommending fixes.
 ```
 
 Apply it:

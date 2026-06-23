@@ -51,9 +51,9 @@ With three agents and two pods, the third agent stays suspended (state snapshott
 - `docker buildx` with multi-platform support (the workload is a Python+Claude image, so `ko` doesn't apply here)
 - An **Anthropic API key**:
 
- ```bash
- export ANTHROPIC_API_KEY=<your-anthropic-api-key>
- ```
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
 
 ## 1. Deploy
 
@@ -62,7 +62,7 @@ From the root of the cloned `substrate/` repo:
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... \
 BUCKET_NAME="$BUCKET_NAME" \
- ./hack/install-ate.sh --deploy-demo-claude-code-multiplex
+  ./hack/install-ate.sh --deploy-demo-claude-code-multiplex
 ```
 
 This:
@@ -79,7 +79,7 @@ This:
 The dashboard talks to `ate-api-server` over gRPC (port-forwarded to your laptop) and reads pod logs from the Kubernetes API via `client-go` (so it picks up your `~/.kube/config` for cluster context).
 
 ```bash
-# Terminal 1: ateapi port-forward - keep alive for the lifetime of the demo
+# Terminal 1: ateapi port-forward — keep alive for the lifetime of the demo
 kubectl port-forward svc/ateapi 8080:8080 -n ate-system
 ```
 
@@ -112,7 +112,7 @@ Smoke-test:
 
 ```bash
 curl localhost:8090/healthz
-# {"logs":true} ← means client-go picked up the cluster context
+# {"logs":true}  ← means client-go picked up the cluster context
 ```
 
 ## 4. Drive the Demo

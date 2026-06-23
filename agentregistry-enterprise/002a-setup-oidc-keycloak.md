@@ -29,38 +29,38 @@ kubectl apply -n keycloak -f - <<'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
- name: keycloak
+  name: keycloak
 spec:
- replicas: 1
- selector: { matchLabels: { app: keycloak } }
- template:
- metadata: { labels: { app: keycloak } }
- spec:
- containers:
- - name: keycloak
- image: quay.io/keycloak/keycloak:26.0
- args: ["start-dev"]
- env:
- - { name: KEYCLOAK_ADMIN, value: admin }
- - { name: KEYCLOAK_ADMIN_PASSWORD, value: admin123 }
- - { name: KC_HTTP_ENABLED, value: "true" }
- - { name: KC_HOSTNAME_STRICT, value: "false" }
- - { name: KC_HOSTNAME_STRICT_HTTPS, value: "false" }
- ports:
- - { containerPort: 8080 }
- readinessProbe:
- httpGet: { path: /realms/master, port: 8080 }
- initialDelaySeconds: 30
- periodSeconds: 10
+  replicas: 1
+  selector: { matchLabels: { app: keycloak } }
+  template:
+    metadata: { labels: { app: keycloak } }
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0
+          args: ["start-dev"]
+          env:
+            - { name: KEYCLOAK_ADMIN,           value: admin }
+            - { name: KEYCLOAK_ADMIN_PASSWORD,  value: admin123 }
+            - { name: KC_HTTP_ENABLED,          value: "true" }
+            - { name: KC_HOSTNAME_STRICT,       value: "false" }
+            - { name: KC_HOSTNAME_STRICT_HTTPS, value: "false" }
+          ports:
+            - { containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /realms/master, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
 metadata:
- name: keycloak
+  name: keycloak
 spec:
- type: LoadBalancer
- selector: { app: keycloak }
- ports: [{ port: 8080, targetPort: 8080 }]
+  type: LoadBalancer
+  selector: { app: keycloak }
+  ports: [{ port: 8080, targetPort: 8080 }]
 EOF
 ```
 
@@ -73,16 +73,16 @@ kubectl get svc keycloak -n keycloak -w
 # Wait for EXTERNAL-IP to be set, then Ctrl-C
 
 export KC_IP=$(kubectl get svc keycloak -n keycloak \
- -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
-echo "Keycloak admin: http://${KC_IP}:8080 (admin / admin123)"
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}')
+echo "Keycloak admin: http://${KC_IP}:8080  (admin / admin123)"
 ```
 
 Pin Keycloak's hostname so its issuer URL matches what your tokens will carry:
 
 ```bash
 kubectl set env deployment/keycloak -n keycloak \
- KC_HOSTNAME_URL=http://${KC_IP}:8080 \
- KC_HOSTNAME_ADMIN_URL=http://${KC_IP}:8080
+  KC_HOSTNAME_URL=http://${KC_IP}:8080 \
+  KC_HOSTNAME_ADMIN_URL=http://${KC_IP}:8080
 kubectl rollout status deployment/keycloak -n keycloak
 ```
 
@@ -94,40 +94,40 @@ Get an admin token:
 
 ```bash
 KC_TOKEN=$(curl -s -X POST "http://${KC_IP}:8080/realms/master/protocol/openid-connect/token" \
- -d "grant_type=password" -d "client_id=admin-cli" \
- -d "username=admin" -d "password=admin123" \
- | jq -r '.access_token')
+  -d "grant_type=password" -d "client_id=admin-cli" \
+  -d "username=admin" -d "password=admin123" \
+  | jq -r '.access_token')
 ```
 
 Allow non-SSL cookies (HTTP-only POC; **don't do this in production** - use HTTPS):
 
 ```bash
 curl -s -X PUT -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/master" \
- -d '{"realm":"master","sslRequired":"none"}'
+  "http://${KC_IP}:8080/admin/realms/master" \
+  -d '{"realm":"master","sslRequired":"none"}'
 ```
 
 Create the `agentregistry-enterprise` realm:
 
 ```bash
 curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms" \
- -d '{"realm":"agentregistry-enterprise","enabled":true,"sslRequired":"none"}'
+  "http://${KC_IP}:8080/admin/realms" \
+  -d '{"realm":"agentregistry-enterprise","enabled":true,"sslRequired":"none"}'
 ```
 
 ## 5. Create the Three Groups
 
 ```bash
 for GROUP in are-admins are-readers are-writers; do
- curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/groups" \
- -d "{\"name\":\"${GROUP}\"}"
+  curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+    "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/groups" \
+    -d "{\"name\":\"${GROUP}\"}"
 done
 
 # Capture each group's GUID for later use in AccessPolicy (050)
 GROUPS_JSON=$(curl -s -H "Authorization: Bearer ${KC_TOKEN}" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/groups")
-export GROUP_ADMINS=$(echo "${GROUPS_JSON}" | jq -r '.[] | select(.name=="are-admins") | .id')
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/groups")
+export GROUP_ADMINS=$(echo "${GROUPS_JSON}"  | jq -r '.[] | select(.name=="are-admins")  | .id')
 export GROUP_READERS=$(echo "${GROUPS_JSON}" | jq -r '.[] | select(.name=="are-readers") | .id')
 export GROUP_WRITERS=$(echo "${GROUPS_JSON}" | jq -r '.[] | select(.name=="are-writers") | .id')
 
@@ -141,32 +141,32 @@ echo "GROUP_WRITERS=${GROUP_WRITERS}"
 ```bash
 # Helper: create user + set password + join group
 create_user() {
- local USERNAME=$1
- local GROUP_ID=$2
- curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users" \
- -d "{\"username\":\"${USERNAME}\",\"enabled\":true,\"email\":\"${USERNAME}@example.com\",\"emailVerified\":true,\"firstName\":\"${USERNAME}\",\"lastName\":\"user\"}"
+  local USERNAME=$1
+  local GROUP_ID=$2
+  curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+    "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users" \
+    -d "{\"username\":\"${USERNAME}\",\"enabled\":true,\"email\":\"${USERNAME}@example.com\",\"emailVerified\":true,\"firstName\":\"${USERNAME}\",\"lastName\":\"user\"}"
 
- local USER_ID=$(curl -s -H "Authorization: Bearer ${KC_TOKEN}" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users?username=${USERNAME}" \
- | jq -r '.[0].id')
+  local USER_ID=$(curl -s -H "Authorization: Bearer ${KC_TOKEN}" \
+    "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users?username=${USERNAME}" \
+    | jq -r '.[0].id')
 
- curl -s -X PUT -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users/${USER_ID}/reset-password" \
- -d "{\"type\":\"password\",\"value\":\"${USERNAME}\",\"temporary\":false}"
+  curl -s -X PUT -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
+    "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users/${USER_ID}/reset-password" \
+    -d "{\"type\":\"password\",\"value\":\"${USERNAME}\",\"temporary\":false}"
 
- curl -s -X PUT -H "Authorization: Bearer ${KC_TOKEN}" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users/${USER_ID}/groups/${GROUP_ID}"
+  curl -s -X PUT -H "Authorization: Bearer ${KC_TOKEN}" \
+    "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/users/${USER_ID}/groups/${GROUP_ID}"
 }
 
-create_user admin "${GROUP_ADMINS}"
+create_user admin  "${GROUP_ADMINS}"
 create_user reader "${GROUP_READERS}"
 create_user writer "${GROUP_WRITERS}"
 ```
 
 | Username | Password | Group |
 |---|---|---|
-| admin | admin | are-admins |
+| admin  | admin  | are-admins |
 | reader | reader | are-readers |
 | writer | writer | are-writers |
 
@@ -182,34 +182,34 @@ Two clients:
 ```bash
 # are-backend (confidential)
 curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients" \
- -d '{
- "clientId":"are-backend",
- "enabled":true,
- "publicClient":false,
- "standardFlowEnabled":true,
- "directAccessGrantsEnabled":true,
- "serviceAccountsEnabled":true,
- "redirectUris":["*"],
- "webOrigins":["*"]
- }'
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients" \
+  -d '{
+    "clientId":"are-backend",
+    "enabled":true,
+    "publicClient":false,
+    "standardFlowEnabled":true,
+    "directAccessGrantsEnabled":true,
+    "serviceAccountsEnabled":true,
+    "redirectUris":["*"],
+    "webOrigins":["*"]
+  }'
 
 # are-cli (public + device-code grant + no PKCE)
 curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients" \
- -d '{
- "clientId":"are-cli",
- "enabled":true,
- "publicClient":true,
- "standardFlowEnabled":true,
- "directAccessGrantsEnabled":true,
- "redirectUris":["*"],
- "webOrigins":["*"],
- "attributes":{
- "oauth2.device.authorization.grant.enabled":"true",
- "pkce.code.challenge.method":""
- }
- }'
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients" \
+  -d '{
+    "clientId":"are-cli",
+    "enabled":true,
+    "publicClient":true,
+    "standardFlowEnabled":true,
+    "directAccessGrantsEnabled":true,
+    "redirectUris":["*"],
+    "webOrigins":["*"],
+    "attributes":{
+      "oauth2.device.authorization.grant.enabled":"true",
+      "pkce.code.challenge.method":""
+    }
+  }'
 ```
 
 > `pkce.code.challenge.method` must be **empty** on `are-cli`. The OAuth 2.0 Device Authorization Grant doesn't send a PKCE challenge - if PKCE is required, `arctl user login` will fail with `Missing parameter: code_challenge_method`.
@@ -220,31 +220,31 @@ By default Keycloak doesn't put group memberships in tokens. Add a mapper that s
 
 ```bash
 ARE_BACKEND_ID=$(curl -s -H "Authorization: Bearer ${KC_TOKEN}" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients?clientId=are-backend" \
- | jq -r '.[0].id')
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients?clientId=are-backend" \
+  | jq -r '.[0].id')
 
 curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" -H "Content-Type: application/json" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients/${ARE_BACKEND_ID}/protocol-mappers/models" \
- -d '{
- "name":"groups",
- "protocol":"openid-connect",
- "protocolMapper":"oidc-group-membership-mapper",
- "config":{
- "claim.name":"groups",
- "full.path":"false",
- "id.token.claim":"true",
- "access.token.claim":"true",
- "userinfo.token.claim":"true"
- }
- }'
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients/${ARE_BACKEND_ID}/protocol-mappers/models" \
+  -d '{
+    "name":"groups",
+    "protocol":"openid-connect",
+    "protocolMapper":"oidc-group-membership-mapper",
+    "config":{
+      "claim.name":"groups",
+      "full.path":"false",
+      "id.token.claim":"true",
+      "access.token.claim":"true",
+      "userinfo.token.claim":"true"
+    }
+  }'
 ```
 
 ## 9. Grab the `are-backend` Client Secret
 
 ```bash
 export BACKEND_CLIENT_SECRET=$(curl -s -X POST -H "Authorization: Bearer ${KC_TOKEN}" \
- "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients/${ARE_BACKEND_ID}/client-secret" \
- | jq -r '.value')
+  "http://${KC_IP}:8080/admin/realms/agentregistry-enterprise/clients/${ARE_BACKEND_ID}/client-secret" \
+  | jq -r '.value')
 echo "BACKEND_CLIENT_SECRET=${BACKEND_CLIENT_SECRET}"
 ```
 
@@ -256,7 +256,7 @@ echo "BACKEND_CLIENT_SECRET=${BACKEND_CLIENT_SECRET}"
 export OIDC_PROVIDER=keycloak
 export OIDC_ISSUER="http://${KC_IP}:8080/realms/agentregistry-enterprise"
 export OIDC_BACKEND=are-backend
-export OIDC_PUBLIC_CLIENT=are-cli # used by arctl user login
+export OIDC_PUBLIC_CLIENT=are-cli                  # used by arctl user login
 export ARE_CLI_CLIENT_ID=are-cli
 export BACKEND_CLIENT_SECRET="${BACKEND_CLIENT_SECRET}"
 export GROUP_ADMINS="${GROUP_ADMINS}"
@@ -265,8 +265,8 @@ export GROUP_WRITERS="${GROUP_WRITERS}"
 
 # Print everything so you can paste into a notes file:
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID \
- BACKEND_CLIENT_SECRET GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
- printf '%-25s %s\n' "${V}=" "${!V}"
+         BACKEND_CLIENT_SECRET GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
+  printf '%-25s %s\n' "${V}=" "${!V}"
 done
 ```
 
@@ -276,24 +276,24 @@ Decode a real token to confirm the `groups` claim shows up:
 
 ```bash
 curl -s -X POST "http://${KC_IP}:8080/realms/agentregistry-enterprise/protocol/openid-connect/token" \
- -d "grant_type=password" \
- -d "client_id=are-backend" \
- -d "client_secret=${BACKEND_CLIENT_SECRET}" \
- -d "username=admin" \
- -d "password=admin" \
- -d "scope=openid" \
- | jq -r '.access_token' \
- | cut -d. -f2 | base64 -d 2>/dev/null | jq '{preferred_username, groups, iss, aud}'
+  -d "grant_type=password" \
+  -d "client_id=are-backend" \
+  -d "client_secret=${BACKEND_CLIENT_SECRET}" \
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "scope=openid" \
+  | jq -r '.access_token' \
+  | cut -d. -f2 | base64 -d 2>/dev/null | jq '{preferred_username, groups, iss, aud}'
 ```
 
 Expected:
 
 ```json
 {
- "preferred_username": "admin",
- "groups": ["/are-admins"],
- "iss": "http://<KC_IP>:8080/realms/agentregistry-enterprise",
- "aud": ["account"]
+  "preferred_username": "admin",
+  "groups": ["/are-admins"],
+  "iss": "http://<KC_IP>:8080/realms/agentregistry-enterprise",
+  "aud": ["account"]
 }
 ```
 
@@ -306,11 +306,11 @@ To remove just Keycloak (you'd do this if you want to switch to the Entra path i
 ```bash
 kubectl delete namespace keycloak
 unset OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT ARE_CLI_CLIENT_ID \
- BACKEND_CLIENT_SECRET GROUP_ADMINS GROUP_READERS GROUP_WRITERS KC_TOKEN KC_IP ARE_BACKEND_ID
+      BACKEND_CLIENT_SECRET GROUP_ADMINS GROUP_READERS GROUP_WRITERS KC_TOKEN KC_IP ARE_BACKEND_ID
 ```
 
 Full workshop teardown is in [099 - Cleanup](099-cleanup.md).
 
 ## Next
 
-- [003 - Install Components](003-install-components.md) (agentregistry + Enterprise Agentgateway)
+- [003 - Install Components](003-install-components.md) (agentregistry + kagent + Enterprise Agentgateway)

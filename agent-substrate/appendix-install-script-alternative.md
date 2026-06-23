@@ -121,10 +121,10 @@ kubectl delete namespace ate-system
 
 # Then re-install via Helm
 helm upgrade --install substrate-crds \
- oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
+  oci://ghcr.io/kagent-dev/substrate/helm/substrate-crds
 helm upgrade --install substrate \
- oci://ghcr.io/kagent-dev/substrate/helm/substrate \
- --namespace ate-system --create-namespace
+  oci://ghcr.io/kagent-dev/substrate/helm/substrate \
+  --namespace ate-system --create-namespace
 ```
 
 The CRDs in the Helm `substrate-crds` chart and the CRDs the script applies should be identical at compatible versions, but mixing them on the same cluster is the kind of thing that "works until it doesn't."

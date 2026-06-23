@@ -1,15 +1,14 @@
 # Track - kagent + MCP
 
-A focused path for someone who wants to register an existing in-cluster **kagent Enterprise** install as an agentregistry runtime, deploy the `k8shelper` BYO agent, and wire it to a remote **GitHub Copilot MCP** server.
+A focused path for someone who wants to register the in-cluster **kagent** install (from the baseline) as an agentregistry runtime, deploy the `k8shelper` BYO agent, and wire it to a remote **GitHub Copilot MCP** server.
 
 ## Estimated Time
 
-- ~75 minutes end-to-end (the BYO image build is the longest step) - **add the time to install kagent Enterprise via its own workshop** if you don't have it on the cluster yet
+- ~75 minutes end-to-end (the BYO image build is the longest step)
 
 ## Prerequisites
 
 - A Kubernetes cluster with a default `StorageClass` + working `LoadBalancer` Service controller
-- **kagent Enterprise installed** in the `kagent` namespace via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - labs 001 through 003
 - A container registry your cluster can pull from (Docker Hub, GHCR, ECR, GAR, ACR, …) - you'll push your own k8shelper image
 - A model API key (`ANTHROPIC_API_KEY` is the workshop default; Gemini variant available)
 - A GitHub Copilot MCP access token
@@ -17,16 +16,15 @@ A focused path for someone who wants to register an existing in-cluster **kagent
 
 ## Order
 
-1. **Install kagent Enterprise** via [its own workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) (labs 001 - 003) if not already installed
-2. [001 - Baseline Setup](../001-baseline-setup.md)
-3. **Pick one OIDC path:** [002a - Keycloak](../002a-setup-oidc-keycloak.md) or [002b - Entra ID](../002b-setup-oidc-entra.md)
-4. [003 - Install Components](../003-install-components.md) - installs agentregistry + Enterprise Agentgateway
-5. [020 - kagent Runtime + k8shelper Agent](../020-kagent-runtime-and-agent.md) - register the runtime + build/push your image + deploy the Agent
-6. [031 - Remote MCP via kagent (GitHub Copilot)](../031-mcp-remote-github-copilot.md) - register + deploy the MCP server
-7. [060 - Tracing](../060-observability-tracing.md) - set the kagent Runtime `spec.telemetryEndpoint`
-8. [061 - Trace Fan-Out Workaround](../061-trace-fanout.md) *(if traces still don't show - see the fan-out vs repoint discussion in 060)*
-9. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
-10. [099 - Cleanup](../099-cleanup.md)
+1. [001 - Baseline Setup](../001-baseline-setup.md)
+2. **Pick one OIDC path:** [002a - Keycloak](../002a-setup-oidc-keycloak.md) or [002b - Entra ID](../002b-setup-oidc-entra.md)
+3. [003 - Install Components](../003-install-components.md) - installs kagent in-cluster as part of the baseline
+4. [020 - kagent Runtime + k8shelper Agent](../020-kagent-runtime-and-agent.md) - register the runtime + build/push your image + deploy the Agent
+5. [031 - Remote MCP via kagent (GitHub Copilot)](../031-mcp-remote-github-copilot.md) - register + deploy the MCP server
+6. [060 - Tracing](../060-observability-tracing.md) - set the kagent Runtime `spec.telemetryEndpoint`
+7. [061 - Trace Fan-Out Workaround](../061-trace-fanout.md) *(if traces still don't show - see the fan-out vs repoint discussion in 060)*
+8. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
+9. [099 - Cleanup](../099-cleanup.md)
 
 ## What You Will Have at the End
 

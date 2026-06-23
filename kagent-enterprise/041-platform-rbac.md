@@ -25,11 +25,11 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
- name: kagent-crd-viewer
+  name: kagent-crd-viewer
 rules:
- - apiGroups: ["kagent.dev"]
- resources: ["agents", "mcpservers", "modelconfigs"]
- verbs: ["get", "list", "watch"]
+  - apiGroups: ["kagent.dev"]
+    resources: ["agents", "mcpservers", "modelconfigs"]
+    verbs: ["get", "list", "watch"]
 EOF
 ```
 
@@ -42,15 +42,15 @@ kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
- name: kagent-viewer-binding
+  name: kagent-viewer-binding
 subjects:
- - kind: ServiceAccount
- name: test-reader
- namespace: kagent
+  - kind: ServiceAccount
+    name: test-reader
+    namespace: kagent
 roleRef:
- kind: ClusterRole
- name: kagent-crd-viewer
- apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kagent-crd-viewer
+  apiGroup: rbac.authorization.k8s.io
 EOF
 ```
 
@@ -77,19 +77,19 @@ kubectl apply -f - --as=system:serviceaccount:kagent:test-reader <<EOF
 apiVersion: kagent.dev/v1alpha1
 kind: MCPServer
 metadata:
- name: test-reader-only
- namespace: kagent
- labels:
- kagent.solo.io/waypoint: "true"
+  name: test-reader-only
+  namespace: kagent
+  labels:
+    kagent.solo.io/waypoint: "true"
 spec:
- deployment:
- image: mcp/everything
- port: 3000
- cmd: npx
- args:
- - "-y"
- - "@modelcontextprotocol/server-github"
- transportType: stdio
+  deployment:
+    image: mcp/everything
+    port: 3000
+    cmd: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-github"
+  transportType: stdio
 EOF
 ```
 
@@ -97,8 +97,8 @@ Expected error:
 
 ```
 Error from server (Forbidden): error when creating "STDIN": mcpservers.kagent.dev is forbidden:
- User "system:serviceaccount:kagent:test-reader" cannot create resource "mcpservers" in API group
- "kagent.dev" in the namespace "kagent"
+  User "system:serviceaccount:kagent:test-reader" cannot create resource "mcpservers" in API group
+  "kagent.dev" in the namespace "kagent"
 ```
 
 ## Cleanup

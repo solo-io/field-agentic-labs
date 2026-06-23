@@ -3,8 +3,8 @@
 #
 # Set GROUP_GUID to the OIDC principal you want to grant write access to:
 #
-# export GROUP_GUID="<your-entra-group-object-id>"
-# envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
+#   export GROUP_GUID="<your-entra-group-object-id>"
+#   envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
 #
 # The `registry:publish` + `registry:edit` actions are what trigger the
 # approval workflow when config.requireCreateApproval=true is set on the

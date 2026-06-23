@@ -13,9 +13,9 @@ Enterprise Agentgateway can short-circuit a request before it ever reaches the L
 - Baseline setup complete: [001](001-baseline-setup.md) → [002](002-licenses-and-secrets.md) → [003](003-install-kagent-enterprise.md) → [004](004-install-enterprise-agentgateway.md)
 - An **Anthropic API key** (the gateway proxies to Anthropic so you can prove the guard intercepts on the way out):
 
- ```bash
- export ANTHROPIC_API_KEY=<your-anthropic-api-key>
- ```
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
 
 ## 1. Stand Up an Anthropic Backend + Route
 
@@ -27,11 +27,11 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
- name: anthropic-secret
- namespace: agentgateway-system
+  name: anthropic-secret
+  namespace: agentgateway-system
 type: Opaque
 stringData:
- Authorization: "${ANTHROPIC_API_KEY}"
+  Authorization: "${ANTHROPIC_API_KEY}"
 EOF
 
 # Anthropic AgentgatewayBackend + HTTPRoute named `claude`
@@ -39,43 +39,43 @@ kubectl apply -f - <<EOF
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
- name: anthropic
- namespace: agentgateway-system
+  name: anthropic
+  namespace: agentgateway-system
 spec:
- ai:
- provider:
- anthropic:
- model: "claude-sonnet-4-6"
- policies:
- auth:
- secretRef:
- name: anthropic-secret
+  ai:
+    provider:
+      anthropic:
+        model: "claude-sonnet-4-6"
+  policies:
+    auth:
+      secretRef:
+        name: anthropic-secret
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
- name: claude
- namespace: agentgateway-system
+  name: claude
+  namespace: agentgateway-system
 spec:
- parentRefs:
- - name: agentgateway-proxy
- namespace: agentgateway-system
- rules:
- - matches:
- - path:
- type: PathPrefix
- value: /anthropic
- filters:
- - type: URLRewrite
- urlRewrite:
- path:
- type: ReplaceFullPath
- replaceFullPath: /v1/chat/completions
- backendRefs:
- - name: anthropic
- namespace: agentgateway-system
- group: agentgateway.dev
- kind: AgentgatewayBackend
+  parentRefs:
+    - name: agentgateway-proxy
+      namespace: agentgateway-system
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /anthropic
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /v1/chat/completions
+      backendRefs:
+        - name: anthropic
+          namespace: agentgateway-system
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
 EOF
 ```
 
@@ -85,7 +85,7 @@ Get the gateway address:
 
 ```bash
 export INGRESS_GW_ADDRESS=$(kubectl get gateway agentgateway-proxy -n agentgateway-system \
- -o jsonpath='{.status.addresses[0].value}')
+  -o jsonpath='{.status.addresses[0].value}')
 echo "Gateway: ${INGRESS_GW_ADDRESS}"
 ```
 
@@ -96,23 +96,23 @@ kubectl apply -f - <<EOF
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
- name: credit-guard-prompt-guard
- namespace: agentgateway-system
+  name: credit-guard-prompt-guard
+  namespace: agentgateway-system
 spec:
- targetRefs:
- - group: gateway.networking.k8s.io
- kind: HTTPRoute
- name: claude
- backend:
- ai:
- promptGuard:
- request:
- - response:
- message: "Rejected due to inappropriate content"
- regex:
- action: Reject
- matches:
- - "credit card"
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: claude
+  backend:
+    ai:
+      promptGuard:
+        request:
+        - response:
+            message: "Rejected due to inappropriate content"
+          regex:
+            action: Reject
+            matches:
+            - "credit card"
 EOF
 ```
 
@@ -127,15 +127,15 @@ What this says:
 
 ```bash
 curl "$INGRESS_GW_ADDRESS:8080/anthropic" \
- -v \
- -H "content-type:application/json" \
- -H "anthropic-version: 2023-06-01" \
- -d '{
- "messages": [
- { "role": "system", "content": "You are a skilled cloud-native network engineer." },
- { "role": "user", "content": "What is a credit card?" }
- ]
- }' | jq
+  -v \
+  -H "content-type:application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+        "messages": [
+          { "role": "system",  "content": "You are a skilled cloud-native network engineer." },
+          { "role": "user",    "content": "What is a credit card?" }
+        ]
+      }' | jq
 ```
 
 Expected:
@@ -152,14 +152,14 @@ with the body `Rejected due to inappropriate content`.
 
 ```bash
 curl "$INGRESS_GW_ADDRESS:8080/anthropic" \
- -H "content-type:application/json" \
- -H "anthropic-version: 2023-06-01" \
- -d '{
- "messages": [
- { "role": "system", "content": "You are a skilled cloud-native network engineer." },
- { "role": "user", "content": "Explain CNI plugins in 3 sentences." }
- ]
- }' | jq
+  -H "content-type:application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+        "messages": [
+          { "role": "system",  "content": "You are a skilled cloud-native network engineer." },
+          { "role": "user",    "content": "Explain CNI plugins in 3 sentences." }
+        ]
+      }' | jq
 ```
 
 You should see a normal 200 response with the model's answer.

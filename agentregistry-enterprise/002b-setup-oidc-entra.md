@@ -30,33 +30,33 @@ Confidential client. Agentregistry's server uses it to validate tokens.
 
 ```bash
 export ARE_BACKEND_CLIENT_ID=$(az ad app create \
- --display-name "are-backend" \
- --sign-in-audience "AzureADMyOrg" \
- --query appId -o tsv)
+  --display-name "are-backend" \
+  --sign-in-audience "AzureADMyOrg" \
+  --query appId -o tsv)
 echo "ARE_BACKEND_CLIENT_ID=${ARE_BACKEND_CLIENT_ID}"
 
 export BACKEND_CLIENT_SECRET=$(az ad app credential reset \
- --id "${ARE_BACKEND_CLIENT_ID}" \
- --display-name "agentregistry-enterprise" \
- --years 1 \
- --query password -o tsv)
+  --id "${ARE_BACKEND_CLIENT_ID}" \
+  --display-name "agentregistry-enterprise" \
+  --years 1 \
+  --query password -o tsv)
 echo "BACKEND_CLIENT_SECRET=${BACKEND_CLIENT_SECRET}"
 
 # Set the Application ID URI so the delegated scope below has a stable name
 az ad app update --id "${ARE_BACKEND_CLIENT_ID}" \
- --identifier-uris "api://${ARE_BACKEND_CLIENT_ID}"
+  --identifier-uris "api://${ARE_BACKEND_CLIENT_ID}"
 
 # Expose the agentregistry delegated scope
 SCOPE_ID=$(python3 -c "import uuid; print(uuid.uuid4())")
 az ad app update --id "${ARE_BACKEND_CLIENT_ID}" \
- --set "api={\"oauth2PermissionScopes\":[{\"id\":\"${SCOPE_ID}\",\"adminConsentDisplayName\":\"Access agentregistry Enterprise\",\"adminConsentDescription\":\"Allows the app to access agentregistry Enterprise on behalf of the signed-in user\",\"isEnabled\":true,\"type\":\"User\",\"userConsentDisplayName\":\"Access agentregistry Enterprise\",\"userConsentDescription\":\"Allows the app to access agentregistry Enterprise on behalf of the signed-in user\",\"value\":\"agentregistry\"}]}"
+  --set "api={\"oauth2PermissionScopes\":[{\"id\":\"${SCOPE_ID}\",\"adminConsentDisplayName\":\"Access agentregistry Enterprise\",\"adminConsentDescription\":\"Allows the app to access agentregistry Enterprise on behalf of the signed-in user\",\"isEnabled\":true,\"type\":\"User\",\"userConsentDisplayName\":\"Access agentregistry Enterprise\",\"userConsentDescription\":\"Allows the app to access agentregistry Enterprise on behalf of the signed-in user\",\"value\":\"agentregistry\"}]}"
 
 # Create the service principal so admin consent works
 az ad sp create --id "${ARE_BACKEND_CLIENT_ID}" 2>/dev/null || true
 
-# Use the v2.0 access-token format - matches the v2.0 OIDC issuer URL the chart uses
+# Use the v2.0 access-token format — matches the v2.0 OIDC issuer URL the chart uses
 az ad app update --id "${ARE_BACKEND_CLIENT_ID}" \
- --set "api.requestedAccessTokenVersion=2"
+  --set "api.requestedAccessTokenVersion=2"
 ```
 
 ## 3. Register the CLI App (`are-cli`)
@@ -65,18 +65,18 @@ Public client. `arctl user login` uses this with the OAuth 2.0 Device Authorizat
 
 ```bash
 export ARE_CLI_CLIENT_ID=$(az ad app create \
- --display-name "are-cli" \
- --sign-in-audience "AzureADMyOrg" \
- --public-client-redirect-uris "http://localhost" \
- --is-fallback-public-client true \
- --query appId -o tsv)
+  --display-name "are-cli" \
+  --sign-in-audience "AzureADMyOrg" \
+  --public-client-redirect-uris "http://localhost" \
+  --is-fallback-public-client true \
+  --query appId -o tsv)
 echo "ARE_CLI_CLIENT_ID=${ARE_CLI_CLIENT_ID}"
 
 # Grant are-cli access to the are-backend delegated scope
 az ad app permission add \
- --id "${ARE_CLI_CLIENT_ID}" \
- --api "${ARE_BACKEND_CLIENT_ID}" \
- --api-permissions "${SCOPE_ID}=Scope"
+  --id "${ARE_CLI_CLIENT_ID}" \
+  --api "${ARE_BACKEND_CLIENT_ID}" \
+  --api-permissions "${SCOPE_ID}=Scope"
 
 az ad app permission admin-consent --id "${ARE_CLI_CLIENT_ID}"
 ```
@@ -87,15 +87,15 @@ Browser SPA for the agentregistry UI. You'll add the HTTPS callback URI in [003]
 
 ```bash
 export ARE_UI_CLIENT_ID=$(az ad app create \
- --display-name "are-ui" \
- --sign-in-audience "AzureADMyOrg" \
- --query appId -o tsv)
+  --display-name "are-ui" \
+  --sign-in-audience "AzureADMyOrg" \
+  --query appId -o tsv)
 echo "ARE_UI_CLIENT_ID=${ARE_UI_CLIENT_ID}"
 
 az ad app permission add \
- --id "${ARE_UI_CLIENT_ID}" \
- --api "${ARE_BACKEND_CLIENT_ID}" \
- --api-permissions "${SCOPE_ID}=Scope"
+  --id "${ARE_UI_CLIENT_ID}" \
+  --api "${ARE_BACKEND_CLIENT_ID}" \
+  --api-permissions "${SCOPE_ID}=Scope"
 
 az ad app permission admin-consent --id "${ARE_UI_CLIENT_ID}"
 ```
@@ -104,16 +104,16 @@ az ad app permission admin-consent --id "${ARE_UI_CLIENT_ID}"
 
 ```bash
 export GROUP_ADMINS=$(az ad group create \
- --display-name "are-admins" --mail-nickname "are-admins" \
- --description "agentregistry Enterprise superuser access" --query id -o tsv)
+  --display-name "are-admins"  --mail-nickname "are-admins"  \
+  --description "agentregistry Enterprise superuser access"   --query id -o tsv)
 
 export GROUP_READERS=$(az ad group create \
- --display-name "are-readers" --mail-nickname "are-readers" \
- --description "agentregistry Enterprise read-only access" --query id -o tsv)
+  --display-name "are-readers" --mail-nickname "are-readers" \
+  --description "agentregistry Enterprise read-only access"   --query id -o tsv)
 
 export GROUP_WRITERS=$(az ad group create \
- --display-name "are-writers" --mail-nickname "are-writers" \
- --description "agentregistry Enterprise read + write access" --query id -o tsv)
+  --display-name "are-writers" --mail-nickname "are-writers" \
+  --description "agentregistry Enterprise read + write access" --query id -o tsv)
 
 echo "GROUP_ADMINS=${GROUP_ADMINS}"
 echo "GROUP_READERS=${GROUP_READERS}"
@@ -140,9 +140,9 @@ Entra doesn't put group memberships in tokens by default. Turn it on for `are-ba
 
 ```bash
 for APP_ID in "${ARE_BACKEND_CLIENT_ID}" "${ARE_CLI_CLIENT_ID}" "${ARE_UI_CLIENT_ID}"; do
- az ad app update --id "${APP_ID}" \
- --set "groupMembershipClaims=\"SecurityGroup\"" \
- --set "optionalClaims={\"accessToken\":[{\"name\":\"groups\",\"source\":null,\"essential\":false,\"additionalProperties\":[]}],\"idToken\":[{\"name\":\"groups\",\"source\":null,\"essential\":false,\"additionalProperties\":[]}]}"
+  az ad app update --id "${APP_ID}" \
+    --set "groupMembershipClaims=\"SecurityGroup\"" \
+    --set "optionalClaims={\"accessToken\":[{\"name\":\"groups\",\"source\":null,\"essential\":false,\"additionalProperties\":[]}],\"idToken\":[{\"name\":\"groups\",\"source\":null,\"essential\":false,\"additionalProperties\":[]}]}"
 done
 ```
 
@@ -162,10 +162,10 @@ export OIDC_PUBLIC_CLIENT="${ARE_UI_CLIENT_ID}"
 # (BACKEND_CLIENT_SECRET, ARE_CLI_CLIENT_ID, ARE_UI_CLIENT_ID, GROUP_* already exported above)
 
 for V in OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
- TENANT_ID ARE_BACKEND_CLIENT_ID ARE_CLI_CLIENT_ID ARE_UI_CLIENT_ID \
- BACKEND_CLIENT_SECRET SCOPE_ID \
- GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
- printf '%-25s %s\n' "${V}=" "${!V}"
+         TENANT_ID ARE_BACKEND_CLIENT_ID ARE_CLI_CLIENT_ID ARE_UI_CLIENT_ID \
+         BACKEND_CLIENT_SECRET SCOPE_ID \
+         GROUP_ADMINS GROUP_READERS GROUP_WRITERS; do
+  printf '%-25s %s\n' "${V}=" "${!V}"
 done
 ```
 
@@ -175,9 +175,9 @@ Run the manual device-code flow once to confirm the apps + scope + permissions l
 
 ```bash
 DEVICE=$(curl -s -X POST \
- "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/devicecode" \
- -H "Content-Type: application/x-www-form-urlencoded" \
- -d "client_id=${ARE_CLI_CLIENT_ID}&scope=openid+api://${ARE_BACKEND_CLIENT_ID}/agentregistry")
+  "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/devicecode" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=${ARE_CLI_CLIENT_ID}&scope=openid+api://${ARE_BACKEND_CLIENT_ID}/agentregistry")
 
 echo "${DEVICE}" | jq
 ```
@@ -188,19 +188,19 @@ Follow the printed URL + code in a browser. After you sign in, poll for the toke
 DEVICE_CODE=$(echo "${DEVICE}" | jq -r .device_code)
 
 while true; do
- RESP=$(curl -s -X POST \
- "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
- -H "Content-Type: application/x-www-form-urlencoded" \
- -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=${ARE_CLI_CLIENT_ID}&device_code=${DEVICE_CODE}")
- ERR=$(echo "${RESP}" | jq -r '.error // "none"')
- if [ "${ERR}" = "none" ]; then
- echo "${RESP}" | jq -r '.access_token' | cut -d. -f2 | base64 -d 2>/dev/null | jq '{preferred_username,groups,iss,aud}'
- break
- elif [ "${ERR}" = "authorization_pending" ]; then
- sleep 5
- else
- echo "${RESP}" | jq; break
- fi
+  RESP=$(curl -s -X POST \
+    "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=${ARE_CLI_CLIENT_ID}&device_code=${DEVICE_CODE}")
+  ERR=$(echo "${RESP}" | jq -r '.error // "none"')
+  if [ "${ERR}" = "none" ]; then
+    echo "${RESP}" | jq -r '.access_token' | cut -d. -f2 | base64 -d 2>/dev/null | jq '{preferred_username,groups,iss,aud}'
+    break
+  elif [ "${ERR}" = "authorization_pending" ]; then
+    sleep 5
+  else
+    echo "${RESP}" | jq; break
+  fi
 done
 ```
 
@@ -230,13 +230,13 @@ az ad group delete --group "${GROUP_READERS}"
 az ad group delete --group "${GROUP_WRITERS}"
 
 unset OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
- TENANT_ID ARE_BACKEND_CLIENT_ID ARE_CLI_CLIENT_ID ARE_UI_CLIENT_ID \
- BACKEND_CLIENT_SECRET SCOPE_ID \
- GROUP_ADMINS GROUP_READERS GROUP_WRITERS MY_USER_ID
+      TENANT_ID ARE_BACKEND_CLIENT_ID ARE_CLI_CLIENT_ID ARE_UI_CLIENT_ID \
+      BACKEND_CLIENT_SECRET SCOPE_ID \
+      GROUP_ADMINS GROUP_READERS GROUP_WRITERS MY_USER_ID
 ```
 
 Full workshop teardown is in [099 - Cleanup](099-cleanup.md).
 
 ## Next
 
-- [003 - Install Components](003-install-components.md) (agentregistry + Enterprise Agentgateway)
+- [003 - Install Components](003-install-components.md) (agentregistry + kagent + Enterprise Agentgateway)

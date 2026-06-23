@@ -118,15 +118,15 @@ Curated paths under [`tracks/`](tracks/):
 
 ```
 agent-substrate/
-├── README.md # this file
-├── 001-baseline-setup.md # cluster prereqs + clone + env file
-├── 002-gcp-iam-and-bucket.md # GCP IAM + snapshot bucket
-├── 003-install-substrate.md # Helm install + kubectl-ate
+├── README.md                            # this file
+├── 001-baseline-setup.md                # cluster prereqs + clone + env file
+├── 002-gcp-iam-and-bucket.md            # GCP IAM + snapshot bucket
+├── 003-install-substrate.md             # Helm install + kubectl-ate
 ├── 010-counter-demo.md
 ├── 011-sandbox-demo.md
 ├── 012-agent-secret-demo.md
-├── 013-claude-code-multiplex.md # DRAFT upstream
-├── 020-kagent-integration.md # install kagent + AgentHarness walkthrough
+├── 013-claude-code-multiplex.md         # DRAFT upstream
+├── 020-kagent-integration.md            # install kagent + AgentHarness walkthrough
 ├── 030-operations.md
 ├── 040-observability.md
 ├── 099-cleanup.md
@@ -135,11 +135,11 @@ agent-substrate/
 ├── appendix-install-script-alternative.md
 ├── appendix-benchmarking.md
 ├── tracks/
-│ ├── install-track.md
-│ ├── demos-track.md
-│ └── kagent-track.md
+│   ├── install-track.md
+│   ├── demos-track.md
+│   └── kagent-track.md
 └── assets/
- ├── env/ate-dev-env.sh.example # mirror of upstream env template
- ├── images/{kagent.png,suberror.png} # screenshots used by 020
- └── agentharness/ # parameterized AgentHarness + gateway-token
+    ├── env/ate-dev-env.sh.example       # mirror of upstream env template
+    ├── images/{kagent.png,suberror.png} # screenshots used by 020
+    └── agentharness/                    # parameterized AgentHarness + gateway-token
 ```

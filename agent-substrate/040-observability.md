@@ -28,7 +28,7 @@ This lab covers all three on the validated paths (GKE for "real" environments + 
 
 ```bash
 kubectl ate logs actors <actor-id>
-kubectl ate logs actors <actor-id> --follow # or -f
+kubectl ate logs actors <actor-id> --follow         # or -f
 ```
 
 By default `kubectl ate logs` queries the Kubernetes API of the worker pod where the actor is **currently** running. If the actor is suspended, it tells you so immediately:
@@ -145,18 +145,18 @@ Two prerequisites:
 
 1. **Cloud Trace API on:**
 
- ```bash
- gcloud services enable cloudtrace.googleapis.com --project=$PROJECT_ID
- ```
+   ```bash
+   gcloud services enable cloudtrace.googleapis.com --project=$PROJECT_ID
+   ```
 
 2. **Managed OpenTelemetry on the cluster:**
 
- ```bash
- gcloud beta container clusters update "$CLUSTER_NAME" \
- --project="$PROJECT_ID" \
- --location="$CLUSTER_LOCATION" \
- --managed-otel-scope=COLLECTION_AND_INSTRUMENTATION_COMPONENTS
- ```
+   ```bash
+   gcloud beta container clusters update "$CLUSTER_NAME" \
+     --project="$PROJECT_ID" \
+     --location="$CLUSTER_LOCATION" \
+     --managed-otel-scope=COLLECTION_AND_INSTRUMENTATION_COMPONENTS
+   ```
 
 Then run any command with `--trace`:
 
@@ -195,8 +195,8 @@ If you enabled Cloud Trace API + Managed OTel on GKE specifically for this lab:
 ```bash
 # Roll back Managed OTel on the cluster
 gcloud beta container clusters update "${CLUSTER_NAME}" \
- --project="${PROJECT_ID}" --location="${CLUSTER_LOCATION}" \
- --managed-otel-scope=DISABLED
+  --project="${PROJECT_ID}" --location="${CLUSTER_LOCATION}" \
+  --managed-otel-scope=DISABLED
 
 # Disable the Cloud Trace API on the project (only if no other workload uses it)
 gcloud services disable cloudtrace.googleapis.com --project="${PROJECT_ID}"

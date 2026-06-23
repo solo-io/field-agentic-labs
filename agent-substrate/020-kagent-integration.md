@@ -37,9 +37,9 @@ kagent **does not** install Substrate and **does not** own `WorkerPool` capacity
 - Baseline setup complete: [001](001-baseline-setup.md) → [002](002-gcp-iam-and-bucket.md) → [003](003-install-substrate.md)
 - An **LLM provider API key**. Anthropic is the workshop default; kagent also accepts OpenAI, Gemini, Ollama:
 
- ```bash
- export ANTHROPIC_API_KEY=<your-anthropic-api-key>
- ```
+  ```bash
+  export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+  ```
 
 - `envsubst` (for the parameterized AgentHarness manifest)
 
@@ -59,9 +59,9 @@ So: confirm [003](003-install-substrate.md) is healthy (`kubectl get pods -n ate
 
 ```bash
 helm upgrade kagent-crds \
- oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
- --version 0.9.7 \
- -n kagent --create-namespace
+  oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
+  --version 0.9.7 \
+  -n kagent --create-namespace
 ```
 
 ## 2. Install kagent with the Substrate Flags
@@ -70,32 +70,32 @@ The flag list is long. Each `controller.substrate.*` flag is what wires kagent i
 
 ```bash
 helm upgrade --install kagent \
- oci://ghcr.io/kagent-dev/kagent/helm/kagent \
- --version 0.9.7 \
- -n kagent \
- --set providers.default=anthropic \
- --set providers.anthropic.apiKey="$ANTHROPIC_API_KEY" \
- --set controller.agentImage.tag="" \
- --set controller.skillsInitImage.tag="" \
- --set controller.image.registry="" \
- --set controller.image.repository=kagent-dev/kagent/controller \
- --set controller.image.tag="" \
- --set controller.image.pullPolicy="" \
- --set ui.image.registry="" \
- --set ui.image.repository=kagent-dev/kagent/ui \
- --set ui.image.tag="" \
- --set ui.image.pullPolicy="" \
- --set controller.substrate.enabled=true \
- --set controller.substrate.defaultWorkerPool.namespace=kagent \
- --set controller.substrate.defaultWorkerPool.name=kagent-default \
- --set substrateWorkerPool.create=true \
- --set substrateWorkerPool.name=kagent-default \
- --set substrateWorkerPool.replicas=1 \
- --set controller.substrate.ateApiEndpoint="dns:///api.ate-system.svc:443" \
- --set controller.substrate.ateApiInsecure=true \
- --set controller.substrate.atenetRouterURL="http://atenet-router.ate-system.svc:80" \
- --set controller.substrate.ateApiTokenFile="/var/run/secrets/tokens/ate-api/token" \
- --set substrateWorkerPool.ateomImage=ghcr.io/kagent-dev/substrate/ateom-gvisor:v0.0.6
+  oci://ghcr.io/kagent-dev/kagent/helm/kagent \
+  --version 0.9.7 \
+  -n kagent \
+  --set providers.default=anthropic \
+  --set providers.anthropic.apiKey="$ANTHROPIC_API_KEY" \
+  --set controller.agentImage.tag="" \
+  --set controller.skillsInitImage.tag="" \
+  --set controller.image.registry="" \
+  --set controller.image.repository=kagent-dev/kagent/controller \
+  --set controller.image.tag="" \
+  --set controller.image.pullPolicy="" \
+  --set ui.image.registry="" \
+  --set ui.image.repository=kagent-dev/kagent/ui \
+  --set ui.image.tag="" \
+  --set ui.image.pullPolicy="" \
+  --set controller.substrate.enabled=true \
+  --set controller.substrate.defaultWorkerPool.namespace=kagent \
+  --set controller.substrate.defaultWorkerPool.name=kagent-default \
+  --set substrateWorkerPool.create=true \
+  --set substrateWorkerPool.name=kagent-default \
+  --set substrateWorkerPool.replicas=1 \
+  --set controller.substrate.ateApiEndpoint="dns:///api.ate-system.svc:443" \
+  --set controller.substrate.ateApiInsecure=true \
+  --set controller.substrate.atenetRouterURL="http://atenet-router.ate-system.svc:80" \
+  --set controller.substrate.ateApiTokenFile="/var/run/secrets/tokens/ate-api/token" \
+  --set substrateWorkerPool.ateomImage=ghcr.io/kagent-dev/substrate/ateom-gvisor:v0.0.6
 ```
 
 What the key flags do:
@@ -132,8 +132,8 @@ Smoke-test the kagent ↔ Substrate handshake:
 
 ```bash
 kubectl run substrate-status-check -n kagent --rm -i --restart=Never \
- --image=curlimages/curl:8.10.1 -- \
- http://kagent-controller:8083/api/substrate/status
+  --image=curlimages/curl:8.10.1 -- \
+  http://kagent-controller:8083/api/substrate/status
 ```
 
 You're looking for `"enabled": true` in the response.
@@ -189,7 +189,7 @@ export SUBSTRATE_GATEWAY_TOKEN=$(openssl rand -hex 32)
 
 ```bash
 kubectl get crd agentharnesses.kagent.dev \
- -o jsonpath='{.spec.versions[?(@.name=="v1alpha2")].schema.openAPIV3Schema.properties.spec.properties.runtime.enum}'
+  -o jsonpath='{.spec.versions[?(@.name=="v1alpha2")].schema.openAPIV3Schema.properties.spec.properties.runtime.enum}'
 ```
 
 Expected:
@@ -238,20 +238,20 @@ The parameterized manifest is at [`assets/agentharness/openclaw-substrate-demo.y
 apiVersion: kagent.dev/v1alpha2
 kind: AgentHarness
 metadata:
- name: ${HARNESS_NAME}
- namespace: kagent
+  name: ${HARNESS_NAME}
+  namespace: kagent
 spec:
- backend: openclaw # openclaw or nemoclaw
- runtime: substrate
- description: OpenClaw harness running on Agent Substrate
- modelConfigRef: default-model-config
- substrate:
- workerPoolRef:
- name: ${WORKER_POOL_NAME}
- gatewayTokenSecretRef:
- name: my-substrate-gateway-token
- snapshotsConfig:
- location: ${SNAPSHOT_BUCKET}
+  backend: openclaw          # openclaw or nemoclaw
+  runtime: substrate
+  description: OpenClaw harness running on Agent Substrate
+  modelConfigRef: default-model-config
+  substrate:
+    workerPoolRef:
+      name: ${WORKER_POOL_NAME}
+    gatewayTokenSecretRef:
+      name: my-substrate-gateway-token
+    snapshotsConfig:
+      location: ${SNAPSHOT_BUCKET}
 ```
 
 Apply:
@@ -277,10 +277,10 @@ kubectl get agentharness "$HARNESS_NAME" -n kagent -o yaml
 Expected condition progression:
 
 ```text
-Accepted → manifest passes admission
-ActorTemplateReady → kagent created the ActorTemplate, Substrate built the golden snapshot
-ActorReady → ate-api created/resumed the actor
-Ready → end-to-end ready; the gateway path will serve traffic
+Accepted              → manifest passes admission
+ActorTemplateReady    → kagent created the ActorTemplate, Substrate built the golden snapshot
+ActorReady            → ate-api created/resumed the actor
+Ready                 → end-to-end ready; the gateway path will serve traffic
 ```
 
 If any condition stays `False`, look at the `message` field on that condition - it usually points at the actual issue (`workerPoolRef is required`, golden-snapshot timeout, gateway-token Secret missing).
@@ -359,7 +359,7 @@ kubectl delete agentharness "${HARNESS_NAME:-openclaw-substrate-demo}" -n kagent
 kubectl delete secret my-substrate-gateway-token -n kagent --ignore-not-found
 
 # Part 1: uninstall kagent
-helm uninstall kagent -n kagent 2>/dev/null || true
+helm uninstall kagent      -n kagent 2>/dev/null || true
 helm uninstall kagent-crds -n kagent 2>/dev/null || true
 kubectl delete namespace kagent --ignore-not-found
 

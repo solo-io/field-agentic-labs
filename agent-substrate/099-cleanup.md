@@ -11,18 +11,18 @@ Anything you created with `kubectl ate create actor <id>`:
 ```bash
 # Suspend (only suspended actors can be deleted)
 kubectl ate suspend actor <id>
-kubectl ate delete actor <id>
+kubectl ate delete  actor <id>
 ```
 
 Use `kubectl ate get actors` first to see what's still around. Bulk-delete pattern (verify the JSON shape on your version):
 
 ```bash
 kubectl ate get actors -o json \
- | jq -r '.items[].id' \
- | while read id; do
- kubectl ate suspend actor "$id" 2>/dev/null
- kubectl ate delete actor "$id" 2>/dev/null
- done
+  | jq -r '.items[].id' \
+  | while read id; do
+      kubectl ate suspend actor "$id" 2>/dev/null
+      kubectl ate delete  actor "$id" 2>/dev/null
+    done
 ```
 
 ### 2. Demos (Labs 010-013)
@@ -30,9 +30,9 @@ kubectl ate get actors -o json \
 Each demo registers a `--delete-demo-<name>` flag with `hack/install-ate.sh` - use them rather than deleting the namespace by hand, because the script also cleans up the `WorkerPool` and `ActorTemplate`:
 
 ```bash
-./hack/install-ate.sh --delete-demo-counter 2>/dev/null || true
-./hack/install-ate.sh --delete-demo-sandbox 2>/dev/null || true
-./hack/install-ate.sh --delete-demo-agent-secret 2>/dev/null || true
+./hack/install-ate.sh --delete-demo-counter             2>/dev/null || true
+./hack/install-ate.sh --delete-demo-sandbox             2>/dev/null || true
+./hack/install-ate.sh --delete-demo-agent-secret        2>/dev/null || true
 ./hack/install-ate.sh --delete-demo-claude-code-multiplex 2>/dev/null || true
 ```
 
@@ -46,7 +46,7 @@ kubectl delete agentharness <name> -n kagent --ignore-not-found
 kubectl delete secret my-substrate-gateway-token -n kagent --ignore-not-found
 
 # kagent Helm releases (this removes the default WorkerPool too if substrateWorkerPool.create was true)
-helm uninstall kagent -n kagent 2>/dev/null || true
+helm uninstall kagent      -n kagent 2>/dev/null || true
 helm uninstall kagent-crds -n kagent 2>/dev/null || true
 
 kubectl delete namespace kagent 2>/dev/null || true
@@ -57,8 +57,8 @@ kubectl delete namespace kagent 2>/dev/null || true
 If you installed via Helm ([003](003-install-substrate.md)):
 
 ```bash
-helm uninstall substrate -n ate-system 2>/dev/null || true
-helm uninstall substrate-crds 2>/dev/null || true
+helm uninstall substrate      -n ate-system 2>/dev/null || true
+helm uninstall substrate-crds                2>/dev/null || true
 kubectl delete namespace ate-system 2>/dev/null || true
 ```
 
@@ -74,9 +74,9 @@ If you installed via the script path ([appendix-install-script-alternative](appe
 
 ```bash
 ./hack/teardown.sh \
- --revoke-gke-node-permissions \
- --delete-iam-policy-bindings \
- --delete-snapshot-bucket
+  --revoke-gke-node-permissions \
+  --delete-iam-policy-bindings \
+  --delete-snapshot-bucket
 ```
 
 > **Only run this in a dedicated demo project.** The teardown removes *whole* IAM bindings and **deletes the bucket**. In a shared project, those roles or that bucket may predate the demo or be used by unrelated workloads. If in doubt, remove the specific member/role pairs by hand instead of running `--delete-iam-policy-bindings`.
@@ -89,9 +89,9 @@ The script removes the *bucket-scoped* `atelet` bindings but has no reverse for 
 
 ```bash
 gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
- --member="$ATELET_PRINCIPAL" --role=roles/storage.objectAdmin --condition=None
+  --member="$ATELET_PRINCIPAL" --role=roles/storage.objectAdmin --condition=None
 gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
- --member="$ATELET_PRINCIPAL" --role=roles/artifactregistry.reader --condition=None
+  --member="$ATELET_PRINCIPAL" --role=roles/artifactregistry.reader --condition=None
 ```
 
 `--condition=None` targets the unconditioned bindings that [002](002-gcp-iam-and-bucket.md) created.
@@ -102,9 +102,9 @@ gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
 
 ```bash
 gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
- --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer --condition=None
+  --member="serviceAccount:${NODE_SA}" --role=roles/storage.objectViewer    --condition=None
 gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
- --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader --condition=None
+  --member="serviceAccount:${NODE_SA}" --role=roles/artifactregistry.reader --condition=None
 ```
 
 #### Cluster mutations from [001 step 2](001-baseline-setup.md#2-confirm-the-cluster) are NOT rolled back
@@ -121,8 +121,8 @@ Per the [GKE beta API docs](https://docs.cloud.google.com/kubernetes-engine/docs
 ### 6. Local Files
 
 ```bash
-rm -f .ate-dev-env.sh # if you copied it from the example
-rm -f keycloak-tls.{crt,key} pinniped-kubeconfig.yaml # if you went through any auth side-quests
+rm -f .ate-dev-env.sh                              # if you copied it from the example
+rm -f keycloak-tls.{crt,key} pinniped-kubeconfig.yaml  # if you went through any auth side-quests
 ```
 
 The `kubectl-ate` binary in `$(go env GOPATH)/bin` - remove if you want:

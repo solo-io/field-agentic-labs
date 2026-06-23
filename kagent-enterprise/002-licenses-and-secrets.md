@@ -49,11 +49,11 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
- name: llm-api-keys
- namespace: kagent
+  name: llm-api-keys
+  namespace: kagent
 type: Opaque
 stringData:
- OPENAI_API_KEY: ${OPENAI_API_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 EOF
 ```
 
@@ -61,9 +61,9 @@ If you'll use Anthropic instead, swap the key - the [070 prompt guards lab](040-
 
 ```bash
 kubectl create secret generic kagent-anthropic \
- -n kagent \
- --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
- --dry-run=client -o yaml | kubectl apply -f -
+  -n kagent \
+  --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 ## 4. Create the OIDC Backend Secret
@@ -75,12 +75,12 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
- name: kagent-backend-secret
- namespace: kagent
+  name: kagent-backend-secret
+  namespace: kagent
 type: Opaque
 stringData:
- clientSecret: ${BACKEND_CLIENT_SECRET}
- secret: ${BACKEND_CLIENT_SECRET}
+  clientSecret: ${BACKEND_CLIENT_SECRET}
+  secret: ${BACKEND_CLIENT_SECRET}
 EOF
 ```
 
@@ -115,10 +115,10 @@ kubectl get secret -n kagent
 Expected - at minimum:
 
 ```
-NAME TYPE DATA AGE
-jwt Opaque 1 <age>
-kagent-backend-secret Opaque 2 <age>
-llm-api-keys Opaque 1 <age>
+NAME                     TYPE     DATA   AGE
+jwt                      Opaque   1      <age>
+kagent-backend-secret    Opaque   2      <age>
+llm-api-keys             Opaque   1      <age>
 ```
 
 ## Next
