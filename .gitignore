@@ -26,3 +26,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Personal Terraform module - keep local, do not commit
+agentregistry-enterprise/ar-gke/
+
+
+*agentregistry-enterprise/ar-gke*
