@@ -66,9 +66,12 @@ spec:
     - actions:
         - "registry:read"
       resources:
-        - { kind: skill,  name: "*" }
-        - { kind: server, name: "*" }
-        - { kind: prompt, name: "*" }
+        - kind: skill
+          name: "*"
+        - kind: server
+          name: "*"
+        - kind: prompt
+          name: "*"
 EOF
 ```
 
@@ -91,9 +94,12 @@ spec:
         - "registry:publish"
         - "registry:edit"
       resources:
-        - { kind: agent,   name: "*" }
-        - { kind: server,  name: "*" }
-        - { kind: runtime, name: "*" }
+        - kind: agent
+          name: "*"
+        - kind: server
+          name: "*"
+        - kind: runtime
+          name: "*"
 EOF
 ```
 
@@ -116,7 +122,8 @@ spec:
     - actions:
         - "runtime:invoke"
       resources:
-        - { kind: agent, name: k8shelper }
+        - kind: agent
+          name: k8shelper
 EOF
 ```
 
@@ -143,7 +150,8 @@ spec:
     - actions:
         - "runtime:invoke"
       resources:
-        - { kind: server, name: github-copilot-mcp-server }
+        - kind: server
+          name: github-copilot-mcp-server
 EOF
 ```
 

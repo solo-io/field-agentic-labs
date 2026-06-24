@@ -21,7 +21,7 @@ client
   ▼
 [ child HTTPRoute (agentregistry-system) ]   ← created by agentregistry
   │
-  │ AgentgatewayBackend                      ← created by agentregistry
+  │ EnterpriseAgentgatewayBackend            ← created by agentregistry
   ▼
 remote MCP server (https://api.githubcopilot.com/mcp)
 ```
@@ -31,7 +31,7 @@ remote MCP server (https://api.githubcopilot.com/mcp)
 | Owner | Owns |
 |---|---|
 | Gateway admin | The Kubernetes `Gateway` + the parent `HTTPRoute` that delegates `/registry` to children |
-| Agentregistry | The catalog `MCPServer`, the `Deployment` targeting `Runtime/virtual-default`, and the child `HTTPRoute` + `AgentgatewayBackend` it generates |
+| Agentregistry | The catalog `MCPServer`, the `Deployment` targeting `Runtime/virtual-default`, and the child `HTTPRoute` + `EnterpriseAgentgatewayBackend` it generates |
 
 The `agentregistry.solo.io/runtime` label on the parent `Gateway` + parent `HTTPRoute` is what binds the two halves together - it tells agentregistry "any Deployment that targets `Runtime: virtual-default` should plumb its child route into the resources carrying this label."
 
@@ -41,7 +41,7 @@ The `agentregistry.solo.io/runtime` label on the parent `Gateway` + parent `HTTP
 - Confirm the seeded `virtual-default` Runtime exists (or create it)
 - Catalog the GitHub Copilot remote MCP server in agentregistry
 - Deploy it to the `Virtual` runtime with a `pathSuffix`
-- Verify the generated child `HTTPRoute` + `AgentgatewayBackend`
+- Verify the generated child `HTTPRoute` + `EnterpriseAgentgatewayBackend`
 - Hit the exposed `/registry/github-copilot` path through the gateway
 
 ## Prerequisites
@@ -67,6 +67,12 @@ What it does:
 - **`HTTPRoute/remote-mcp-delegate`** - same label, parents to `remote-mcp-gateway`, delegates `/registry` to *any* child `HTTPRoute` (`name: "*"`) in the `agentregistry-system` namespace
 
 That second part is the delegation: when agentregistry creates a child route under itself, it gets stitched into this parent route's `/registry` prefix automatically.
+
+The delegation is possible due to the label:
+```
+labels:
+  agentregistry.solo.io/runtime: virtual-default
+```
 
 ## 2. Confirm the `Virtual` Runtime Exists
 
@@ -143,23 +149,22 @@ Agentregistry creates child resources in its install namespace whenever a `Virtu
 
 ```bash
 kubectl -n agentregistry-system get httproutes.gateway.networking.k8s.io
-kubectl -n agentregistry-system get agentgatewaybackends.agentgateway.dev
+kubectl -n agentregistry-system get enterpriseagentgatewaybackends.enterpriseagentgateway.solo.io
 ```
 
 For troubleshooting:
 
 ```bash
 kubectl -n agentregistry-system describe httproute
-kubectl -n agentregistry-system describe agentgatewaybackend
+kubectl -n agentregistry-system describe enterpriseagentgatewaybackend.enterpriseagentgateway.solo.io
 ```
 
-The child `HTTPRoute` is what the parent route's `backendRefs: [{kind: HTTPRoute, name: "*"}]` delegates to. The `AgentgatewayBackend` is what handles the upstream connection - including the `Authorization: Bearer ...` header from step 3 - to `api.githubcopilot.com`.
+The child `HTTPRoute` is what the parent route's `backendRefs: [{kind: HTTPRoute, name: "*"}]` delegates to. The `EnterpriseAgentgatewayBackend` is what handles the upstream connection - including the `Authorization: Bearer ...` header from step 3 - to `api.githubcopilot.com`.
 
 ## 6. Get the Gateway Address
 
 ```bash
 kubectl -n agentgateway-system get gateway remote-mcp-gateway
-kubectl -n agentgateway-system get svc
 ```
 
 Depending on your environment, the address might appear on the `Gateway` status (`.status.addresses`) or on the Agentgateway-managed Service (`.status.loadBalancer.ingress`).
@@ -170,24 +175,24 @@ export AGW_ADDRESS="<gateway-address>"
 
 ## 7. Call the Exposed MCP Endpoint
 
-The exact MCP request depends on which MCP client you use. As a basic connectivity check:
+The exact MCP request depends on which MCP client you use. As a basic MCP transport connectivity check, send a minimal JSON-RPC `initialize` request:
 
 ```bash
-curl -i "http://${AGW_ADDRESS}/registry/github-copilot"
+curl -i -X POST \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' \
+  "http://${AGW_ADDRESS}/registry/github-copilot"
 ```
+
+Expected: `HTTP/1.1 200 OK`, `content-type: text/event-stream`, and an `mcp-session-id` response header.
+
+If you omit `text/event-stream`, the MCP endpoint can return `406 Not Acceptable` with `mcp: client must accept text/event-stream`. If you use a plain `GET`, it can return `400 Bad Request` with `mcp: session ID is required`. Both mean the Agentgateway route is reachable, but the request is not a valid MCP streamable-HTTP initialize request.
 
 For real MCP traffic, point your MCP client at:
 
 ```
 http://<gateway-address>/registry/github-copilot
-```
-
-If the parent route has `hostnames` configured (this lab's doesn't), include the expected `Host` header:
-
-```bash
-curl -i \
-  -H "Host: mcp.example.com" \
-  "http://${AGW_ADDRESS}/registry/github-copilot"
 ```
 
 ## How This Compares to [031](031-mcp-remote-github-copilot.md)
@@ -236,7 +241,7 @@ Common causes:
 
 ### Upstream TLS or auth fails
 
-For an `https://` remote MCP URL, agentregistry configures Agentgateway to TLS to the upstream by default. If the upstream needs custom TLS (client certs, custom CAs, mTLS) or non-bearer auth handling, attach the appropriate Agentgateway policy to the generated `AgentgatewayBackend` in `agentregistry-system`.
+For an `https://` remote MCP URL, agentregistry configures Agentgateway to TLS to the upstream by default. If the upstream needs custom TLS (client certs, custom CAs, mTLS) or non-bearer auth handling, attach the appropriate Agentgateway policy to the generated `EnterpriseAgentgatewayBackend` in `agentregistry-system`.
 
 ### Two MCPs colliding at the same path
 
