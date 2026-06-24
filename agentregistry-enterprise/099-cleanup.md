@@ -2,7 +2,7 @@
 
 Tear down everything the workshop installed. Run this when you're done.
 
-Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[070](070-gitops-gitlab-ci.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
+Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[061](061-trace-fanout.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
 
 > **kagent Enterprise is not torn down by this lab.** It's a separate workshop / install - if you also want to remove it, follow the cleanup steps in the [kagent-enterprise workshop's 099](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/099-cleanup.md).
 
@@ -10,7 +10,7 @@ Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[070](070-gitops-gitla
 
 ## Recommended Order
 
-1. **Each unit-of-value lab's `## Cleanup`** - run the cleanup section of every lab you ran (010 → 020 → 030 → … → 070). Skip the ones you didn't run.
+1. **Each unit-of-value lab's `## Cleanup`** - run the cleanup section of every lab you ran (010 → 020 → 030 → … → 061). Skip the ones you didn't run.
 2. **This lab** - tear down the three component Helm releases, then the OIDC backend, then the namespaces, then local files.
 
 ## 1. Run Each Lab's Cleanup First

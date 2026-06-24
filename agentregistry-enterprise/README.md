@@ -28,7 +28,6 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 - [Prompts](#prompts)
 - [AccessPolicy & Approvals](#accesspolicy--approvals)
 - [Observability](#observability)
-- [GitOps](#gitops)
 - [Cleanup](#cleanup)
 
 ---
@@ -80,12 +79,6 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 
 ---
 
-## GitOps
-
-- [070 - Register Agents and MCP Servers from a GitLab Pipeline](070-gitops-gitlab-ci.md)
-
----
-
 ## Cleanup
 
 - [099 - Cleanup](099-cleanup.md) - tear down the baseline (each unit-of-value lab has its own cleanup too)
@@ -110,7 +103,6 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 - Enforce AccessPolicy-based RBAC against Entra group object IDs, Entra app roles, or Keycloak groups
 - Gate every catalog submission behind admin approval (`requireCreateApproval`)
 - Surface traces from all runtimes in the agentregistry dashboard via the bundled OTel Collector + ClickHouse
-- Drive registration through `arctl apply` in GitLab CI/CD
 
 ## Validated On
 
@@ -141,7 +133,6 @@ agentregistry-enterprise/
 ├── 051-approval-workflows.md            # requireCreateApproval feature
 ├── 060-observability-tracing.md         # tracing setup
 ├── 061-trace-fanout.md                  # kagent collector fan-out
-├── 070-gitops-gitlab-ci.md              # CI/CD pipeline
 ├── 099-cleanup.md                       # full teardown
 ├── tracks/
 │   ├── aws-track.md

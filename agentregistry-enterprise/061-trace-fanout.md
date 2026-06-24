@@ -73,12 +73,14 @@ kubectl -n kagent rollout status  statefulset solo-enterprise-telemetry-collecto
 
 Both ClickHouses should report a growing count while you invoke agents:
 
+agentregistry ClickHouse (the new path)
 ```bash
-# agentregistry ClickHouse (the new path)
 kubectl -n agentregistry-system exec agentregistry-enterprise-clickhouse-shard0-0 -- \
   clickhouse-client -q "SELECT count(), max(Timestamp) FROM agentregistry.otel_traces_json"
+```
 
-# kagent ClickHouse (should still receive — unchanged)
+kagent ClickHouse (should still receive — unchanged)
+```bash
 kubectl -n kagent exec kagent-mgmt-clickhouse-shard0-0 -- \
   clickhouse-client -q "SELECT count(), max(Timestamp) FROM platformdb.otel_traces_json"
 ```

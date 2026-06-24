@@ -325,4 +325,3 @@ Every unit-of-value lab from here on is self-contained. Pick one:
 - [051 - Approval Workflows](051-approval-workflows.md)
 - [060 - Observability / Tracing](060-observability-tracing.md)
 - [061 - Trace Fan-Out (kagent)](061-trace-fanout.md) (**requires kagent Enterprise already installed**)
-- [070 - GitOps with GitLab CI](070-gitops-gitlab-ci.md)

@@ -42,4 +42,3 @@ A focused path for someone who wants to register an existing in-cluster **kagent
 
 - [AWS track](aws-track.md) - add Bedrock AgentCore as a second runtime
 - [032 - MCP through Agentgateway](../032-mcp-through-agentgateway.md) - third MCP topology
-- [070 - Register Agents from a GitLab Pipeline](../070-gitops-gitlab-ci.md)
