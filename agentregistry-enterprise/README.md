@@ -48,7 +48,7 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 ## Runtimes & Agents
 
 - [010 - AWS Bedrock AgentCore Runtime + demochatbot](010-aws-bedrock-runtime.md) - registers AWS as a Runtime + deploys the `demochatbot` agent on top
-- [020 - kagent Runtime + k8shelper Agent](020-kagent-runtime-and-agent.md) - register kagent as a Runtime + build/push your own `k8shelper` BYO image + deploy
+- [020 - kagent Runtime + k8shelper Agent](020-kagent-runtime-and-agent.md) - register kagent as a Runtime, then deploy the prebuilt `k8shelper` BYO image (run [031](031-mcp-remote-github-copilot.md) before the Agent apply if using the checked-in MCP-enabled manifest)
 
 ---
 

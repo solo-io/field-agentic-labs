@@ -12,7 +12,7 @@ Register the GitHub Copilot MCP as a **remote streamable-HTTP** MCP server with 
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
 - **kagent Enterprise installed** in the `kagent` namespace via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise)
-- **kagent registered as an agentregistry Runtime.** If you haven't done [020](020-kagent-runtime-and-agent.md), do at least step 3 of it (`arctl apply -f /tmp/kagent-runtime.yaml`) to register `Runtime: kagent`. You don't need to deploy `k8shelper` itself.
+- **kagent registered as an agentregistry Runtime.** If you haven't done [020](020-kagent-runtime-and-agent.md), do steps 1-3 of it to register `Runtime: kagent`. You do not need to deploy `k8shelper` before this lab; in the full flow, you return to 020 after this lab to register and deploy the Agent.
 - A GitHub Copilot MCP access token:
 
   ```bash
@@ -78,25 +78,6 @@ Look for:
 - `phase: deployed`
 - Conditions: `Ready=True`, `RuntimeConfigured=True`, `MCPServerURL=True`
 
-## 3. (Optional) Inspect the Generated `RemoteMCPServer` CR
-
-The kagent runtime creates a `kagent.dev/v1alpha2 RemoteMCPServer` for this:
-
-```bash
-kubectl get remotemcpservers.kagent.dev -n kagent
-kubectl get remotemcpserver github-copilot-mcp-server -n kagent -o yaml
-```
-
-Healthy shape:
-
-- `Accepted=True`
-- `spec.url` set to `https://api.githubcopilot.com/mcp`
-- `status.discoveredTools` populated with the GitHub Copilot tool surface
-
-## 4. Use It from an Agent
-
-Reference `github-copilot-mcp-server` from any Agent's `spec.mcpServers`. The `k8shelper` Agent in [020](020-kagent-runtime-and-agent.md) already references it - if you ran 020, the wiring is in place and the agent will see the GitHub MCP tools at runtime.
-
 ## Cleanup
 
 ```bash
@@ -104,12 +85,6 @@ arctl delete deployment github-copilot-mcp-kagent
 arctl delete mcp        github-copilot-mcp-server --tag latest
 
 unset GITHUB_COPILOT_MCP_TOKEN
-```
-
-If you only ran step 3 of [020](020-kagent-runtime-and-agent.md) (kagent Runtime registration) specifically for this lab, also:
-
-```bash
-arctl delete runtime kagent
 ```
 
 ## Troubleshooting

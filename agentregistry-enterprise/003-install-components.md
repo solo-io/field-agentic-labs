@@ -62,6 +62,12 @@ Every line should print `OK`. If any OIDC variable prints `MISSING`, go back to 
 Build the Helm values from your OIDC variables. The script appends the Entra-only `additionalScopes` setting when `OIDC_PROVIDER=entra`. **Do not commit this file** - it contains secrets:
 
 ```bash
+if [ "${OIDC_PROVIDER}" = "keycloak" ]; then
+  export OIDC_SUPERUSER_ROLE="are-admins"
+else
+  export OIDC_SUPERUSER_ROLE="${GROUP_ADMINS}"
+fi
+
 cat > /tmp/are-values.yaml.tpl <<'EOF'
 image:
   tag: v2026.6.1
@@ -75,7 +81,7 @@ oidc:
   publicClientId: "${OIDC_PUBLIC_CLIENT}"
   clientSecret: "${BACKEND_CLIENT_SECRET}"
   roleClaim: "groups"
-  superuserRole: "${GROUP_ADMINS}"
+  superuserRole: "${OIDC_SUPERUSER_ROLE}"
   insecureSkipVerify: false
 EOF
 
@@ -107,6 +113,8 @@ EOF
 envsubst < /tmp/are-values.yaml.tpl > /tmp/are-values.yaml
 rm -f /tmp/are-values.yaml.tpl
 ```
+
+Keycloak emits group names such as `are-admins` in the `groups` claim. Entra emits group object IDs, so the Entra path uses `${GROUP_ADMINS}`.
 
 Install:
 

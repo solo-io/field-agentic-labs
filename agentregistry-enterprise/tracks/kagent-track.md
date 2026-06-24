@@ -21,12 +21,13 @@ A focused path for someone who wants to register an existing in-cluster **kagent
 2. [001 - Baseline Setup](../001-baseline-setup.md)
 3. **Pick one OIDC path:** [002a - Keycloak](../002a-setup-oidc-keycloak.md) or [002b - Entra ID](../002b-setup-oidc-entra.md)
 4. [003 - Install Components](../003-install-components.md) - installs agentregistry + Enterprise Agentgateway
-5. [020 - kagent Runtime + k8shelper Agent](../020-kagent-runtime-and-agent.md) - register the runtime + build/push your image + deploy the Agent
-6. [031 - Remote MCP via kagent (GitHub Copilot)](../031-mcp-remote-github-copilot.md) - register + deploy the MCP server
-7. [060 - Tracing](../060-observability-tracing.md) - set the kagent Runtime `spec.telemetryEndpoint`
-8. [061 - Trace Fan-Out Workaround](../061-trace-fanout.md) *(if traces still don't show - see the fan-out vs repoint discussion in 060)*
-9. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
-10. [099 - Cleanup](../099-cleanup.md)
+5. [020 - kagent Runtime + k8shelper Agent](../020-kagent-runtime-and-agent.md) steps 1-4 - register the runtime, set the image, and create the model API-key Secret
+6. [031 - Remote MCP via kagent (GitHub Copilot)](../031-mcp-remote-github-copilot.md) - register + deploy the MCP server referenced by the checked-in k8shelper Agent
+7. Return to [020](../020-kagent-runtime-and-agent.md) step 5 - register and deploy the Agent
+8. [060 - Tracing](../060-observability-tracing.md) - set the kagent Runtime `spec.telemetryEndpoint`
+9. [061 - Trace Fan-Out Workaround](../061-trace-fanout.md) *(if traces still don't show - see the fan-out vs repoint discussion in 060)*
+10. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
+11. [099 - Cleanup](../099-cleanup.md)
 
 ## What You Will Have at the End
 
