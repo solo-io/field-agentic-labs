@@ -130,7 +130,7 @@ Return the cluster + AWS account to the baseline:
 ```bash
 # agentregistry side: delete the deployment + agent + runtime
 arctl delete deployment demochatbot
-arctl delete agent      demochatbot --version 1.0.4
+arctl delete agent      demochatbot --tag 1.0.4
 arctl delete runtime    AWS
 
 # AWS side: delete the CloudFormation stack (removes the IAM role)

@@ -2,7 +2,7 @@ apiVersion: ar.dev/v1alpha1
 kind: MCPServer
 metadata:
   name: demo-tools
-  version: "1.0.0"
+  tag: "1.0.0"
 spec:
   description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
   transport: stdio

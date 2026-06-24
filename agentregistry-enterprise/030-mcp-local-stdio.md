@@ -30,7 +30,7 @@ apiVersion: ar.dev/v1alpha1
 kind: MCPServer
 metadata:
   name: demo-tools
-  version: "1.0.0"
+  tag: "1.0.0"
 spec:
   description: "A minimal MCP server with simple tools: get_time, random_number, reverse_string"
   transport: stdio
@@ -70,7 +70,7 @@ demo-tools   1.0.0     A minimal MCP server with simple tools: get_time, random_
 Inspect the full record:
 
 ```bash
-arctl get mcp demo-tools --version 1.0.0 -o yaml
+arctl get mcp demo-tools --tag latest -o yaml
 ```
 
 ## Where the Server Actually Runs
@@ -82,7 +82,7 @@ To wire it into an agent, add the reference under `spec.mcpServers` (and `spec.t
 ## Cleanup
 
 ```bash
-arctl delete mcp demo-tools --version 1.0.0
+arctl delete mcp demo-tools --tag 1.0.0
 ```
 
 ## Next

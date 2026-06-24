@@ -241,8 +241,8 @@ Tear down everything the pipeline created:
 ```bash
 # agentregistry side
 arctl delete deployment demochatbot                          2>/dev/null || true
-arctl delete agent      demochatbot --version 1.0.4          2>/dev/null || true
-arctl delete remotemcpserver github/copilot-mcp-server --version 0.1.0 2>/dev/null || true
+arctl delete agent      demochatbot --tag 1.0.4              2>/dev/null || true
+arctl delete remotemcpserver github/copilot-mcp-server --tag 0.1.0 2>/dev/null || true
 
 # Kubernetes side: the gateway + backend + route + secret the pipeline applied
 kubectl delete httproute           mcp-route          -n agentgateway-system --ignore-not-found
