@@ -1,9 +1,10 @@
 # Grants registry write actions to a non-admin group so members can stage
 # new catalog assets for admin approval (used by 051-approval-workflows.md).
 #
-# Set GROUP_GUID to the OIDC principal you want to grant write access to:
+# Set GROUP_PRINCIPAL to the OIDC principal you want to grant write access to:
 #
-#   export GROUP_GUID="<your-entra-group-object-id>"
+#   export GROUP_PRINCIPAL="are-readers"                  # Keycloak
+#   export GROUP_PRINCIPAL="<entra-group-object-id>"      # Entra
 #   envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
 #
 # The `registry:publish` + `registry:edit` actions are what trigger the
@@ -17,7 +18,7 @@ spec:
   description: "Catalog read, publish, and edit access for a non-admin group; submissions are approval-gated when requireCreateApproval is enabled"
   principals:
     - kind: Role
-      name: "${GROUP_GUID}"
+      name: "${GROUP_PRINCIPAL}"
   rules:
     - actions:
         - "registry:read"

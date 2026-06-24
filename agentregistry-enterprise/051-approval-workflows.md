@@ -51,18 +51,23 @@ If you see nothing or `false`, the `helm upgrade` didn't reach the controller - 
 
 ## 3. Grant a Non-Admin Group Writer Access
 
-Approval workflows are only interesting if you have a non-admin user who can *submit* but not *commit*. Pick a group that isn't in `oidc.superuserRole`, then grant it `registry:publish` + `registry:edit` via `AccessPolicy`.
+Approval workflows are only interesting if you have a non-admin user who can *submit* but not *commit*. Pick a group that is not in `oidc.superuserRole`, then grant it `registry:publish` + `registry:edit` via `AccessPolicy`.
 
-> **The principal is the GUID** you exported in 002a/002b as `${GROUP_READERS}` (or `${GROUP_WRITERS}`). See [050 - AccessPolicy](050-access-policies.md) for the full principal model.
+For the Keycloak path, use the group name that appears in the token (`are-readers` or `are-writers`). For the Entra path, use the group object ID exported as `${GROUP_READERS}` or `${GROUP_WRITERS}`. See [050 - AccessPolicy](050-access-policies.md) for the full principal model.
 
 The parameterized manifest is at [`assets/access-policies/writer-group-policy.yaml`](assets/access-policies/writer-group-policy.yaml):
 
 ```bash
-export GROUP_GUID="${GROUP_READERS}"   # or GROUP_WRITERS — any non-admin group works
+if [ "${OIDC_PROVIDER}" = "keycloak" ]; then
+  export GROUP_PRINCIPAL="are-readers"
+else
+  export GROUP_PRINCIPAL="${GROUP_READERS}"
+fi
+
 envsubst < assets/access-policies/writer-group-policy.yaml | arctl apply -f -
 ```
 
-That manifest grants `registry:read` / `registry:publish` / `registry:edit` on `agent` / `server` / `runtime` resources to `Role:${GROUP_GUID}`. Without `requireCreateApproval=true`, those users would commit directly to the catalog. **With** it on, every submission becomes an Administrative Request.
+That manifest grants `registry:read` / `registry:publish` / `registry:edit` on `agent` / `server` / `runtime` resources to `Role:${GROUP_PRINCIPAL}`. Without `requireCreateApproval=true`, those users would commit directly to the catalog. **With** it on, every submission becomes an Administrative Request.
 
 Confirm:
 
@@ -76,7 +81,10 @@ Pick **either** the UI flow or the CLI flow below. The result is the same - a pe
 
 ### UI submission
 
-1. Log into the UI as a member of the group you just granted.
+1. Log into the UI as a read member:
+- Username: reader
+- Password: reader
+
 2. Go to **Catalog** > **+ Create > Agent**.
 3. Fill in any test agent (name, description, source, model - anything works for the approval test).
 4. Click **Create**.
