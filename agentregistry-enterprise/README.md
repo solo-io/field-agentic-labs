@@ -18,6 +18,7 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 - A Solo Enterprise for agentgateway license key (used by [003](003-install-components.md))
 - An LLM provider API key - Anthropic / OpenAI / Gemini (used by kagent)
 - (Optional) AWS account for the AWS Bedrock AgentCore lab ([010](010-aws-bedrock-runtime.md))
+- (Optional) Azure subscription + Azure AI Foundry project for the Foundry Runtime lab ([011](011-azure-ai-foundry-runtime.md))
 - (Optional) `docker buildx` + a container registry for the BYO-agent lab ([020](020-kagent-runtime-and-agent.md))
 
 # Table of Contents
@@ -47,6 +48,7 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 ## Runtimes & Agents
 
 - [010 - AWS Bedrock AgentCore Runtime + demochatbot](010-aws-bedrock-runtime.md) - registers AWS as a Runtime + deploys the `demochatbot` agent on top
+- [011 - Azure AI Foundry Runtime](011-azure-ai-foundry-runtime.md) - registers a Foundry Agent Service project as a discovery runtime
 - [020 - kagent Runtime + k8shelper Agent](020-kagent-runtime-and-agent.md) - register kagent as a Runtime, then deploy the prebuilt `k8shelper` BYO image (run [031](031-mcp-remote-github-copilot.md) before the Agent apply if using the checked-in MCP-enabled manifest)
 
 ---
@@ -98,6 +100,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 - Install agentregistry Enterprise on Kubernetes with OIDC
 - Federate AWS Bedrock AgentCore and kagent under a single agent catalog and RBAC model
+- Federate Azure AI Foundry Agent Service projects as discovery runtimes
 - Register agents either by repo source (cloned + built by agentregistry) or by pre-built container image (BYO image)
 - Register MCP servers (`stdio` local, `streamable-http` remote, `Virtual` runtime via Agentgateway) and wire them into agents
 - Enforce AccessPolicy-based RBAC against Entra group object IDs, Entra app roles, or Keycloak groups
@@ -106,13 +109,14 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 ## Validated On
 
-- Agentregistry Enterprise chart `v2026.6.1`
-- `arctl` `v2026.6.1`
+- Agentregistry Enterprise chart `v2026.6.2`
+- `arctl` `v2026.6.2`
 - Kagent OSS chart `0.9.7`
 - Enterprise Agentgateway `v2026.6.1`
 - Keycloak `quay.io/keycloak/keycloak:26.0`
 - Kubernetes 1.29+
 - AWS Bedrock AgentCore (us-east-1)
+- Azure AI Foundry Agent Service
 
 ## Repo Layout
 
@@ -124,6 +128,7 @@ agentregistry-enterprise/
 ├── 002b-setup-oidc-entra.md             # OIDC path B: Microsoft Entra ID
 ├── 003-install-components.md            # agentregistry + kagent + Enterprise Agentgateway
 ├── 010-aws-bedrock-runtime.md           # AWS Runtime + demochatbot
+├── 011-azure-ai-foundry-runtime.md      # Azure AI Foundry Runtime
 ├── 020-kagent-runtime-and-agent.md      # kagent Runtime + k8shelper
 ├── 030-mcp-local-stdio.md               # in-tree stdio MCP
 ├── 031-mcp-remote-github-copilot.md     # GitHub Copilot MCP via kagent

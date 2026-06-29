@@ -70,7 +70,7 @@ fi
 
 cat > /tmp/are-values.yaml.tpl <<'EOF'
 image:
-  tag: v2026.6.1
+  tag: v2026.6.2
 
 service:
   type: LoadBalancer
@@ -121,7 +121,7 @@ Install:
 ```bash
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.6.1 \
+  --version 2026.6.2 \
   --namespace agentregistry-system \
   -f /tmp/are-values.yaml \
   --wait --timeout 5m
@@ -306,7 +306,7 @@ The namespaces from 001 / 002 stay - re-run this lab to reinstall.
 |---|---|
 | Agentregistry pods stuck in `Pending` on storage | No default `StorageClass`. Go back to [001 step 1](001-baseline-setup.md#1-confirm-the-cluster-is-ready). |
 | `arctl version --json` shows empty `server_version` | `ARCTL_API_BASE_URL` is unset or wrong. `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`. |
-| `arctl user whoami` shows local token info only and `registry unreachable` | Your OIDC login worked, but `ARCTL_API_BASE_URL` is stale or wrong. Re-export it with `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`; do not use `:8080` for the `2026.6.1` Service. |
+| `arctl user whoami` shows local token info only and `registry unreachable` | Your OIDC login worked, but `ARCTL_API_BASE_URL` is stale or wrong. Re-export it with `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`; do not use `:8080` for the agentregistry Service. |
 | `arctl user login` hangs on Entra | The current CLI doesn't pass `scope`. Use the manual device-code flow above. |
 | UI shows "no mapped roles" after login | The `groups` claim is missing or the GUID doesn't match `${GROUP_ADMINS}`. Decode your token at <https://jwt.io> and confirm. Re-run 002a/002b if the realm/app-reg config drifted. |
 | Agentgateway controller `CrashLoopBackOff` | Check that `AGENTGATEWAY_LICENSE_KEY` was set and passed with `--set-string licensing.licenseKey=...`. |
