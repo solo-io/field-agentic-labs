@@ -78,6 +78,24 @@ Look for:
 - `phase: deployed`
 - Conditions: `Ready=True`, `RuntimeConfigured=True`, `MCPServerURL=True`
 
+### For Secret Pulls
+
+If you want to pull image secrets:
+
+```
+apiVersion: ar.dev/v1alpha1
+kind: Runtime
+metadata:
+  name: prod-cluster
+spec:
+  type: Kagent
+  config:
+    kagentUrl: https://your-hostname.local
+    namespace: kagent
+    imagePullSecrets:
+      - my-private-registry
+```
+
 ## Cleanup
 
 ```bash
