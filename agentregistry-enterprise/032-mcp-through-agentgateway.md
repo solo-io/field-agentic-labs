@@ -199,11 +199,11 @@ http://<gateway-address>/registry/github-copilot
 
 This section has three runnable paths:
 
-- **HTTP** - the AgentRegistry Virtual runtime MCP route from this lab.
+- **HTTP** - the Agentregistry Virtual runtime MCP route from this lab.
 - **TCP** - a separate Agentgateway `TCPRoute` that sends raw TCP traffic to an echo backend.
 - **Tunnel** - a separate Agentgateway HTTP route that reaches the echo backend through an HTTP CONNECT proxy by using `backend.tunnel` policy.
 
-### 8a. HTTP: AgentRegistry Virtual MCP Route
+### 8a. HTTP: Agentregistry Virtual MCP Route
 
 MCP streamable HTTP uses an HTTP listener, path matching, and headers. You can prove that agentregistry created HTTP resources for the Virtual runtime Deployment:
 
