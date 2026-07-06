@@ -195,6 +195,261 @@ For real MCP traffic, point your MCP client at:
 http://<gateway-address>/registry/github-copilot
 ```
 
+## 8. HTTP, TCP, and Tunnels Demo
+
+This lab's runnable path is **HTTP**, because MCP streamable HTTP needs an HTTP listener, path matching, and headers. You can prove that agentregistry created HTTP resources for the Virtual runtime Deployment:
+
+```bash
+kubectl -n agentregistry-system get httproutes.gateway.networking.k8s.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-remote-mcp-agw
+
+kubectl -n agentregistry-system get enterpriseagentgatewaybackends.enterpriseagentgateway.solo.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-remote-mcp-agw
+```
+
+Inspect the child route and confirm it is HTTP path-based routing:
+
+```bash
+kubectl -n agentregistry-system get httproutes.gateway.networking.k8s.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-remote-mcp-agw \
+  -o yaml
+```
+
+Look for:
+
+- `kind: HTTPRoute`
+- `matches.path.value: /registry/github-copilot`
+- `backendRefs.kind: EnterpriseAgentgatewayBackend`
+
+TCP is not part of this Virtual MCP integration. The adapter emits `HTTPRoute` resources, not `TCPRoute` resources:
+
+```bash
+kubectl -n agentregistry-system get tcproutes.gateway.networking.k8s.io 2>/dev/null || true
+```
+
+Expected: either no `TCPRoute` CRD exists in the cluster, or no TCPRoutes are returned for this lab. If you need a raw TCP service through Agentgateway, build it as a separate Gateway API lab; do not use the AgentRegistry Virtual MCP runtime for it.
+
+Tunnels are also not configured by this lab. This upstream is public (`https://api.githubcopilot.com/mcp`), so the Agentgateway data plane connects directly. If your upstream MCP is private, first make the upstream reachable from Agentgateway through your chosen tunnel/private-network pattern, then reuse the same `MCPServer` + `Deployment` shape from this lab.
+
+## 9. Transformation Demo
+
+This demo adds a second MCP catalog entry that sets two upstream headers:
+
+- `Authorization: Bearer ${GITHUB_COPILOT_MCP_TOKEN}` for GitHub Copilot upstream auth
+- `X-Agentregistry-Lab: 032-transformation` as a visible lab transformation
+
+Apply the transform demo assets:
+
+```bash
+envsubst < assets/mcp/agentgateway/github-copilot-transform-mcp.yaml | arctl apply -f -
+arctl apply -f assets/mcp/agentgateway/github-copilot-transform-deploy.yaml
+```
+
+Wait for the Deployment to report ready:
+
+```bash
+arctl get deployment github-copilot-transform-agw -o yaml
+```
+
+Inspect the generated child `HTTPRoute` and confirm agentregistry projected `spec.remote.headers` into a `RequestHeaderModifier` filter:
+
+```bash
+kubectl -n agentregistry-system get httproutes.gateway.networking.k8s.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-transform-agw \
+  -o yaml
+```
+
+Look for this shape in the generated route:
+
+```yaml
+filters:
+  - type: RequestHeaderModifier
+    requestHeaderModifier:
+      set:
+        - name: Authorization
+          value: Bearer ...
+        - name: X-Agentregistry-Lab
+          value: 032-transformation
+```
+
+Call the transformed endpoint:
+
+```bash
+curl -i -X POST \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' \
+  "http://${AGW_ADDRESS}/registry/github-copilot-transform"
+```
+
+Expected: `HTTP/1.1 200 OK`, `content-type: text/event-stream`, and an `mcp-session-id` response header.
+
+## 10. MCP Auth Demo
+
+This section has two runnable auth demos:
+
+- **Upstream auth** - Agentgateway authenticates to GitHub Copilot MCP with a static bearer token.
+- **Client-facing MCP auth** - Agentgateway requires MCP clients to present a Keycloak JWT before it proxies traffic upstream.
+
+### 10a. Upstream Auth with an AgentRegistry Secret
+
+This demo separates the upstream credential from the MCP catalog entry. Instead of putting `Authorization` in `spec.remote.headers`, it stores the upstream token in an AgentRegistry `Secret` and references it from `spec.runtimeConfig.backend.auth.secretRef`.
+
+Apply the write-only AgentRegistry Secret:
+
+```bash
+AR_BASE="${ARCTL_API_BASE_URL%/}"
+AR_BASE="${AR_BASE%/v0}"
+
+python3 - <<'PY' > /tmp/github-copilot-upstream-auth.json
+import json
+import os
+
+token = os.environ["GITHUB_COPILOT_MCP_TOKEN"]
+print(json.dumps({
+    "apiVersion": "ar.dev/v1alpha1",
+    "kind": "Secret",
+    "metadata": {"name": "github-copilot-upstream-auth"},
+    "spec": {
+        "type": "Opaque",
+        "stringData": {"Authorization": f"Bearer {token}"},
+    },
+}))
+PY
+
+curl -sS -X PUT \
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data @/tmp/github-copilot-upstream-auth.json \
+  "${AR_BASE}/v0/secrets/github-copilot-upstream-auth" \
+  | python3 -m json.tool
+```
+
+Confirm the Secret exists without revealing the token value:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  "${AR_BASE}/v0/secrets/github-copilot-upstream-auth" \
+  | python3 -m json.tool
+```
+
+Expected: the response shows `status.dataKeys` with `Authorization`, not the bearer token.
+
+Apply the MCP entry with no headers and the Deployment that references the Secret:
+
+```bash
+arctl apply -f assets/mcp/agentgateway/github-copilot-auth-secret-mcp.yaml
+arctl apply -f assets/mcp/agentgateway/github-copilot-auth-secret-deploy.yaml
+```
+
+Wait for it to become ready:
+
+```bash
+arctl get deployment github-copilot-auth-secret-agw -o yaml
+```
+
+Inspect the generated backend and confirm it has backend auth wired by secret reference:
+
+```bash
+kubectl -n agentregistry-system get enterpriseagentgatewaybackends.enterpriseagentgateway.solo.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-auth-secret-agw \
+  -o yaml
+```
+
+Look for a backend policy with `auth.secretRef`. The Secret name is the mirrored Kubernetes Secret that agentregistry created in `agentregistry-system`; it is not the original AgentRegistry Secret name.
+
+Call the auth-secret endpoint:
+
+```bash
+curl -i -X POST \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' \
+  "http://${AGW_ADDRESS}/registry/github-copilot-auth-secret"
+```
+
+Expected: `HTTP/1.1 200 OK`, `content-type: text/event-stream`, and an `mcp-session-id` response header.
+
+This is upstream auth only. It lets Agentgateway authenticate to GitHub Copilot MCP. It does **not** authenticate clients that call the gateway URL.
+
+### 10b. Client-Facing MCP Auth with Keycloak
+
+This demo requires the Keycloak setup path from [002a](002a-setup-oidc-keycloak.md). If you used Entra in [002b](002b-setup-oidc-entra.md), skip this subsection or adapt the issuer, JWKS backend, and token minting commands for Entra.
+
+Create the Agentgateway backend that fetches Keycloak JWKS:
+
+```bash
+kubectl apply -f assets/mcp/agentgateway/keycloak-jwks-backend.yaml
+```
+
+The client-auth deployment reuses the MCPServer and Secret from 10a, then adds `runtimeConfig.backend.mcp.authentication`. Apply it with `envsubst` so `OIDC_ISSUER` and `AGW_ADDRESS` are rendered into the resource metadata:
+
+```bash
+envsubst < assets/mcp/agentgateway/github-copilot-client-auth-deploy.yaml | arctl apply -f -
+```
+
+Wait for it to become ready:
+
+```bash
+arctl get deployment github-copilot-client-auth-agw -o yaml
+```
+
+Inspect the generated backend and confirm MCP authentication is configured:
+
+```bash
+kubectl -n agentregistry-system get enterpriseagentgatewaybackends.enterpriseagentgateway.solo.io \
+  -l agentregistry.solo.io/owner-deployment=default.github-copilot-client-auth-agw \
+  -o yaml
+```
+
+Look for:
+
+```yaml
+policies:
+  mcp:
+    authentication:
+      mode: Strict
+      issuer: ...
+      jwks:
+        backendRef:
+          name: keycloak-jwks
+```
+
+Call the endpoint without a token:
+
+```bash
+curl -i -X POST \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' \
+  "http://${AGW_ADDRESS}/registry/github-copilot-client-auth"
+```
+
+Expected: `HTTP/1.1 401 Unauthorized` with a `WWW-Authenticate` header.
+
+Mint a Keycloak token and call the same MCP endpoint with `Authorization: Bearer ...`:
+
+```bash
+export MCP_CLIENT_TOKEN=$(curl -s -X POST "${OIDC_ISSUER}/protocol/openid-connect/token" \
+  -d "grant_type=password" \
+  -d "client_id=are-backend" \
+  -d "client_secret=${BACKEND_CLIENT_SECRET}" \
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "scope=openid" \
+  | jq -r '.access_token')
+
+curl -i -X POST \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${MCP_CLIENT_TOKEN}" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"0.0.1"}}}' \
+  "http://${AGW_ADDRESS}/registry/github-copilot-client-auth"
+```
+
+Expected: `HTTP/1.1 200 OK`, `content-type: text/event-stream`, and an `mcp-session-id` response header.
+
 ## How This Compares to [031](031-mcp-remote-github-copilot.md)
 
 Same upstream MCP server, three different ways to get an agent to talk to it:
@@ -252,6 +507,21 @@ If two `Deployment`s used `pathSuffix: /github-copilot` against the same `Virtua
 ```bash
 arctl delete deployment github-copilot-remote-mcp-agw
 arctl delete mcp github-copilot-remote-mcp --tag latest
+
+arctl delete deployment github-copilot-transform-agw
+arctl delete mcp github-copilot-transform-mcp --tag latest
+
+arctl delete deployment github-copilot-auth-secret-agw
+arctl delete deployment github-copilot-client-auth-agw
+arctl delete mcp github-copilot-auth-secret-mcp --tag latest
+
+AR_BASE="${ARCTL_API_BASE_URL%/}"
+AR_BASE="${AR_BASE%/v0}"
+curl -sS -X DELETE \
+  -H "Authorization: Bearer ${ARCTL_API_TOKEN}" \
+  "${AR_BASE}/v0/secrets/github-copilot-upstream-auth"
+
+kubectl -n agentregistry-system delete agentgatewaybackend keycloak-jwks
 
 kubectl -n agentgateway-system delete httproute remote-mcp-delegate
 kubectl -n agentgateway-system delete gateway remote-mcp-gateway

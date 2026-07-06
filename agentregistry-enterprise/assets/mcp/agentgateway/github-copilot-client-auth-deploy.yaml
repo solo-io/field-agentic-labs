@@ -1,0 +1,49 @@
+# Deploy the auth-secret MCP with client-facing MCP authentication enabled.
+#
+# Apply with envsubst. Requires:
+#   OIDC_ISSUER: issuer from the Keycloak setup, such as
+#     http://<KC_IP>:8080/realms/agentregistry-enterprise
+#   AGW_ADDRESS: gateway address from this lab
+#
+# This demo reuses:
+#   - MCPServer/github-copilot-auth-secret-mcp
+#   - Secret/github-copilot-upstream-auth
+#   - AgentgatewayBackend/keycloak-jwks in agentregistry-system
+apiVersion: ar.dev/v1alpha1
+kind: Deployment
+metadata:
+  name: github-copilot-client-auth-agw
+spec:
+  targetRef:
+    kind: MCPServer
+    name: github-copilot-auth-secret-mcp
+    tag: latest
+  runtimeRef:
+    kind: Runtime
+    name: virtual-default
+  runtimeConfig:
+    route:
+      pathSuffix: /github-copilot-client-auth
+    backend:
+      auth:
+        secretRef:
+          name: github-copilot-upstream-auth
+      mcp:
+        authentication:
+          mode: Strict
+          issuer: "${OIDC_ISSUER}"
+          provider: Keycloak
+          audiences:
+            - account
+          jwks:
+            backendRef:
+              group: agentgateway.dev
+              kind: AgentgatewayBackend
+              name: keycloak-jwks
+            jwksPath: /realms/agentregistry-enterprise/protocol/openid-connect/certs
+          resourceMetadata:
+            resource: "http://${AGW_ADDRESS}/registry/github-copilot-client-auth"
+            authorizationServers:
+              - "http://${AGW_ADDRESS}/registry/github-copilot-client-auth"
+            scopesSupported:
+              - openid

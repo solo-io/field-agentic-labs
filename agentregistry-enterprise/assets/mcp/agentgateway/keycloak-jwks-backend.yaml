@@ -1,0 +1,13 @@
+# Agentgateway backend used by the client-facing MCP auth demo.
+#
+# This targets the in-cluster Keycloak service from 002a. Apply this only when
+# you chose the Keycloak OIDC setup path.
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: keycloak-jwks
+  namespace: agentregistry-system
+spec:
+  static:
+    host: keycloak.keycloak.svc.cluster.local
+    port: 8080

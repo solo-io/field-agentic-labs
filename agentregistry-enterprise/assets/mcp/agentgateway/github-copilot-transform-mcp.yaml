@@ -1,0 +1,21 @@
+# Remote MCP catalog entry used to demonstrate request header transformation.
+#
+# Agentregistry projects spec.remote.headers into a RequestHeaderModifier filter
+# on the generated child HTTPRoute. Apply with envsubst so the upstream
+# Authorization header is populated for GitHub Copilot MCP.
+apiVersion: ar.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github-copilot-transform-mcp
+  tag: latest
+spec:
+  title: GitHub Copilot Transform MCP
+  description: GitHub Copilot MCP exposed through Agentgateway with a lab header transformation
+  remote:
+    type: streamable-http
+    url: https://api.githubcopilot.com/mcp
+    headers:
+      - name: Authorization
+        value: "Bearer ${GITHUB_COPILOT_MCP_TOKEN}"
+      - name: X-Agentregistry-Lab
+        value: "032-transformation"

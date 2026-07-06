@@ -1,0 +1,19 @@
+# Deploy the transform demo MCP to the Virtual runtime.
+#
+# The generated child HTTPRoute should include a RequestHeaderModifier filter
+# that sets Authorization and X-Agentregistry-Lab before proxying upstream.
+apiVersion: ar.dev/v1alpha1
+kind: Deployment
+metadata:
+  name: github-copilot-transform-agw
+spec:
+  targetRef:
+    kind: MCPServer
+    name: github-copilot-transform-mcp
+    tag: latest
+  runtimeRef:
+    kind: Runtime
+    name: virtual-default
+  runtimeConfig:
+    route:
+      pathSuffix: /github-copilot-transform
