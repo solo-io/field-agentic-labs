@@ -293,7 +293,7 @@ This section has two runnable auth demos:
 
 ### 10a. Upstream Auth with an AgentRegistry Secret
 
-This demo separates the upstream credential from the MCP catalog entry. Instead of putting `Authorization` in `spec.remote.headers`, it stores the upstream token in an AgentRegistry `Secret` and references it from `spec.runtimeConfig.backend.auth.secretRef`.
+This demo separates the upstream credential from the MCP catalog entry. Instead of putting `Authorization` in `spec.remote.headers`, it stores the upstream token in an Agentregistry `Secret` and references it from `spec.runtimeConfig.backend.auth.secretRef`.
 
 Apply the write-only AgentRegistry Secret:
 
