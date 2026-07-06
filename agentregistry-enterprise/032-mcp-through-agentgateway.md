@@ -197,7 +197,15 @@ http://<gateway-address>/registry/github-copilot
 
 ## 8. HTTP, TCP, and Tunnels Demo
 
-This lab's runnable path is **HTTP**, because MCP streamable HTTP needs an HTTP listener, path matching, and headers. You can prove that agentregistry created HTTP resources for the Virtual runtime Deployment:
+This section has three runnable paths:
+
+- **HTTP** - the AgentRegistry Virtual runtime MCP route from this lab.
+- **TCP** - a separate Agentgateway `TCPRoute` that sends raw TCP traffic to an echo backend.
+- **Tunnel** - a separate Agentgateway HTTP route that reaches the echo backend through an HTTP CONNECT proxy by using `backend.tunnel` policy.
+
+### 8a. HTTP: AgentRegistry Virtual MCP Route
+
+MCP streamable HTTP uses an HTTP listener, path matching, and headers. You can prove that agentregistry created HTTP resources for the Virtual runtime Deployment:
 
 ```bash
 kubectl -n agentregistry-system get httproutes.gateway.networking.k8s.io \
@@ -221,15 +229,82 @@ Look for:
 - `matches.path.value: /registry/github-copilot`
 - `backendRefs.kind: EnterpriseAgentgatewayBackend`
 
-TCP is not part of this Virtual MCP integration. The adapter emits `HTTPRoute` resources, not `TCPRoute` resources:
+### 8b. TCP: Agentgateway TCPRoute
+
+`TCPRoute` is part of the Gateway API experimental channel. If your cluster does not already have it, install the experimental Gateway API CRDs:
 
 ```bash
-kubectl -n agentregistry-system get tcproutes.gateway.networking.k8s.io 2>/dev/null || true
+kubectl get crd tcproutes.gateway.networking.k8s.io >/dev/null 2>&1 || \
+  kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/experimental-install.yaml
 ```
 
-Expected: either no `TCPRoute` CRD exists in the cluster, or no TCPRoutes are returned for this lab. If you need a raw TCP service through Agentgateway, build it as a separate Gateway API lab; do not use the AgentRegistry Virtual MCP runtime for it.
+Apply the TCP and tunnel demo asset:
 
-Tunnels are also not configured by this lab. This upstream is public (`https://api.githubcopilot.com/mcp`), so the Agentgateway data plane connects directly. If your upstream MCP is private, first make the upstream reachable from Agentgateway through your chosen tunnel/private-network pattern, then reuse the same `MCPServer` + `Deployment` shape from this lab.
+```bash
+kubectl apply -f assets/mcp/agentgateway/http-tcp-tunnel-demo.yaml
+kubectl -n agentgateway-system rollout status deployment/agw-lab-echo
+kubectl -n agentgateway-system rollout status deployment/agw-lab-connect-proxy
+```
+
+The asset extends `Gateway/remote-mcp-gateway` with a `TCP` listener on port `9090`, creates `TCPRoute/agw-lab-tcp`, and routes TCP traffic to an echo backend.
+
+Confirm the `TCPRoute` was accepted:
+
+```bash
+kubectl -n agentgateway-system get tcproute agw-lab-tcp -o yaml
+```
+
+Look for:
+
+- `kind: TCPRoute`
+- `parentRefs.sectionName: tcp`
+- `conditions[type=Accepted].status: "True"`
+- `conditions[type=ResolvedRefs].status: "True"`
+
+Call the TCP listener. This sends an HTTP request over the raw TCP route to the echo backend:
+
+```bash
+curl -i "http://${AGW_ADDRESS}:9090/tcp-demo"
+```
+
+Expected: `HTTP/1.1 200 OK` from the echo backend.
+
+### 8c. Tunnel: Backend Proxy
+
+The same asset also creates:
+
+- `Deployment/agw-lab-connect-proxy` - a tiny HTTP proxy that supports absolute-form HTTP requests and CONNECT
+- `HTTPRoute/agw-lab-tunnel` - routes `/tunnel-demo` to the echo backend
+- `AgentgatewayPolicy/agw-lab-tunnel` - attaches `backend.tunnel.backendRef` to the route so Agentgateway reaches the backend through the proxy
+
+Confirm the tunnel policy is accepted:
+
+```bash
+kubectl -n agentgateway-system get agentgatewaypolicy agw-lab-tunnel -o yaml
+```
+
+Look for:
+
+- `conditions[type=Accepted].status: "True"`
+- `conditions[type=Attached].status: "True"`
+
+Call the tunnel-backed HTTP route:
+
+```bash
+curl -i \
+  -H "Host: agw-lab-echo.agentgateway-system.svc.cluster.local:8080" \
+  "http://${AGW_ADDRESS}/tunnel-demo"
+```
+
+Expected: `HTTP/1.1 200 OK` from the echo backend.
+
+Confirm the CONNECT proxy was actually used by checking its logs:
+
+```bash
+kubectl -n agentgateway-system logs deploy/agw-lab-connect-proxy --tail=20
+```
+
+Expected: at least one line like `HTTP GET agw-lab-echo.agentgateway-system.svc.cluster.local:8080/tunnel-demo`.
 
 ## 9. Transformation Demo
 
@@ -522,6 +597,13 @@ curl -sS -X DELETE \
   "${AR_BASE}/v0/secrets/github-copilot-upstream-auth"
 
 kubectl -n agentregistry-system delete agentgatewaybackend keycloak-jwks
+
+kubectl -n agentgateway-system delete agentgatewaypolicy agw-lab-tunnel
+kubectl -n agentgateway-system delete httproute agw-lab-tunnel
+kubectl -n agentgateway-system delete tcproute agw-lab-tcp
+kubectl -n agentgateway-system delete svc agw-lab-connect-proxy agw-lab-echo
+kubectl -n agentgateway-system delete deploy agw-lab-connect-proxy agw-lab-echo
+kubectl -n agentgateway-system delete configmap agw-lab-connect-proxy
 
 kubectl -n agentgateway-system delete httproute remote-mcp-delegate
 kubectl -n agentgateway-system delete gateway remote-mcp-gateway

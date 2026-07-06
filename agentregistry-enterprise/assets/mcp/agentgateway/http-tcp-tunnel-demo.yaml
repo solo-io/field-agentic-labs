@@ -1,0 +1,234 @@
+# Runnable HTTP, TCP, and backend tunnel demo for 032-mcp-through-agentgateway.md.
+#
+# This extends the existing remote-mcp-gateway with a TCP listener on :9090,
+# deploys an echo backend, exposes it through a TCPRoute, and exposes the same
+# backend through an HTTPRoute that uses an Agentgateway backend tunnel policy.
+# The proxy supports absolute-form HTTP proxy requests and CONNECT so you can
+# observe which form Agentgateway uses for the request.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: remote-mcp-gateway
+  namespace: agentgateway-system
+  labels:
+    agentregistry.solo.io/runtime: virtual-default
+spec:
+  gatewayClassName: enterprise-agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 80
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+    - protocol: TCP
+      port: 9090
+      name: tcp
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agw-lab-echo
+  namespace: agentgateway-system
+  labels:
+    app: agw-lab-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agw-lab-echo
+  template:
+    metadata:
+      labels:
+        app: agw-lab-echo
+    spec:
+      containers:
+        - name: echo
+          image: jmalloc/echo-server@sha256:c87f80de8dbb976a59b228fc9ecf257e0574c6f760c2f1c5f05f64c7ac7fbc1e
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agw-lab-echo
+  namespace: agentgateway-system
+spec:
+  selector:
+    app: agw-lab-echo
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: agw-lab-tcp
+  namespace: agentgateway-system
+spec:
+  parentRefs:
+    - name: remote-mcp-gateway
+      sectionName: tcp
+  rules:
+    - backendRefs:
+        - name: agw-lab-echo
+          port: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agw-lab-connect-proxy
+  namespace: agentgateway-system
+data:
+  proxy.py: |
+    import urllib.parse
+    import select
+    import socket
+    import socketserver
+
+    def relay(a, b):
+        sockets = [a, b]
+        while True:
+            readable, _, _ = select.select(sockets, [], [], 60)
+            if not readable:
+                break
+            for sock in readable:
+                data = sock.recv(65535)
+                if not data:
+                    return
+                (b if sock is a else a).sendall(data)
+
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            line = self.rfile.readline().decode("utf-8", "replace").rstrip("\r\n")
+            if not line:
+                return
+            method, target, version = line.split(maxsplit=2)
+            headers = []
+            host_header = ""
+            while True:
+                raw = self.rfile.readline()
+                if raw in (b"\r\n", b"\n", b""):
+                    break
+                header = raw.decode("utf-8", "replace").rstrip("\r\n")
+                headers.append(header)
+                if header.lower().startswith("host:"):
+                    host_header = header.split(":", 1)[1].strip()
+
+            if method.upper() == "CONNECT":
+                host, port = target.rsplit(":", 1)
+                print(f"CONNECT {host}:{port}", flush=True)
+                upstream = socket.create_connection((host, int(port)), timeout=10)
+                self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                relay(self.connection, upstream)
+                return
+
+            parsed = urllib.parse.urlsplit(target)
+            if parsed.scheme and parsed.netloc:
+                hostport = parsed.netloc
+                path = urllib.parse.urlunsplit(("", "", parsed.path or "/", parsed.query, ""))
+            else:
+                hostport = host_header
+                path = target
+            if ":" in hostport:
+                host, port = hostport.rsplit(":", 1)
+            else:
+                host, port = hostport, "80"
+            print(f"HTTP {method} {host}:{port}{path}", flush=True)
+            upstream = socket.create_connection((host, int(port)), timeout=10)
+            upstream.sendall(f"{method} {path} {version}\r\n".encode())
+            for header in headers:
+                upstream.sendall((header + "\r\n").encode())
+            upstream.sendall(b"\r\n")
+            relay(self.connection, upstream)
+
+    class Server(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+
+    Server(("0.0.0.0", 3128), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agw-lab-connect-proxy
+  namespace: agentgateway-system
+  labels:
+    app: agw-lab-connect-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agw-lab-connect-proxy
+  template:
+    metadata:
+      labels:
+        app: agw-lab-connect-proxy
+    spec:
+      containers:
+        - name: proxy
+          image: python:3.12-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - /app/proxy.py
+          ports:
+            - containerPort: 3128
+          volumeMounts:
+            - name: proxy
+              mountPath: /app
+      volumes:
+        - name: proxy
+          configMap:
+            name: agw-lab-connect-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agw-lab-connect-proxy
+  namespace: agentgateway-system
+spec:
+  selector:
+    app: agw-lab-connect-proxy
+  ports:
+    - name: connect
+      port: 3128
+      targetPort: 3128
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: agw-lab-tunnel
+  namespace: agentgateway-system
+spec:
+  parentRefs:
+    - name: remote-mcp-gateway
+      sectionName: http
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /tunnel-demo
+      backendRefs:
+        - name: agw-lab-echo
+          port: 8080
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw-lab-tunnel
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: agw-lab-tunnel
+  backend:
+    tunnel:
+      backendRef:
+        name: agw-lab-connect-proxy
+        port: 3128
