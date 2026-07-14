@@ -148,15 +148,20 @@ helm upgrade agentregistry-enterprise \
   --wait --timeout 10m
 ```
 
-Verify the server received the audit environment:
+Verify the server received the audit environment. The chart injects the `AUDIT_*` variables through the `agentregistry-enterprise` ConfigMap via `envFrom`, not as individual `env` entries on the Deployment, so inspect the running pod (or the ConfigMap) rather than the Deployment spec:
 
 ```bash
-kubectl get deployment agentregistry-enterprise-server \
-  -n agentregistry-system -o json | jq '[
-    .spec.template.spec.containers[0].env[]
-    | select(.name | startswith("AUDIT_"))
-    | {name, value}
-  ]'
+kubectl exec -n agentregistry-system deploy/agentregistry-enterprise-server -- \
+  env | grep '^AUDIT_'
+```
+
+Expected output:
+
+```text
+AUDIT_ENABLED=true
+AUDIT_OTLP_ENDPOINT=agentregistry-audit-debug.agentregistry-system.svc.cluster.local:4317
+AUDIT_OTLP_INSECURE=true
+AUDIT_AUTHZ_ALLOWED_DECISIONS=all
 ```
 
 ## 4. Generate Lifecycle and Authorization Events
