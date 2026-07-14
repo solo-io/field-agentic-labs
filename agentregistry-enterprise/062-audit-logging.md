@@ -194,7 +194,7 @@ Run a permitted registry read to generate an `authorization` event:
 arctl get agents
 ```
 
-Update and delete the policy to produce more lifecycle actions:
+Update the policy to produce another lifecycle action:
 
 ```bash
 arctl apply -f - <<'EOF'
@@ -216,8 +216,6 @@ spec:
         - kind: prompt
           name: "*"
 EOF
-
-arctl delete accesspolicy audit-lab-viewer
 ```
 
 If [051 - Approval Workflows](051-approval-workflows.md) is enabled, submitting and approving its test agent also produces `approval` events. Deploying an artifact through [010](010-aws-bedrock-runtime.md), [020](020-kagent-runtime-and-agent.md), or [032](032-mcp-through-agentgateway.md) produces `applied_resource` events.
@@ -235,7 +233,7 @@ Look for:
 InstrumentationScope audit.resource_activity
 EventName: agentregistry.audit.lifecycle
 event.schema_version: v1
-event.action: create | update | delete
+event.action: create | update
 actor.subject: <OIDC sub>
 actor.roles: [...]
 resource.kind: AccessPolicy
@@ -387,7 +385,6 @@ spec:
 EOF
 
 arctl get agents
-arctl delete accesspolicy audit-splunk-demo
 ```
 
 Check both collectors for export errors:
@@ -459,7 +456,7 @@ High-volume environments should measure `all` before adopting it. `sensitive` is
 
 - Confirm the server pod restarted after the Helm upgrade.
 - Inspect the `AUDIT_*` environment variables in step 3.
-- Generate a create, update, or delete operation after audit logging is enabled.
+- Generate a create or update operation after audit logging is enabled.
 - Check connectivity to the collector Service on port `4317`.
 
 ### The Splunk bridge reports `401` or `403`
