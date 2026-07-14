@@ -266,9 +266,9 @@ kubectl get pods -n agentgateway-system
 kubectl get crd | grep agentgateway
 ```
 
-If both blocks look healthy, the baseline is in place. Any unit-of-value lab that doesn't require kagent (010, 030, 032, 040, 050, 051, 060, 070) should now work.
+If both blocks look healthy, the baseline is in place. Any unit-of-value lab that doesn't require kagent (010, 030, 032, 040, 050, 051, the AWS portion of 060, and 070) should now work.
 
-For labs that **do** require kagent (020, 031, 061), install it first from the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - run that workshop's labs 001 through 003.
+For labs that **do** require kagent (020, 031, and the kagent portion of 060), install it first from the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - run that workshop's labs 001 through 003.
 
 ## What's in Place After 001 + 002 + 003
 
@@ -278,7 +278,7 @@ For labs that **do** require kagent (020, 031, 061), install it first from the [
 | Agentregistry Enterprise | `agentregistry-system` | Catalog + control plane |
 | Enterprise Agentgateway | `agentgateway-system` | LLM / MCP gateway |
 | Keycloak **or** Entra ID | `keycloak` namespace / Microsoft cloud | OIDC backend |
-| kagent Enterprise (**user-installed prereq**) | `kagent` | In-cluster agent runtime, only required by labs 020 / 031 / 061 |
+| kagent Enterprise (**user-installed prereq**) | `kagent` | In-cluster agent runtime, required by labs 020 / 031 and the kagent portion of 060 |
 
 Each unit-of-value lab assumes this baseline. None of them re-install these components.
 
@@ -323,5 +323,4 @@ Every unit-of-value lab from here on is self-contained. Pick one:
 - [040 - Prompts](040-prompts.md)
 - [050 - AccessPolicy](050-access-policies.md)
 - [051 - Approval Workflows](051-approval-workflows.md)
-- [060 - Observability / Tracing](060-observability-tracing.md)
-- [061 - Trace Fan-Out (kagent)](061-trace-fanout.md) (**requires kagent Enterprise already installed**)
+- [060 - Observability / Tracing + kagent Fan-Out](060-observability-tracing.md) (**kagent section requires kagent Enterprise already installed**)

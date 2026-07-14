@@ -2,7 +2,7 @@
 
 Tear down everything the workshop installed. Run this when you're done.
 
-Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[061](061-trace-fanout.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
+Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[062](062-audit-logging.md)) has its **own** Cleanup section that returns the cluster to the post-baseline state. This lab is for tearing down the **baseline itself** - the agentregistry / Enterprise Agentgateway installs from [003](003-install-components.md), plus the OIDC backend from [002a](002a-setup-oidc-keycloak.md) or [002b](002b-setup-oidc-entra.md), plus the namespace from [001](001-baseline-setup.md).
 
 > **kagent Enterprise is not torn down by this lab.** It's a separate workshop / install - if you also want to remove it, follow the cleanup steps in the [kagent-enterprise workshop's 099](https://github.com/solo-io/field-agentic-labs/blob/main/kagent-enterprise/099-cleanup.md).
 
@@ -10,7 +10,7 @@ Each unit-of-value lab ([010](010-aws-bedrock-runtime.md)-[061](061-trace-fanout
 
 ## Recommended Order
 
-1. **Each unit-of-value lab's `## Cleanup`** - run the cleanup section of every lab you ran (010 → 020 → 030 → … → 061). Skip the ones you didn't run.
+1. **Each unit-of-value lab's `## Cleanup`** - run the cleanup section of every lab you ran (010 → 020 → 030 → … → 062). Skip the ones you didn't run.
 2. **This lab** - tear down the three component Helm releases, then the OIDC backend, then the namespaces, then local files.
 
 ## 1. Run Each Lab's Cleanup First
@@ -112,6 +112,7 @@ unset OIDC_PROVIDER OIDC_ISSUER OIDC_BACKEND OIDC_PUBLIC_CLIENT \
  AWS_ACCOUNT_ID AWS_REGION AWS_ROLE_ARN AWS_EXTERNAL_ID \
  AGENTGATEWAY_LICENSE_KEY \
  K8SHELPER_IMAGE ANTHROPIC_API_KEY GITHUB_COPILOT_MCP_TOKEN \
+ SPLUNK_HEC_URL SPLUNK_INDEX AUDIT_CLUSTER_NAME AUDIT_ENVIRONMENT \
  KC_IP KC_TOKEN
 ```
 
@@ -139,6 +140,7 @@ These are intentionally **not** removed by this lab:
 | Your `LoadBalancer` controller | Pre-existed |
 | Container images pushed to your registry in [020](020-kagent-runtime-and-agent.md#2-build--push-the-k8shelper-image) | Outside the cluster - use your registry's tooling |
 | AWS CloudFormation stack from [010](010-aws-bedrock-runtime.md) | Should already be deleted by 010's Cleanup; double-check with `aws cloudformation list-stacks` |
+| Audit events sent to Splunk from [062](062-audit-logging.md) | SIEM retention is controlled in Splunk; the workshop does not delete indexed security records |
 
 ## Troubleshooting
 

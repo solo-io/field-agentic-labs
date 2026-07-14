@@ -17,7 +17,7 @@ This lab is on purpose minimal. It does not install Keycloak, agentregistry, or 
 - **OIDC** ([002a](002a-setup-oidc-keycloak.md) Keycloak **or** [002b](002b-setup-oidc-entra.md) Entra ID)
 - **Components** ([003](003-install-components.md): agentregistry + Enterprise Agentgateway)
 
-Some later unit labs (020, 031, 061) also need **kagent Enterprise** installed on the cluster. That's a prereq the user satisfies separately via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - it isn't installed by 003.
+Some later unit labs (020, 031, and the kagent portion of 060) also need **kagent Enterprise** installed on the cluster. That's a prereq the user satisfies separately via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) - it isn't installed by 003.
 
 After **001 → 002a/b → 003**, you have the baseline that every unit-of-value lab (010+) assumes.
 

@@ -24,18 +24,17 @@ A focused path for someone who wants to register an existing in-cluster **kagent
 5. [020 - kagent Runtime + k8shelper Agent](../020-kagent-runtime-and-agent.md) steps 1-4 - register the runtime, set the image, and create the model API-key Secret
 6. [031 - Remote MCP via kagent (GitHub Copilot)](../031-mcp-remote-github-copilot.md) - register + deploy the MCP server referenced by the checked-in k8shelper Agent
 7. Return to [020](../020-kagent-runtime-and-agent.md) step 5 - register and deploy the Agent
-8. [060 - Tracing](../060-observability-tracing.md) - set the kagent Runtime `spec.telemetryEndpoint`
-9. [061 - Trace Fan-Out Workaround](../061-trace-fanout.md) *(if traces still don't show - see the fan-out vs repoint discussion in 060)*
-10. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
-11. [099 - Cleanup](../099-cleanup.md)
+8. [060 - Tracing + Fan-Out](../060-observability-tracing.md) - keep traces on the kagent collector and forward them to Agentregistry too
+9. [050 - AccessPolicy](../050-access-policies.md) - including the per-MCP-tool restriction examples
+10. [099 - Cleanup](../099-cleanup.md)
 
 ## What You Will Have at the End
 
 - Agentregistry Enterprise authenticated against your OIDC provider
-- A `kagent` Runtime with `spec.telemetryEndpoint` pointed at the agentregistry collector
+- A `kagent` Runtime with generic telemetry pointed at Agentregistry and trace-specific export pointed at the kagent collector
 - `k8shelper` deployed via the kagent runtime, calling Anthropic (or Gemini) with the API key from a Kubernetes Secret
 - The GitHub Copilot MCP registered, deployed to kagent, and wired into `k8shelper`
-- Spans from real chat invocations visible in the agentregistry UI
+- Spans from real chat invocations visible in both the kagent and Agentregistry UIs
 - `AccessPolicy` records limiting which MCP tools `k8shelperanthropic-kagent` can invoke
 
 ## Next

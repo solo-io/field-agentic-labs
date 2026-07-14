@@ -4,7 +4,7 @@ A hands-on lab series for **Solo.io agentregistry Enterprise** (`arctl` + `ar.de
 
 The workshop is built around two ideas:
 
-1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + Enterprise Agentgateway). You only run setup once. Some unit labs (020, 031, 061) additionally require **kagent Enterprise** - install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) before running those.
+1. **Three setup labs, soup to nuts.** [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md) takes you from a bare Kubernetes cluster to a working baseline (OIDC + agentregistry + Enterprise Agentgateway). You only run setup once. Some unit labs (020, 031, and the kagent portion of 060) additionally require **kagent Enterprise** - install it via the [kagent-enterprise workshop](https://github.com/solo-io/field-agentic-labs/tree/main/kagent-enterprise) before running those.
 
 2. **Independent unit-of-value labs.** Every lab numbered 010 and up is standalone - it states what it needs from the baseline, walks through one capability, and has its own `## Cleanup` section that returns the cluster to the post-baseline state. Run them in any order, run cleanup, move on.
 
@@ -76,8 +76,8 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 
 ## Observability
 
-- [060 - Tracing (kagent + AWS AgentCore runtimes)](060-observability-tracing.md)
-- [061 - Trace Fan-Out Workaround for kagent](061-trace-fanout.md)
+- [060 - Tracing + kagent Fan-Out (kagent + AWS AgentCore runtimes)](060-observability-tracing.md)
+- [062 - Audit Logging (local debug + Splunk HEC)](062-audit-logging.md)
 
 ---
 
@@ -93,6 +93,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 - [`aws-track.md`](tracks/aws-track.md) - Baseline → AWS Bedrock AgentCore + demochatbot
 - [`kagent-track.md`](tracks/kagent-track.md) - Baseline → kagent runtime → k8shelper + MCP
+- [`audit-track.md`](tracks/audit-track.md) - Baseline → local audit validation → Splunk HEC
 
 ---
 
@@ -106,11 +107,12 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 - Enforce AccessPolicy-based RBAC against Entra group object IDs, Entra app roles, or Keycloak groups
 - Gate every catalog submission behind admin approval (`requireCreateApproval`)
 - Surface traces from all runtimes in the agentregistry dashboard via the bundled OTel Collector + ClickHouse
+- Export structured lifecycle, approval, authorization, and applied-resource audit events locally or to Splunk
 
 ## Validated On
 
-- Agentregistry Enterprise chart `v2026.6.2`
-- `arctl` `v2026.6.2`
+- Core workshop baseline: Agentregistry Enterprise chart and `arctl` `v2026.6.2`
+- Audit Logging lab: Agentregistry Enterprise `v2026.7.0` and OTel Collector Contrib `0.148.0`
 - Kagent OSS chart `0.9.7`
 - Enterprise Agentgateway `v2026.6.1`
 - Keycloak `quay.io/keycloak/keycloak:26.0`
@@ -136,10 +138,11 @@ agentregistry-enterprise/
 ├── 040-prompts.md                       # Prompt CRUD
 ├── 050-access-policies.md               # AccessPolicy patterns
 ├── 051-approval-workflows.md            # requireCreateApproval feature
-├── 060-observability-tracing.md         # tracing setup
-├── 061-trace-fanout.md                  # kagent collector fan-out
+├── 060-observability-tracing.md         # tracing setup + kagent collector fan-out
+├── 062-audit-logging.md                 # local debug + Splunk audit export
 ├── 099-cleanup.md                       # full teardown
 ├── tracks/
+│   ├── audit-track.md
 │   ├── aws-track.md
 │   └── kagent-track.md
 └── assets/                              # YAML, agent source, Terraform, ConfigMap patches
@@ -152,7 +155,7 @@ agentregistry-enterprise/
     │   ├── github-copilot-mcpserver.yaml
     │   ├── github-copilot-mcp-deploy.yaml
     │   └── agentgateway/                # parent Gateway + Route + Virtual runtime + MCP for lab 032
-    ├── observability/                   # ConfigMap patches for lab 061
+    ├── observability/                   # tracing patches + audit collector manifests
     ├── private-eks/                     # Terraform reference (not used by the main flow)
     ├── prompts/
     └── providers/kagent/                # k8shelper Agent + Deployment manifests
