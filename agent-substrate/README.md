@@ -23,7 +23,9 @@ This workshop **links out to the upstream Substrate repo** (`github.com/agent-su
 - [Setup (mandatory)](#setup-mandatory)
 - [Substrate Demos](#substrate-demos)
 - [Kagent Integration](#kagent-integration)
+- [Agentgateway Integration](#agentgateway-integration)
 - [Operations & Observability](#operations--observability)
+- [Optimization & Benchmarking](#optimization--benchmarking)
 - [Cleanup](#cleanup)
 - [Appendix](#appendix)
 
@@ -47,12 +49,20 @@ Pick any combination. Each is self-contained, each has its own Cleanup.
 - [011 - Sandbox Demo (Alpine shell + REPL client)](011-sandbox-demo.md)
 - [012 - Agent-Secret Demo (Zero-Idle self-suspend + RAM persistence)](012-agent-secret-demo.md)
 - [013 - Claude Code Multiplex (3 agents on 2 pods)](013-claude-code-multiplex.md) - **upstream DRAFT**
+- [014 - Multi-Tenancy + Teleport (Atespaces, state follows the actor)](014-multi-tenancy-teleport.md)
 
 ---
 
 ## Kagent Integration
 
 - [020 - kagent Integration (install + substrate-backed `AgentHarness`)](020-kagent-integration.md) - install kagent with substrate enabled + walk through a real `AgentHarness` end-to-end
+- [021 - kagent `SandboxAgent` on Substrate](021-kagent-sandboxagent.md) - the declarative `SandboxAgent` path (`platform: substrate`)
+
+---
+
+## Agentgateway Integration
+
+- [022 - agentgateway + Substrate: MCP Server as an Actor](022-agentgateway-mcp.md) - one stable `/mcp` endpoint in front of an MCP server that exists only when called
 
 ---
 
@@ -60,6 +70,13 @@ Pick any combination. Each is self-contained, each has its own Cleanup.
 
 - [030 - Suspend / Resume Operations](030-operations.md)
 - [040 - Logs, Metrics, and Tracing](040-observability.md)
+- [041 - Live Grafana Dashboard (wake latency, lifecycle rate, worker utilization)](041-grafana-live-dashboard.md)
+
+---
+
+## Optimization & Benchmarking
+
+- [050 - Cost Comparison Benchmark (always-on pods vs Substrate actors)](050-cost-comparison-benchmark.md)
 
 ---
 
@@ -75,6 +92,7 @@ Pick any combination. Each is self-contained, each has its own Cleanup.
 - [Appendix - Local `kind` Quickstart](appendix-kind-quickstart.md) - for laptop dev without GCP
 - [Appendix - Install Substrate from Source (`install-ate.sh`)](appendix-install-script-alternative.md)
 - [Appendix - Benchmarking with Locust](appendix-benchmarking.md)
+- [Appendix - MicroVM Pod Isolation (Kata on AKS + EKS)](appendix-microvm-isolation.md) - the hardware-virtualized alternative to gVisor sandboxing
 
 ---
 
@@ -94,7 +112,10 @@ Curated paths under [`tracks/`](tracks/):
 - Preserve in-memory + disk state across **suspend → snapshot → resume** cycles, even when the actor lands on a different worker
 - Use gVisor sandboxes (`runsc`) to checkpoint and restore real process state, not just container restarts
 - Run framework-agnostic agents - ADK, LangChain, Claude Code, MCP servers - as Substrate Actors
-- Stand up substrate-backed `AgentHarness` resources from kagent, with kagent generating one `ActorTemplate` per harness
+- Stand up substrate-backed `AgentHarness` and `SandboxAgent` resources from kagent, with kagent generating one `ActorTemplate` per harness
+- Isolate tenants with **Atespaces** - same actor ID in two tenants, zero collision in state, DNS, or snapshots
+- Front a Substrate-backed MCP server with **agentgateway** - one stable `/mcp` endpoint, actor-level scale-to-zero behind it
+- Measure the density story: pod-hours and wake/warm latency of always-on Deployments vs multiplexed actors
 - Operate suspended actors via `kubectl-ate` and the `ateapi.Control` gRPC API
 
 ## Validated On
@@ -126,14 +147,20 @@ agent-substrate/
 ├── 011-sandbox-demo.md
 ├── 012-agent-secret-demo.md
 ├── 013-claude-code-multiplex.md         # DRAFT upstream
+├── 014-multi-tenancy-teleport.md        # Atespaces + state teleport
 ├── 020-kagent-integration.md            # install kagent + AgentHarness walkthrough
+├── 021-kagent-sandboxagent.md           # declarative SandboxAgent on substrate
+├── 022-agentgateway-mcp.md              # MCP server as a Substrate actor
 ├── 030-operations.md
 ├── 040-observability.md
+├── 041-grafana-live-dashboard.md        # live lifecycle dashboard + load cycles
+├── 050-cost-comparison-benchmark.md     # always-on pods vs actors, measured
 ├── 099-cleanup.md
 ├── appendix-why-gke.md
 ├── appendix-kind-quickstart.md
 ├── appendix-install-script-alternative.md
 ├── appendix-benchmarking.md
+├── appendix-microvm-isolation.md        # Kata/microVM alternative to gVisor
 ├── tracks/
 │   ├── install-track.md
 │   ├── demos-track.md
