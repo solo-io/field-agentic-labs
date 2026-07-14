@@ -132,7 +132,7 @@ kubectl get pod,service -n agentregistry-system \
 
 ## 3. Enable Audit Export to the Debug Collector
 
-For the demo, set `allowedDecisions=all` so a successful `arctl get` produces an authorization event. Production environments normally start with `sensitive` to reduce event volume.
+For the demo, set `allowedDecisions=all` so a successful single-resource `arctl get` produces an authorization event. Production environments normally start with `sensitive` to reduce event volume.
 
 ```bash
 helm upgrade agentregistry-enterprise \
@@ -188,10 +188,11 @@ spec:
 EOF
 ```
 
-Run a permitted registry read to generate an `authorization` event:
+Run a permitted single-resource read to generate an `authorization` event. List requests (`arctl get agents`) do **not** produce authorization events — list results are filtered per row rather than permission-checked — so read one agent by name and tag, picking any row from the list output:
 
 ```bash
 arctl get agents
+arctl get agent <name> --tag <tag>   # for example: arctl get agent demochatbot --tag 1.0.4
 ```
 
 Update the policy to produce another lifecycle action:
@@ -384,7 +385,7 @@ spec:
           name: "*"
 EOF
 
-arctl get agents
+arctl get agent <name> --tag <tag>
 ```
 
 Check both collectors for export errors:
