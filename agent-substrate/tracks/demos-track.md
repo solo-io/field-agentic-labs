@@ -10,7 +10,7 @@ All five Substrate demos in sequence. Each one adds a different dimension on top
 ## Prerequisites
 
 - Completed the [install-track](install-track.md) (or the equivalent steps yourself)
-- For [013](../013-claude-code-multiplex.md): an Anthropic API key + `docker buildx`
+- For the current [015 multiplex lab](../015-agent-multiplex-demo.md): an Anthropic API key + `docker buildx`
 
 ## What Each Demo Adds
 
@@ -20,7 +20,7 @@ All five Substrate demos in sequence. Each one adds a different dimension on top
 | **Sandbox** | Filesystem state (not just RAM) persists; custom REPL client | [011](../011-sandbox-demo.md) |
 | **Multi-Tenancy + Teleport** | Atespaces (same actor ID, two tenants, zero collision); actor resumes onto a *different* worker with state intact | [014](../014-multi-tenancy-teleport.md) |
 | **Agent-Secret** | Self-suspending agent; volatile RAM secret across many cycles; 24 actors on 8 workers | [012](../012-agent-secret-demo.md) |
-| **Claude Code Multiplex** | Real LLM workload (3 agents on 2 pods); live dashboard UI | [013](../013-claude-code-multiplex.md) |
+| **Claude Code Multiplex** | Real LLM workload (3 agents on 2 pods); explicit lifecycle control and an optional observational UI | [015](../015-agent-multiplex-demo.md) ([013](../013-claude-code-multiplex.md) is the legacy draft) |
 
 ## Order
 
@@ -28,7 +28,7 @@ All five Substrate demos in sequence. Each one adds a different dimension on top
 2. [014 - Multi-Tenancy + Teleport](../014-multi-tenancy-teleport.md) - reuses the counter template, so run it while 010 is still deployed
 3. [011 - Sandbox Demo](../011-sandbox-demo.md)
 4. [012 - Agent-Secret Demo](../012-agent-secret-demo.md)
-5. [013 - Claude Code Multiplex](../013-claude-code-multiplex.md) - read the DRAFT callout first
+5. [015 - Agent Multiplex Demo](../015-agent-multiplex-demo.md) - current walkthrough; use [013](../013-claude-code-multiplex.md) only if you specifically need the legacy upstream draft
 6. [030 - Suspend/Resume Operations](../030-operations.md) - useful when actors get stuck
 7. [099 - Cleanup](../099-cleanup.md)
 

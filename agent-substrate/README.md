@@ -48,8 +48,9 @@ Pick any combination. Each is self-contained, each has its own Cleanup.
 - [010 - Counter Demo (stateful HTTP, suspend/resume)](010-counter-demo.md) ← canonical first demo
 - [011 - Sandbox Demo (Alpine shell + REPL client)](011-sandbox-demo.md)
 - [012 - Agent-Secret Demo (Zero-Idle self-suspend + RAM persistence)](012-agent-secret-demo.md)
-- [013 - Claude Code Multiplex (3 agents on 2 pods)](013-claude-code-multiplex.md) - **upstream DRAFT**
+- [013 - Claude Code Multiplex (legacy upstream walkthrough)](013-claude-code-multiplex.md) - **upstream DRAFT**
 - [014 - Multi-Tenancy + Teleport (Atespaces, state follows the actor)](014-multi-tenancy-teleport.md)
+- [015 - Agent Multiplex Demo (3 Claude Code agents on 2 pods)](015-agent-multiplex-demo.md) - current explicit-lifecycle walkthrough
 
 ---
 
@@ -101,7 +102,7 @@ Pick any combination. Each is self-contained, each has its own Cleanup.
 Curated paths under [`tracks/`](tracks/):
 
 - [`install-track.md`](tracks/install-track.md) - Cluster → Substrate install → counter demo
-- [`demos-track.md`](tracks/demos-track.md) - All four demos in sequence
+- [`demos-track.md`](tracks/demos-track.md) - All five demos in sequence
 - [`kagent-track.md`](tracks/kagent-track.md) - Substrate + kagent end-to-end
 
 ---
@@ -148,6 +149,7 @@ agent-substrate/
 ├── 012-agent-secret-demo.md
 ├── 013-claude-code-multiplex.md         # DRAFT upstream
 ├── 014-multi-tenancy-teleport.md        # Atespaces + state teleport
+├── 015-agent-multiplex-demo.md           # current explicit multiplex walkthrough
 ├── 020-kagent-integration.md            # install kagent + AgentHarness walkthrough
 ├── 021-kagent-sandboxagent.md           # declarative SandboxAgent on substrate
 ├── 022-agentgateway-mcp.md              # MCP server as a Substrate actor

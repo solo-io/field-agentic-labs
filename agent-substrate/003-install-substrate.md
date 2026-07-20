@@ -124,7 +124,7 @@ kubectl get svc -n ate-system
 kubectl ate get workers
 ```
 
-Empty list is expected - no `WorkerPool` exists yet (those come with the demos in [010](010-counter-demo.md)-[013](013-claude-code-multiplex.md)).
+Empty list is expected - no `WorkerPool` exists yet (those come with the demos in [010](010-counter-demo.md)-[015](015-agent-multiplex-demo.md)).
 
 ## What's In Place After This Lab
 
@@ -160,6 +160,9 @@ Every unit-of-value lab from here on is self-contained. Pick one:
 - [011 - Sandbox Demo (Alpine shell + REPL client)](011-sandbox-demo.md)
 - [012 - Agent-Secret Demo (Zero-Idle + RAM persistence)](012-agent-secret-demo.md)
 - [013 - Claude Code Multiplex (3 agents on 2 pods)](013-claude-code-multiplex.md)
+- [014 - Multi-Tenancy + Teleport](014-multi-tenancy-teleport.md)
+- [015 - Agent Multiplex Demo (current explicit-lifecycle walkthrough)](015-agent-multiplex-demo.md)
 - [020 - kagent Integration (substrate-backed `AgentHarness`)](020-kagent-integration.md)
 - [030 - Suspend / Resume Operations](030-operations.md)
 - [040 - Observability (logs, metrics, traces)](040-observability.md)
+- [041 - Live Grafana Dashboard](041-grafana-live-dashboard.md)
