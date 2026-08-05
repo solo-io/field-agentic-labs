@@ -3,10 +3,10 @@ kind: Deployment
 metadata:
   name: demochatbot
 spec:
-  providerRef:
-    kind: Provider
+  runtimeRef:
+    kind: Runtime
     name: AWS
   targetRef:
     kind: Agent
     name: demochatbot
-    version: "1.0.4"
+    tag: "1.0.4"

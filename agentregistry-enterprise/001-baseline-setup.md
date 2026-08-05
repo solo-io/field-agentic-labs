@@ -83,7 +83,7 @@ which -a arctl
 # /usr/local/bin/arctl          ← OSS
 ```
 
-The Enterprise CLI has `arctl user login`, `arctl apply`, `arctl provider setup aws`, and the approval-workflow API surface that the OSS one lacks.
+The Enterprise CLI has `arctl user login`, `arctl apply`, `arctl runtime setup bedrock-agent-core`, and the approval-workflow API surface that the OSS one lacks.
 
 ## 4. Sanity-Check Your Shell Has Everything
 

@@ -4,7 +4,7 @@ Register AWS Bedrock AgentCore as an agentregistry **Runtime** and deploy the in
 
 ## Lab Objectives
 
-- Generate the IAM CloudFormation template with `arctl provider setup aws`
+- Generate the IAM CloudFormation template with `arctl runtime setup bedrock-agent-core`
 - Deploy the stack and capture `RoleArn` + `ExternalId`
 - Register the AWS Runtime in agentregistry
 - Register and deploy the `demochatbot` Agent
@@ -25,12 +25,15 @@ export AWS_REGION=us-east-1   # adjust if you want a different region
 ## 1. Generate the IAM CloudFormation Template
 
 ```bash
-arctl provider setup aws --aws-account-id "${AWS_ACCOUNT_ID}" > /tmp/agentregistry-cf.yaml
+arctl runtime setup bedrock-agent-core \
+  --aws-account-id "${AWS_ACCOUNT_ID}" > /tmp/agentregistry-cf.yaml
 ```
 
 The template creates an IAM role with the permissions agentregistry needs to drive AgentCore: Bedrock AgentCore, IAM (to create per-agent execution roles), S3 (agent code artifacts), CloudWatch Logs, AppConfig, Cognito, EC2.
 
-Note the **External ID** and **Role Name** printed at the bottom of the template output.
+Note the **External ID** and **Role Name** printed to the terminal. They are written
+to stderr so the redirected file contains only valid CloudFormation YAML. The
+External ID is also included in the template's stack outputs.
 
 ## 2. Deploy the CloudFormation Stack
 

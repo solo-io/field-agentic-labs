@@ -2,7 +2,7 @@ apiVersion: ar.dev/v1alpha1
 kind: Agent
 metadata:
   name: demochatbot
-  version: "1.0.4"
+  tag: "1.0.4"
 spec:
   description: "A deterministic A2A/ADK-compatible chatbot for AWS Bedrock AgentCore"
   source:
