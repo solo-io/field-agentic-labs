@@ -120,6 +120,7 @@ The Deployment moves through `deploying` → `deployed`. If `status.conditions` 
 | Failure | Fix |
 |---|---|
 | `API returned status 401: Unauthorized` | The IdP issued a token, but AgentRegistry did not accept it. Re-export `ARCTL_API_BASE_URL` from lab 003, export `ARCTL_API_TOKEN` with `arctl user info --show-tokens`, and require `arctl user whoami` to succeed before retrying. |
+| `forbidden: unauthenticated` or HTTP `403` | AgentRegistry accepted the bearer token but did not map it to a role allowed to publish a Runtime. Confirm `arctl user whoami` shows the configured superuser role. For Keycloak, re-run 002a's setup script so the `are-cli` token includes the `groups` claim, then log in again. |
 | `IAM role not assumable` | Re-check `External ID` matches what's in the role's trust policy (step 2) |
 | `image build failed` | Check the agentregistry server logs: `kubectl logs -n agentregistry-system deploy/agentregistry-enterprise-server --tail=100` |
 

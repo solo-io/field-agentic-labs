@@ -8,7 +8,7 @@ The second mandatory setup lab (Keycloak path). Stands up Keycloak in-cluster, c
 
 - Deploy Keycloak `quay.io/keycloak/keycloak:26.0` in-cluster
 - Get a `LoadBalancer` IP and configure Keycloak's hostname
-- Run a single script that creates the `agentregistry-enterprise` realm, three groups, three users, two OIDC clients, and the `groups` claim mapper
+- Run a single script that creates the `agentregistry-enterprise` realm, three groups, three users, two OIDC clients, and their `groups` claim mappers
 - Source the exported values into your shell ready for [003](003-install-components.md)
 
 ## Prerequisites
@@ -72,7 +72,7 @@ What it does:
 | 3 | Create three groups: `are-admins`, `are-readers`, `are-writers`; capture each GUID |
 | 4 | Create three users (`admin`, `reader`, `writer`) with password = username; add each to its group |
 | 5 | Create two OIDC clients: `are-backend` (confidential) and `are-cli` (public + device-code grant, no PKCE) |
-| 6 | Add a `groups` claim mapper on `are-backend` so group memberships show up in tokens |
+| 6 | Add a `groups` claim mapper on `are-backend` and `are-cli` so API tokens carry AgentRegistry roles |
 | 7 | Pull the `are-backend` client secret |
 | 8 | Write all values [003](003-install-components.md) consumes to `~/.are-keycloak-env` |
 
@@ -100,8 +100,9 @@ Expected output (truncated):
 ==> Creating OIDC clients
     are-backend: created
     are-cli: created
-==> Adding 'groups' claim mapper to are-backend
-    mapper created
+==> Adding groups claim mapper to are-backend and are-cli
+    are-backend: mapper created
+    are-cli: mapper created
 ==> Fetching are-backend client secret
 ==> Writing /Users/<you>/.are-keycloak-env
 ==> Done. Source the env file:

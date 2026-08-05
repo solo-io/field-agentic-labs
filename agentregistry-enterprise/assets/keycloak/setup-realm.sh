@@ -164,22 +164,34 @@ create_client "are-cli"     "${ARE_CLI_PAYLOAD}"
 
 ARE_BACKEND_ID=$(api GET "/admin/realms/${KC_REALM}/clients?clientId=are-backend" \
   | jq -r '.[0].id')
+ARE_CLI_ID=$(api GET "/admin/realms/${KC_REALM}/clients?clientId=are-cli" \
+  | jq -r '.[0].id')
 
 # ---------------------------------------------------------------------------
-# 6. Add a "groups" claim mapper to are-backend so group memberships
-#    show up in tokens.
+# 6. Add a "groups" claim mapper to both clients so group memberships show
+#    up in backend/service tokens and the user token arctl sends to the API.
 # ---------------------------------------------------------------------------
-echo "==> Adding groups claim mapper to are-backend"
-EXISTING_MAPPER=$(api GET "/admin/realms/${KC_REALM}/clients/${ARE_BACKEND_ID}/protocol-mappers/models" \
-  | jq -r '.[] | select(.name=="groups") | .id // empty')
-if [ -n "${EXISTING_MAPPER}" ]; then
-  echo "    mapper already exists"
-else
-  GROUPS_MAPPER_PAYLOAD='{"name":"groups","protocol":"openid-connect","protocolMapper":"oidc-group-membership-mapper","config":{"claim.name":"groups","full.path":"false","id.token.claim":"true","access.token.claim":"true","userinfo.token.claim":"true"}}'
-  api POST "/admin/realms/${KC_REALM}/clients/${ARE_BACKEND_ID}/protocol-mappers/models" \
-    --data-raw "${GROUPS_MAPPER_PAYLOAD}" >/dev/null
-  echo "    mapper created"
-fi
+echo "==> Adding groups claim mapper to are-backend and are-cli"
+GROUPS_MAPPER_PAYLOAD='{"name":"groups","protocol":"openid-connect","protocolMapper":"oidc-group-membership-mapper","config":{"claim.name":"groups","full.path":"false","id.token.claim":"true","access.token.claim":"true","userinfo.token.claim":"true"}}'
+
+ensure_groups_mapper() {
+  local CLIENT_NAME=$1
+  local CLIENT_ID=$2
+  local EXISTING_MAPPER
+
+  EXISTING_MAPPER=$(api GET "/admin/realms/${KC_REALM}/clients/${CLIENT_ID}/protocol-mappers/models" \
+    | jq -r '.[] | select(.name=="groups") | .id // empty')
+  if [ -n "${EXISTING_MAPPER}" ]; then
+    echo "    ${CLIENT_NAME}: mapper already exists"
+  else
+    api POST "/admin/realms/${KC_REALM}/clients/${CLIENT_ID}/protocol-mappers/models" \
+      --data-raw "${GROUPS_MAPPER_PAYLOAD}" >/dev/null
+    echo "    ${CLIENT_NAME}: mapper created"
+  fi
+}
+
+ensure_groups_mapper "are-backend" "${ARE_BACKEND_ID}"
+ensure_groups_mapper "are-cli" "${ARE_CLI_ID}"
 
 # ---------------------------------------------------------------------------
 # 7. Grab the are-backend client secret.
