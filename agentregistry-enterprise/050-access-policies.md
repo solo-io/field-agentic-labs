@@ -38,14 +38,22 @@ Code-backed references in the agentregistry server tree:
 
 ## Worked Examples
 
-These examples reference the `are-admins` group identifier you exported in 002a/002b as `${GROUP_ADMINS}`. The value differs by IdP:
+`AccessPolicy` `Role` principals match against the values in the token's `groups` claim - the same claim `RBAC_ROLE_CLAIM` maps to roles. The claim value differs by IdP:
 
-| OIDC backend | `${GROUP_ADMINS}` is | Notes |
+| OIDC backend | `groups` claim carries | `Role` principal to use |
 |---|---|---|
-| Keycloak ([002a](002a-setup-oidc-keycloak.md)) | The group's GUID (from the Keycloak admin API) | The `groups` claim emits `/are-admins` but `AccessPolicy` principals match against the GUID you exported |
-| Entra ID ([002b](002b-setup-oidc-entra.md)) | The group's object ID (GUID) | Entra emits group object IDs in the `groups` claim |
+| Keycloak ([002a](002a-setup-oidc-keycloak.md)) | Group names (`are-admins`) | The group **name** - the exported `${GROUP_ADMINS}` GUID never appears in Keycloak tokens |
+| Entra ID ([002b](002b-setup-oidc-entra.md)) | Group object IDs (GUIDs) | The group's **object ID** - `${GROUP_ADMINS}` from 002b |
 
-If you're starting fresh in a new shell, re-export the GROUP_* values from 002a or 002b before running the examples below.
+Export the right principal for your IdP once, then run the examples below as written (re-export the `GROUP_*` values from 002a/002b first if you're in a fresh shell):
+
+```bash
+if [ "${OIDC_PROVIDER}" = "keycloak" ]; then
+  export ADMIN_PRINCIPAL="are-admins"
+else
+  export ADMIN_PRINCIPAL="${GROUP_ADMINS}"
+fi
+```
 
 ### 1. Catalog Read Access
 
@@ -61,7 +69,7 @@ spec:
   description: "Catalog read access for the are-admins group"
   principals:
     - kind: Role
-      name: "${GROUP_ADMINS}"
+      name: "${ADMIN_PRINCIPAL}"
   rules:
     - actions:
         - "registry:read"
@@ -87,7 +95,7 @@ spec:
   description: "Catalog read, publish, and edit access for the are-admins group"
   principals:
     - kind: Role
-      name: "${GROUP_ADMINS}"
+      name: "${ADMIN_PRINCIPAL}"
   rules:
     - actions:
         - "registry:read"
@@ -117,7 +125,7 @@ spec:
   description: "Allow are-admins users to invoke the k8shelper agent"
   principals:
     - kind: Role
-      name: "${GROUP_ADMINS}"
+      name: "${ADMIN_PRINCIPAL}"
   rules:
     - actions:
         - "runtime:invoke"

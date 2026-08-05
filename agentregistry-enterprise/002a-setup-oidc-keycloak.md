@@ -35,7 +35,7 @@ What's in the manifest:
 - A `Deployment` running `quay.io/keycloak/keycloak:26.0` in `start-dev` mode (HTTP only, relaxed hostname checks) with admin credentials `admin` / `admin123`
 - A `Service` of type `LoadBalancer` on port `8080`
 
-> The default admin password `admin123` is for a POC. Rotate it (`kubectl set env deployment/keycloak -n keycloak KEYCLOAK_ADMIN_PASSWORD=<new>`) if your security team requires it.
+> The default admin password `admin123` is for a POC. The bootstrap env vars only seed the admin user on first boot - to rotate the password afterwards, change it in the Keycloak admin console (or via the admin REST API), then export `KC_ADMIN_PASS=<new>` before re-running the realm script.
 
 ## 3. Wait for the External IP
 
@@ -48,12 +48,12 @@ export KC_IP=$(kubectl get svc keycloak -n keycloak \
 echo "Keycloak admin: http://${KC_IP}:8080  (admin / admin123)"
 ```
 
-Pin Keycloak's hostname so its issuer URL matches what your tokens will carry:
+Pin Keycloak's hostname so its issuer URL matches what your tokens will carry. Keycloak 25+ uses hostname v2 options - `KC_HOSTNAME` accepts a full URL (the older `KC_HOSTNAME_URL` / `KC_HOSTNAME_ADMIN_URL` options were removed and are silently ignored):
 
 ```bash
 kubectl set env deployment/keycloak -n keycloak \
-  KC_HOSTNAME_URL=http://${KC_IP}:8080 \
-  KC_HOSTNAME_ADMIN_URL=http://${KC_IP}:8080
+  KC_HOSTNAME=http://${KC_IP}:8080 \
+  KC_HOSTNAME_ADMIN=http://${KC_IP}:8080
 kubectl rollout status deployment/keycloak -n keycloak
 ```
 
@@ -158,13 +158,13 @@ Expected:
 ```json
 {
   "preferred_username": "admin",
-  "groups": ["/are-admins"],
+  "groups": ["are-admins"],
   "iss": "http://<KC_IP>:8080/realms/agentregistry-enterprise",
   "aud": ["account"]
 }
 ```
 
-> Keycloak prefixes group names with `/` (the realm path). [050 access policies](050-access-policies.md) shows how to write policy that matches against the GUID variants (the GUIDs are stable and don't have the `/` prefix).
+> The mapper is configured with `full.path=false`, so the claim carries plain group names (`are-admins`) without the `/` realm-path prefix. These names are what `RBAC_SUPERUSER_ROLE` and [050 access policy](050-access-policies.md) `Role` principals match against on the Keycloak path.
 
 ## Cleanup
 

@@ -19,15 +19,17 @@ spec:
           image: quay.io/keycloak/keycloak:26.0
           args: ["start-dev"]
           env:
-            - name: KEYCLOAK_ADMIN
+            # Keycloak 26 bootstrap-admin variables (KEYCLOAK_ADMIN[_PASSWORD]
+            # are deprecated aliases). These only seed the admin user on the
+            # first boot of an empty database.
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
               value: admin
-            - name: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               value: admin123
             - name: KC_HTTP_ENABLED
               value: "true"
+            # Hostname v2: KC_HOSTNAME_STRICT_HTTPS was removed in Keycloak 25.
             - name: KC_HOSTNAME_STRICT
-              value: "false"
-            - name: KC_HOSTNAME_STRICT_HTTPS
               value: "false"
           ports:
             - containerPort: 8080
