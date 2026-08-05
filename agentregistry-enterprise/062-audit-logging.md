@@ -1,6 +1,6 @@
 # Audit Logging - Local Debug and Splunk
 
-Agentregistry Enterprise `2026.7.0` adds structured control-plane audit events. The server emits the events as OpenTelemetry logs over OTLP/gRPC. This is separate from the runtime traces collected in [060](060-observability-tracing.md).
+Agentregistry Enterprise emits structured control-plane audit events as OpenTelemetry logs over OTLP/gRPC. This is separate from the runtime traces collected in [060](060-observability-tracing.md).
 
 | Signal | What it records | Destination in this workshop |
 |---|---|---|
@@ -52,7 +52,7 @@ The second collector is required when Splunk exposes HEC but not a native OTLP/g
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) -> [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) -> [003](003-install-components.md)
-- Agentregistry Enterprise `2026.7.0` or newer
+- Agentregistry Enterprise `v2026.7.1` or newer
 - `arctl` authenticated as a registry administrator
 - `kubectl`, Helm 3, `jq`, and `curl`
 - A local checkout of this repository, with the current directory set to `agentregistry-enterprise/`
@@ -70,15 +70,17 @@ kubectl get deployment agentregistry-enterprise-server \
   -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
 ```
 
-The tag must be `v2026.7.0` or newer. If the installation is older, upgrade the chart while preserving its existing user-supplied values:
+The tag must be `v2026.7.1` or newer. If the installation is older, upgrade the chart while preserving its existing user-supplied values. Set `AGENTREGISTRY_VERSION` to a newer release when needed; otherwise the workshop uses its minimum supported version:
 
 ```bash
+export AGENTREGISTRY_VERSION="${AGENTREGISTRY_VERSION:-2026.7.1}"
+
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.7.0 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
-  --set image.tag=v2026.7.0 \
+  --set image.tag="v${AGENTREGISTRY_VERSION}" \
   --wait --timeout 10m
 ```
 
@@ -89,7 +91,7 @@ helm get values agentregistry-enterprise \
   -n agentregistry-system -a -o json | jq .audit
 ```
 
-Fresh `2026.7.0` values show:
+Fresh `v2026.7.1` baseline values show:
 
 ```json
 {
@@ -137,7 +139,7 @@ For the demo, set `allowedDecisions=all` so a successful single-resource `arctl 
 ```bash
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.7.0 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
   --set audit.enabled=true \
@@ -331,7 +333,7 @@ Point Agentregistry at the bridge and enable the chart-managed audit collector. 
 ```bash
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.7.0 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
   --set audit.enabled=true \
@@ -482,7 +484,7 @@ Disable audit production before deleting either destination:
 ```bash
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.7.0 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
   --set audit.enabled=false \

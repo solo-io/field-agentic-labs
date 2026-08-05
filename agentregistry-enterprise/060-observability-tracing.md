@@ -62,7 +62,7 @@ kubectl get pods,services -n agentregistry-system \
 For external runtimes such as AWS AgentCore, expose the collector with a `LoadBalancer`. Set the version to match the Agentregistry release you installed:
 
 ```bash
-export AGENTREGISTRY_VERSION=2026.7.0
+export AGENTREGISTRY_VERSION="${AGENTREGISTRY_VERSION:-2026.7.1}"
 
 helm upgrade agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \

@@ -111,8 +111,8 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 
 ## Validated On
 
-- Core workshop baseline: Agentregistry Enterprise chart and `arctl` `v2026.6.2`
-- Audit Logging lab: Agentregistry Enterprise `v2026.7.0` and OTel Collector Contrib `0.148.0`
+- Minimum supported workshop baseline: Agentregistry Enterprise chart and `arctl` `v2026.7.1` or newer
+- Audit Logging lab: Agentregistry Enterprise `v2026.7.1` or newer and OTel Collector Contrib `0.148.0`
 - Kagent OSS chart `0.9.7`
 - Enterprise Agentgateway `v2026.6.1`
 - Keycloak `quay.io/keycloak/keycloak:26.0`

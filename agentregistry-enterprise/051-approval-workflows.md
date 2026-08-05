@@ -24,9 +24,11 @@ When you grant a non-admin group `registry:publish` / `registry:edit` ([050](050
 The Helm value is `config.requireCreateApproval` on the `agentregistry-enterprise` chart.
 
 ```bash
+export AGENTREGISTRY_VERSION="${AGENTREGISTRY_VERSION:-2026.7.1}"
+
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.6.1 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
   --set config.requireCreateApproval=true
@@ -248,7 +250,7 @@ arctl delete accesspolicy writers-group-catalog-write
 # release queued requests; clear those with reject first)
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.6.1 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   --reuse-values \
   --set config.requireCreateApproval=false

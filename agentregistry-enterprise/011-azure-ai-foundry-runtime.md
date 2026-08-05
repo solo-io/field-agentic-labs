@@ -16,7 +16,7 @@ This lab is discovery-focused. You create the Entra application, grant Azure RBA
 ## Prerequisites
 
 - Baseline setup complete: [001](001-baseline-setup.md) → [002a](002a-setup-oidc-keycloak.md) **or** [002b](002b-setup-oidc-entra.md) → [003](003-install-components.md)
-- Agentregistry Enterprise `v2026.6.2` or newer
+- Agentregistry Enterprise `v2026.7.1` or newer
 - `arctl` authenticated against the running agentregistry
 - `az` CLI installed and authenticated (`az account show` succeeds)
 - An Azure AI Foundry project endpoint, for example:

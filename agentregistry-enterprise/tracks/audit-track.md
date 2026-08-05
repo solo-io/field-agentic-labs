@@ -11,7 +11,7 @@ A focused path for validating Agentregistry control-plane audit events locally, 
 
 - A Kubernetes cluster with a default `StorageClass`
 - An OIDC provider: Keycloak or Microsoft Entra ID
-- Agentregistry Enterprise `2026.7.0` or newer
+- Agentregistry Enterprise `v2026.7.1` or newer
 - For the Splunk portion: an enabled HEC endpoint, token, and writable index
 
 ## Order

@@ -53,11 +53,15 @@ kubectl create namespace agentregistry-system
 ## 3. Install the Enterprise `arctl` CLI
 
 ```bash
-export ARCTL_VERSION=v2026.6.2
+export ARCTL_VERSION="${ARCTL_VERSION:-v2026.7.1}"
 curl -sSL https://storage.googleapis.com/agentregistry-enterprise/install.sh \
-  | ARCTL_VERSION=$ARCTL_VERSION sh
+  | ARCTL_VERSION="${ARCTL_VERSION}" sh
 export PATH=$HOME/.arctl/bin:$PATH
 ```
+
+The workshop requires `arctl` `v2026.7.1` or newer. Override `ARCTL_VERSION`
+when you want to use a newer release; otherwise the minimum supported version
+is used for reproducibility.
 
 Persist the `PATH` change in your shell profile:
 

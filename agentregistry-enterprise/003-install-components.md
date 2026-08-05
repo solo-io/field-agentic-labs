@@ -62,6 +62,8 @@ Every line should print `OK`. If any OIDC variable prints `MISSING`, go back to 
 Build the Helm values from your OIDC variables. The script appends the Entra-only `additionalScopes` setting when `OIDC_PROVIDER=entra`. **Do not commit this file** - it contains secrets:
 
 ```bash
+export AGENTREGISTRY_VERSION="${AGENTREGISTRY_VERSION:-2026.7.1}"
+
 if [ "${OIDC_PROVIDER}" = "keycloak" ]; then
   export OIDC_SUPERUSER_ROLE="are-admins"
 else
@@ -70,7 +72,7 @@ fi
 
 cat > /tmp/are-values.yaml.tpl <<'EOF'
 image:
-  tag: v2026.6.2
+  tag: "v${AGENTREGISTRY_VERSION}"
 
 service:
   type: LoadBalancer
@@ -121,7 +123,7 @@ Install:
 ```bash
 helm upgrade --install agentregistry-enterprise \
   oci://us-docker.pkg.dev/solo-public/agentregistry-enterprise/helm/agentregistry-enterprise \
-  --version 2026.6.2 \
+  --version "${AGENTREGISTRY_VERSION}" \
   --namespace agentregistry-system \
   -f /tmp/are-values.yaml \
   --wait --timeout 5m
