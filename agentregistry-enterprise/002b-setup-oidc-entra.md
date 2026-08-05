@@ -211,7 +211,7 @@ Expected - a non-empty `groups` array containing the GUID of `are-admins` (if yo
 
 | Error | Fix |
 |---|---|
-| `AADSTS900144: request body must contain 'scope'` | The CLI didn't pass a `scope`. The manual device-code script above always passes one - use it. |
+| `AADSTS900144: request body must contain 'scope'` | The login command omitted the delegated API scope. Use `--oidc-scope "api://${ARE_BACKEND_CLIENT_ID}/agentregistry"` or the manual device-code validation above. |
 | `AADSTS7000218: client_assertion / client_secret required` | `are-cli` is misconfigured as confidential. Run `az ad app update --id "${ARE_CLI_CLIENT_ID}" --is-fallback-public-client true`. |
 | `AADSTS65001: not consented` | Admin consent missing. `az ad app permission admin-consent --id "${ARE_CLI_CLIENT_ID}"`. |
 | `groups` claim missing from the token | The token-config step 6 didn't apply. Re-run; confirm with `az ad app show --id "${ARE_BACKEND_CLIENT_ID}" --query 'groupMembershipClaims'`. |

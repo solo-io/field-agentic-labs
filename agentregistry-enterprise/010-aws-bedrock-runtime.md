@@ -18,6 +18,15 @@ Register AWS Bedrock AgentCore as an agentregistry **Runtime** and deploy the in
 - `aws` CLI installed and authenticated (`aws sts get-caller-identity` succeeds)
 
 ```bash
+: "${ARCTL_API_BASE_URL:?ARCTL_API_BASE_URL is not set; repeat the API setup from lab 003}"
+
+# Make the stored login token explicit for enterprise-only helper commands.
+export ARCTL_API_TOKEN="$(arctl user info --show-tokens | jq -er '.access_token')"
+
+# Login success only confirms the IdP flow. This call confirms that
+# AgentRegistry accepts the token. Do not continue if it returns 401/403.
+arctl user whoami
+
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export AWS_REGION=us-east-1   # adjust if you want a different region
 ```
@@ -26,7 +35,8 @@ export AWS_REGION=us-east-1   # adjust if you want a different region
 
 ```bash
 arctl runtime setup bedrock-agent-core \
-  --aws-account-id "${AWS_ACCOUNT_ID}" > /tmp/agentregistry-cf.yaml
+  --aws-account-id "${AWS_ACCOUNT_ID}" \
+  --registry-token "${ARCTL_API_TOKEN}" > /tmp/agentregistry-cf.yaml
 ```
 
 The template creates an IAM role with the permissions agentregistry needs to drive AgentCore: Bedrock AgentCore, IAM (to create per-agent execution roles), S3 (agent code artifacts), CloudWatch Logs, AppConfig, Cognito, EC2.
@@ -109,6 +119,7 @@ The Deployment moves through `deploying` → `deployed`. If `status.conditions` 
 
 | Failure | Fix |
 |---|---|
+| `API returned status 401: Unauthorized` | The IdP issued a token, but AgentRegistry did not accept it. Re-export `ARCTL_API_BASE_URL` from lab 003, export `ARCTL_API_TOKEN` with `arctl user info --show-tokens`, and require `arctl user whoami` to succeed before retrying. |
 | `IAM role not assumable` | Re-check `External ID` matches what's in the role's trust policy (step 2) |
 | `image build failed` | Check the agentregistry server logs: `kubectl logs -n agentregistry-system deploy/agentregistry-enterprise-server --tail=100` |
 

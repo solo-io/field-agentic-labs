@@ -204,41 +204,25 @@ You should see the `enterprise-agentgateway` controller pod Ready.
 arctl user login \
   --oidc-issuer-url "${OIDC_ISSUER}" \
   --oidc-client-id "${ARE_CLI_CLIENT_ID}"
+
+export ARCTL_API_TOKEN="$(arctl user info --show-tokens | jq -er '.access_token')"
 ```
 
 This opens a browser to Keycloak; sign in as `admin` / `admin`. The token is cached in your OS keychain and `arctl` refreshes it automatically.
 
 ### Entra path
 
-The current `arctl user login` doesn't pass a `scope` parameter, which Entra requires (`AADSTS900144`). Use the manual device-code flow you already validated in [002b step 7](002b-setup-oidc-entra.md#verify-the-setup), then export the access token:
+Request the delegated AgentRegistry API scope created in [002b](002b-setup-oidc-entra.md):
 
 ```bash
-DEVICE=$(curl -s -X POST \
-  "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/devicecode" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=${ARE_CLI_CLIENT_ID}&scope=openid+api://${ARE_BACKEND_CLIENT_ID}/agentregistry")
-echo "${DEVICE}" | jq
+arctl user login \
+  --oidc-issuer-url "${OIDC_ISSUER}" \
+  --oidc-client-id "${ARE_CLI_CLIENT_ID}" \
+  --oidc-scope openid \
+  --oidc-scope profile \
+  --oidc-scope "api://${OIDC_BACKEND}/agentregistry"
 
-# Open the URL + enter the code in your browser, then:
-DEVICE_CODE=$(echo "${DEVICE}" | jq -r .device_code)
-
-while true; do
-  RESP=$(curl -s -X POST \
-    "https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token" \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id=${ARE_CLI_CLIENT_ID}&device_code=${DEVICE_CODE}")
-  ERR=$(echo "${RESP}" | jq -r '.error // "none"')
-  if [ "${ERR}" = "none" ]; then
-    export ARCTL_API_TOKEN=$(echo "${RESP}" | jq -r '.access_token')
-    echo "Token obtained"
-    break
-  elif [ "${ERR}" = "authorization_pending" ]; then
-    sleep 5
-  else
-    echo "${RESP}" | jq
-    break
-  fi
-done
+export ARCTL_API_TOKEN="$(arctl user info --show-tokens | jq -er '.access_token')"
 ```
 
 ### Verify either path
@@ -309,7 +293,7 @@ The namespaces from 001 / 002 stay - re-run this lab to reinstall.
 | Agentregistry pods stuck in `Pending` on storage | No default `StorageClass`. Go back to [001 step 1](001-baseline-setup.md#1-confirm-the-cluster-is-ready). |
 | `arctl version --json` shows empty `server_version` | `ARCTL_API_BASE_URL` is unset or wrong. `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`. |
 | `arctl user whoami` shows local token info only and `registry unreachable` | Your OIDC login worked, but `ARCTL_API_BASE_URL` is stale or wrong. Re-export it with `export ARCTL_API_BASE_URL=http://${AR_IP}:12121`; do not use `:8080` for the agentregistry Service. |
-| `arctl user login` hangs on Entra | The current CLI doesn't pass `scope`. Use the manual device-code flow above. |
+| Entra login returns `AADSTS900144` or the API returns `401` | Confirm the login command includes `--oidc-scope "api://${OIDC_BACKEND}/agentregistry"`, then re-export `ARCTL_API_TOKEN` and run `arctl user whoami`. |
 | UI shows "no mapped roles" after login | The `groups` claim is missing or the GUID doesn't match `${GROUP_ADMINS}`. Decode your token at <https://jwt.io> and confirm. Re-run 002a/002b if the realm/app-reg config drifted. |
 | Agentgateway controller `CrashLoopBackOff` | Check that `AGENTGATEWAY_LICENSE_KEY` was set and passed with `--set-string licensing.licenseKey=...`. |
 
