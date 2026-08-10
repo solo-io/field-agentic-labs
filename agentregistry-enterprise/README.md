@@ -27,6 +27,7 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 - [Runtimes & Agents](#runtimes--agents)
 - [MCP Servers](#mcp-servers)
 - [Prompts](#prompts)
+- [Plugins](#plugins)
 - [AccessPolicy & Approvals](#accesspolicy--approvals)
 - [Observability](#observability)
 - [Cleanup](#cleanup)
@@ -67,6 +68,12 @@ All manifests, agent source code, and Python MCP servers are in [`assets/`](asse
 
 ---
 
+## Plugins
+
+- [041 - Plugins (Catalog Asset Quickstart)](041-plugins.md) - `Plugin` via `arctl` (git source pointer; UI Create may omit Plugin on v2026.7.1)
+
+---
+
 ## AccessPolicy & Approvals
 
 - [050 - AccessPolicy for Groups + MCP Tools + Chat](050-access-policies.md)
@@ -104,6 +111,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 - Federate Azure AI Foundry Agent Service projects as discovery runtimes
 - Register agents either by repo source (cloned + built by agentregistry) or by pre-built container image (BYO image)
 - Register MCP servers (`stdio` local, `streamable-http` remote, `Virtual` runtime via Agentgateway) and wire them into agents
+- Register Plugins as catalog source pointers (`arctl apply`) when the API supports them
 - Enforce AccessPolicy-based RBAC against Entra group object IDs, Entra app roles, or Keycloak groups
 - Gate every catalog submission behind admin approval (`requireCreateApproval`)
 - Surface traces from all runtimes in the agentregistry dashboard via the bundled OTel Collector + ClickHouse

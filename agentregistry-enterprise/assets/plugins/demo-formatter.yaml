@@ -1,0 +1,18 @@
+apiVersion: ar.dev/v1alpha1
+kind: Plugin
+metadata:
+  name: demo-formatter
+  tag: "1.0.0"
+spec:
+  title: Demo Formatter
+  description: Sample plugin registered from a public git repo (lite workshop lab).
+  harnesses:
+    - claude-code
+  source:
+    type: git
+    git:
+      repository:
+        url: https://github.com/solo-io/agentregistry-dev-samples
+        branch: main
+        # commit: <full-sha>     # preferred for reproducible tags
+        # subfolder: plugins/foo # if the plugin lives in a monorepo path
