@@ -4,6 +4,7 @@ A third deployment topology for the same GitHub Copilot remote MCP server from [
 
 This is the right pattern when:
 
+- You have MCP servers whose lifecycle is not management by agentregisty but that you still want to catalog and apply policy to. These might be MCP servers hosted by third parties (e.g. GitHub) or that you deploy outside of agentregistry (e.g. via CI)
 - You don't want every agent runtime (kagent, AgentCore, etc.) to know how to reach the remote MCP
 - You want one place to apply gateway policies (auth, rate limits, mTLS to the upstream) for MCP traffic
 - You're integrating non-kagent clients (Claude Code, Claude Desktop, MCP-aware tools running outside the cluster)
