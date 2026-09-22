@@ -31,6 +31,83 @@ export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output tex
 export AWS_REGION=us-east-1   # adjust if you want a different region
 ```
 
+## IAM permissions
+
+AgentRegistry never calls Bedrock with the long-lived IAM user keys you put in the Helm values. It calls `sts:AssumeRole` into the access role from the CloudFormation stack, then uses those temporary credentials. Put Bedrock, S3, and IAM permissions on **that role**. The user only needs permission to assume it.
+
+Use your own account, role name, and External ID. Do not copy values from another install. The Runtime `spec.config.externalId` and the role trust policy must be the same string. A mismatch returns `AccessDenied` on `sts:AssumeRole` even when the user is an account admin.
+
+### Caller (the IAM user or role whose keys AgentRegistry stores)
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeAgentRegistryAccessRole",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ],
+      "Resource": "arn:aws:iam::<account-id>:role/AgentRegistryAccessRole-<suffix>"
+    }
+  ]
+}
+```
+
+`sts:TagSession` is required because AgentRegistry names the STS session and the role trust allows `TagSession` as its own statement.
+
+### Role trust policy
+
+The stack writes this. If you edit the role by hand, keep both statements. Only `AssumeRole` is conditioned on the External ID.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::<account-id>:root" },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": { "sts:ExternalId": "<runtime spec.config.externalId>" }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::<account-id>:root" },
+      "Action": "sts:TagSession"
+    }
+  ]
+}
+```
+
+### Access role — sync
+
+Attach the AWS managed policy:
+
+`arn:aws:iam::aws:policy/BedrockAgentCoreFullAccess`
+
+That policy grants `bedrock-agentcore:*` on `arn:aws:bedrock-agentcore:*:*:*`, which covers discovery (`ListAgentRuntimes`, `GetAgentRuntime`) and invoke. It also includes the IAM pass-role, Secrets Manager, KMS, and log-read actions AWS bundles with it. A Runtime can show **Synced** with only this managed policy, plus a matching External ID.
+
+### Access role — deploy
+
+Sync does not upload agent artifacts. Catalog deploys also need the inline policy `BedrockAgentCoreSupplementalAccess` from the same template. An older stack that predates the `are-*` S3 statement will sync and then fail `s3:CreateBucket` or `s3:PutBucketTagging` / `s3:GetBucketTagging`. Update the stack or add the missing statement. The template does not grant `s3:DeleteBucket`.
+
+| Sid | What it is for | Actions | Resource |
+|---|---|---|---|
+| `IAMCreateAndManageExecutionRoles` | Per-agent AgentCore execution roles | `iam:CreateRole`, `DeleteRole`, `GetRole`, `PutRolePolicy`, `DeleteRolePolicy`, `AttachRolePolicy`, `DetachRolePolicy`, `TagRole`, `ListRolePolicies`, `ListAttachedRolePolicies`, `GetRolePolicy`, `UpdateRole`, `UpdateAssumeRolePolicy` | `arn:aws:iam::*:role/*BedrockAgentCore*`, `arn:aws:iam::*:role/service-role/*BedrockAgentCore*`, `arn:aws:iam::*:role/AmazonBedrockAgentCoreSDKRuntime-*`, `arn:aws:iam::*:role/aws-service-role/bedrock-agentcore.amazonaws.com/*` |
+| `IAMCreatePolicy` | Execution-role customer managed policies | `iam:CreatePolicy`, `GetPolicy`, `GetPolicyVersion`, `ListPolicyVersions`, `DeletePolicy`, `DeletePolicyVersion`, `CreatePolicyVersion` | `arn:aws:iam::*:policy/service-role/AmazonBedrockAgentCoreRuntimeExecutionPolicy_*` |
+| `IAMServiceLinkedRole` | AgentCore service-linked role | `iam:CreateServiceLinkedRole`, `GetServiceLinkedRoleDeletionStatus`, `DeleteServiceLinkedRole` | `arn:aws:iam::*:role/aws-service-role/bedrock-agentcore.amazonaws.com/*`, only when `iam:AWSServiceName` is `bedrock-agentcore.amazonaws.com` |
+| `CloudWatchLogsFullAccess` | AgentCore runtime logs | `logs:CreateLogGroup`, `CreateLogStream`, `PutLogEvents`, `DescribeLogGroups`, `DescribeLogStreams`, `DeleteLogGroup`, `PutDeliverySource`, `PutResourcePolicy`, `DeleteResourcePolicy` | `arn:aws:logs:*:*:log-group:/aws/bedrock-agentcore/*`, `arn:aws:logs:*:*:log-group:/aws/vendedlogs/bedrock-agentcore/*`, `arn:aws:logs:*:*:delivery-source:*`, `arn:aws:logs:*:*:delivery-destination:*` |
+| `CloudWatchLogsResourcePolicy` | Account log-resource policies | `logs:PutResourcePolicy`, `DeleteResourcePolicy`, `DescribeResourcePolicies` | `*` |
+| `S3CodeBuildArtifacts` | Source and install buckets (`are-*`, `agentcore-*`, `bedrock-agentcore-codebuild-sources-*`) | `s3:CreateBucket`, `PutObject`, `GetObject`, `ListBucket`, `ListBucketVersions`, `GetBucketLocation`, `PutBucketPublicAccessBlock`, `PutBucketVersioning`, `PutBucketPolicy`, `GetBucketPolicy`, `DeleteObject`, `DeleteObjectVersion`, `PutLifecycleConfiguration`, `PutObjectTagging`, `GetObjectTagging`, `PutBucketTagging`, `GetBucketTagging` | `arn:aws:s3:::are-*`, `arn:aws:s3:::are-*/*`, and the same pair for `agentcore-*` and `bedrock-agentcore-codebuild-sources-*` |
+| `CognitoUserPoolManagement` | Optional AgentCore auth pools | `cognito-idp:CreateUserPool`, `DeleteUserPool`, `DescribeUserPool`, `CreateUserPoolClient`, `DeleteUserPoolClient`, `DescribeUserPoolClient`, `AdminCreateUser`, `AdminDeleteUser`, `AdminSetUserPassword`, `AdminGetUser`, `InitiateAuth` | `*` |
+| `OutboundIdentityFederationDescribe` | Workload identity token setup | `iam:GetOutboundWebIdentityFederationInfo` | `*` |
+
+Source of truth: `internal/runtime/agentcore/setup.go` in the AgentRegistry Enterprise repo (`BedrockAgentCoreSupplementalAccess`). Re-apply that template when upgrading AgentRegistry rather than hand-editing a subset of the S3 actions.
+
 ## 1. Generate the IAM CloudFormation Template
 
 ```bash
@@ -39,11 +116,12 @@ arctl runtime setup bedrock-agent-core \
   --registry-token "${ARCTL_API_TOKEN}" > /tmp/agentregistry-cf.yaml
 ```
 
-The template creates an IAM role with the permissions agentregistry needs to drive AgentCore: Bedrock AgentCore, IAM (to create per-agent execution roles), S3 (agent code artifacts), CloudWatch Logs, AppConfig, Cognito, EC2.
+The template creates one IAM role. That role — not the IAM user whose keys AgentRegistry stores — is what lists, deploys, and invokes AgentCore. The full permission split is in [IAM permissions](#iam-permissions) above.
 
 Note the **External ID** and **Role Name** printed to the terminal. They are written
 to stderr so the redirected file contains only valid CloudFormation YAML. The
-External ID is also included in the template's stack outputs.
+External ID is also included in the template's stack outputs. The role name is
+`AgentRegistryAccessRole-` plus the first 8 characters of that External ID.
 
 ## 2. Deploy the CloudFormation Stack
 
