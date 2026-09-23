@@ -25,7 +25,7 @@ After this lab, the cluster has the baseline that [010](010-create-an-agent.md) 
 - An LLM provider API key (`OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` if you use the Anthropic block below)
 - On GKE, Workload Identity turned on so Actor snapshots can be written to Cloud Storage
 
-The cluster also needs `ClusterTrustBundle` and the corresponding projected-volume support on the nodes.
+The cluster also needs `ClusterTrustBundle` and the corresponding projected-volume support on the nodes. `PodCertificateRequest` is how a Substrate pod gets the certificate it presents for mTLS. The chart does not ship TLS Secrets. Each pod asks Kubernetes to issue a short-lived certificate, and Substrate's pod-certificate controller signs it.
 
 > **Kubernetes v1.37 and above.** The `PodCertificateRequest` gate is no longer required.
 
