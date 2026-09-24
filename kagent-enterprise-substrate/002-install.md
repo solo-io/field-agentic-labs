@@ -55,6 +55,15 @@ credentialProvider:
   namespacePolicies:
     - atespace: kagent
       allowedNamespaces: [kagent]
+
+otel:
+  endpoint: http://solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317
+  traces:
+    enabled: false
+atelet:
+  extraEnv:
+    - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      value: delta
 EOF
 
 helm install substrate oci://ghcr.io/kagent-dev/substrate/helm/substrate \
@@ -226,6 +235,19 @@ providers:
   openAI:
     apiKey: "${OPENAI_API_KEY:?Set OPENAI_API_KEY}"
 EOF
+```
+
+If you want to use agentevals, put the below in the config above when installing kagent:
+
+```
+agentevals:
+  enabled: true
+  image:
+    repository: solo-enterprise-agentevals-kagent
+    tag: <enterprise-overlay-tag>
+controller:
+  agentevals:
+    enabled: true
 ```
 
 > **Anthropic provider block.** Set `ANTHROPIC_API_KEY` and replace the `providers:` block above with:
