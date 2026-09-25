@@ -1,0 +1,34 @@
+apiVersion: kagent.dev/v1alpha3
+kind: Harness
+metadata:
+  name: adk-trace-enabled
+  namespace: kagent
+spec:
+  kagent: {}
+  workload:
+    image: ${IMAGE}
+    command: ["/app"]
+  env:
+    - name: MODEL_NAME
+      value: ${MODEL_NAME}
+  substrate:
+    workerPoolRef:
+      name: kagent-default
+    snapshotPolicy:
+      location: ${SNAPSHOT_LOCATION}
+  allowedAgentTemplates:
+    selector:
+      matchLabels:
+        demo.kagent.dev/runtime: adk-trace-enabled
+---
+apiVersion: kagent.dev/v1alpha3
+kind: AgentTemplate
+metadata:
+  name: adk-trace-enabled
+  namespace: kagent
+  labels:
+    demo.kagent.dev/runtime: adk-trace-enabled
+spec:
+  description: Programmatic Go ADK agent with a traced model and addition tool.
+  modelConfig:
+    name: default-model-config
