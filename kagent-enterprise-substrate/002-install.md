@@ -207,6 +207,7 @@ telemetry:
     enabled: true
 
 otel:
+  captureSensitiveContent: true
   tracing:
     enabled: true
     exporter:
