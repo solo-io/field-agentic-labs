@@ -8,7 +8,7 @@ The workshop is built around two ideas:
 
 2. **Independent unit-of-value labs.** Every lab numbered 010 and up states what it needs from the baseline. [010](010-create-an-agent.md) creates one `Harness` and one `AgentTemplate`, and has its own `## Cleanup` that removes those objects. [020](020-access-control.md) walks the mTLS path the install already uses. It applies nothing.
 
-Every Helm value, manifest, and command is inline in the lab that uses it.
+Every Helm value, manifest, and command is inline in the lab that uses it. The story those labs tell, who each one is for, and what a walkthrough can show, is [outcomes.md](outcomes.md). That page has no commands. Product and engineering read it to see the claim. Someone running the workshop reads it to see the scope.
 
 ## Prerequisites
 
@@ -85,6 +85,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 ```
 kagent-enterprise-substrate/
 ├── README.md
+├── outcomes.md                    # what each lab shows; no commands
 ├── 001-where-it-works.md          # cluster compatibility
 ├── 002-install.md                 # Substrate + kagent Enterprise
 ├── 010-create-an-agent.md         # Harness + AgentTemplate
