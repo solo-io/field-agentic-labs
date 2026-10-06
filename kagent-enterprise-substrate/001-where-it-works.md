@@ -29,15 +29,9 @@ The same note applies to the install prerequisites in [002](002-install.md).
 1. GKE, which lets you enable the gate.
 2. Any cluster where you own the API server: microk8s, kind, minikube, kubeadm, and the same class of install.
 
-## 3. Where It May or May Not Work
+## 3. Kagent Fix
 
-AKS and EKS.
-
-**EKS.** AWS lists Kubernetes 1.36 as its newest available version. Upstream Kubernetes leaves `PodCertificateRequest` off by default through 1.36. EKS permits extra kubelet arguments through node launch templates, but that cannot enable the API on the managed control plane.
-
-**AKS.** Microsoft’s calendar lists Kubernetes 1.37 in preview in September 2026, with GA scheduled for October. Upstream Kubernetes makes `PodCertificateRequest` stable and on by default in 1.37. AKS documents a limited set of configurable kubelet settings, not a general control-plane feature-gate switch.
-
-Check your Kubernetes provider before continuing.
+Within the latest build of kagent v1, the `PodCertificateRequest` need is fixed. It can now run on clusters back to k8s v1.34.
 
 ## What's in Place After This Lab
 
