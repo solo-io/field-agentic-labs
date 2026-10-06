@@ -11,10 +11,10 @@ After this lab, the cluster has the baseline that [010](010-create-an-agent.md) 
 ## Lab Objectives
 
 - Install the kagent Enterprise CRDs with the `WorkerPool` CRD enabled
-- Install Agent Substrate `0.2.0-beta5`
+- Install Agent Substrate Enterprise `0.3.0-alpha3-eddf527`
 - Create the five cryptographic pools and the actor-id CA Secret the chart does not create
 - Tell `ate-api-server` which JWTs to trust
-- Install kagent Enterprise `1.0.0-alpha3` pointed at that Substrate API
+- Install kagent Enterprise `1.0.0-alpha6` pointed at that Substrate API
 - Open the kagent UI
 
 ## Prerequisites
@@ -22,16 +22,17 @@ After this lab, the cluster has the baseline that [010](010-create-an-agent.md) 
 - [001 - Where Substrate Works](001-where-it-works.md). Continue only if your cluster can serve `PodCertificateRequest`, or it is already on Kubernetes v1.37 or above.
 - `kubectl`, `helm` v3, `curl`, `jq`, `openssl`
 - Solo kagent license key
+- Enterprise agentgateway license key. The Substrate Enterprise chart runs the enterprise agentgateway and refuses to render without one.
 - An LLM provider API key (`OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` if you use the Anthropic block below)
 - On GKE, Workload Identity turned on so Actor snapshots can be written to Cloud Storage
 
 The cluster also needs `ClusterTrustBundle` and the corresponding projected-volume support on the nodes. `PodCertificateRequest` is how a Substrate pod gets the certificate it presents for mTLS. The chart does not ship TLS Secrets. Each pod asks Kubernetes to issue a short-lived certificate, and Substrate's pod-certificate controller signs it.
 
-> **Kubernetes v1.37 and above.** The `PodCertificateRequest` gate is no longer required.
+> **Kubernetes v1.37 and above.** The `PodCertificateRequest` gate is no longer required with kagent v1 (works back to k8s v1.34)
 
 ## What Gets Installed
 
-- Postgres (kagent state, checkpoints, eval definitions)
+- Postgres (kagent state, checkpoints)
 - ClickHouse (OTel traces, Substrate requests, harness chat spans, agenteval results)
 - kagent and Agent Substrate CRDs
 - kagent and Agent Substrate
@@ -41,16 +42,24 @@ The cluster also needs `ClusterTrustBundle` and the corresponding projected-volu
 ```bash
 helm install kagent-crds \
   oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts/kagent-enterprise-crds \
-  --version 1.0.0-alpha3 --namespace kagent --create-namespace \
+  --version 1.0.0-alpha6 --namespace kagent --create-namespace \
   --set substrate.enabled=true
 ```
 
-Without `substrate.enabled=true`, the `WorkerPool` CRD will not exist, so no Workers will be available to run Actors.
+Without `substrate.enabled=true`, the `WorkerPool` CRD will not exist, so no Workers will be available to run Actors. This release also installs the `api.kagent.dev` CRDs (`Agent`, `AgentTemplate`, `Harness`, ...) that [010](010-create-an-agent.md) uses. Install it before Substrate: the Substrate chart creates a `SandboxConfig`, whose CRD ships here.
 
 ## 2. Install Agent Substrate
 
 ```bash
-cat > substrate-values.yaml <<'EOF'
+export AGENTGATEWAY_LICENSE_KEY=
+```
+
+```bash
+cat > substrate-values.yaml <<EOF
+global:
+  licensing:
+    licenseKey: "${AGENTGATEWAY_LICENSE_KEY:?Set AGENTGATEWAY_LICENSE_KEY}"
+
 credentialProvider:
   namespacePolicies:
     - atespace: kagent
@@ -66,12 +75,16 @@ atelet:
       value: delta
 EOF
 
-helm install substrate oci://ghcr.io/kagent-dev/substrate/helm/substrate \
-  --version 0.2.0-beta5 --namespace ate-system --create-namespace \
+helm install substrate oci://us-docker.pkg.dev/solo-public/enterprise-substrate-helm/substrate \
+  --version 0.3.0-alpha3-eddf527 --namespace ate-system --create-namespace \
   --wait=false -f substrate-values.yaml
 ```
 
 `--wait=false` is intentional. The chart does not create the cryptographic Secrets below, so its pods cannot become Ready until those pools exist.
+
+> **Release name and namespace are fixed.** Keep the release named `substrate` in `ate-system`. The chart's resource names and its RBAC assume both, and under another release name the golden actor fails to resume with a SPIFFE identity mismatch.
+
+> **`substrate-values.yaml` now holds the license key.** Don't commit it. [099](099-cleanup.md) deletes it.
 
 ## 3. Install `kubectl-ate`
 
@@ -79,7 +92,7 @@ helm install substrate oci://ghcr.io/kagent-dev/substrate/helm/substrate \
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 curl -fsSL -o kubectl-ate \
-  "https://github.com/kagent-dev/substrate/releases/download/v0.2.0-beta5/kubectl-ate-${OS}-${ARCH}" &&
+  "https://github.com/kagent-dev/substrate/releases/download/v0.3.0-alpha3/kubectl-ate-${OS}-${ARCH}" &&
   chmod +x kubectl-ate
 ```
 
@@ -174,7 +187,7 @@ jwtProviders:
 
 ```bash
 kubectl rollout status deploy/podcertificate-controller -n podcertificate-controller-system --timeout=300s
-for d in ate-api-server ate-controller atenet-router atenet-egress k8s-credential-provider; do
+for d in ate-api-server ate-controller atenet-router atenet-egress k8s-credential-provider rustfs; do
   kubectl rollout status deploy/$d -n ate-system --timeout=300s
 done
 kubectl rollout status ds/atelet -n ate-system --timeout=300s
@@ -194,7 +207,7 @@ export OPENAI_API_KEY=
 ```bash
 helm install kagent \
   oci://us-docker.pkg.dev/solo-public/kagent-enterprise-helm/charts/kagent-enterprise \
-  --version 1.0.0-alpha3 --namespace kagent --wait --timeout 15m -f - <<EOF
+  --version 1.0.0-alpha6 --namespace kagent --wait --timeout 15m -f - <<EOF
 global:
   cluster: kagent-demo
   licensing:
@@ -207,21 +220,19 @@ telemetry:
     enabled: true
 
 otel:
-  captureSensitiveContent: true
-  tracing:
+  exporter:
+    otlp:
+      endpoint: http://solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317
+  traces:
     enabled: true
-    exporter:
-      otlp:
-        endpoint: http://solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317
-        insecure: true
+  capture:
+    messageContent: false
 
 controller:
   substrate:
     enabled: true
     ateApiEndpoint: "dns:///api.ate-system.svc:443"
     atenetRouterURL: "http://atenet-router.ate-system.svc:80"
-    defaultWorkerPool:
-      name: kagent-default
 
 substrate:
   enabled: false
@@ -229,7 +240,7 @@ substrate:
 substrateWorkerPool:
   create: true
   name: kagent-default
-  workerImage: ghcr.io/kagent-dev/substrate/ateom-gvisor:v0.2.0-beta5
+  workerImage: us-docker.pkg.dev/solo-public/substrate-enterprise/ateom-gvisor:v0.3.0-alpha3-eddf527
   sandboxClass: gvisor
 
 providers:
@@ -260,7 +271,13 @@ providers:
     apiKey: "${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY}"
 ```
 
-> **Keep the `http://` prefix on the OTLP endpoint.** Without it, the exporter attempts TLS against the collector's plaintext port and agent traces do not arrive.
+> **Keep the `http://` prefix on the OTLP endpoint.** Without it, the exporter attempts TLS against the collector's plaintext port and agent traces do not arrive. The scheme replaces the old `insecure` flag: `http://` is plaintext.
+
+> **Prompt and response capture is off.** `otel.capture.messageContent: false` keeps prompts and responses out of telemetry. Set it to `true` only after a privacy review.
+
+> **Values removed in 1.0.0-alpha6.** The chart refuses to render if you carry these over from an older install: `controller.substrate.defaultWorkerPool` (each `Harness` names its own pool), `otel.tracing.*` (now `otel.exporter.otlp.endpoint` and `otel.traces.enabled`), and `otel.captureSensitiveContent` (now `otel.capture.messageContent`).
+
+> **Worker image and Substrate chart move together.** The `ateom-gvisor` tag must be the same build as the Substrate chart from step 2. A mismatched worker dies on startup and the `WorkerPool` never registers a worker.
 
 > **The values above use the built-in demo IdP.** To use your own, create the client-secret and set `enterprise.oidc`:
 
