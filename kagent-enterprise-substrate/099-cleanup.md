@@ -16,6 +16,7 @@ Tear down everything the workshop installed. Run this when you're done.
 ## 1. Remove the Agent from 010
 
 ```bash
+kubectl delete agent assistant -n kagent --ignore-not-found
 kubectl delete harness kagent -n kagent --ignore-not-found
 kubectl delete agenttemplate assistant -n kagent --ignore-not-found
 ```

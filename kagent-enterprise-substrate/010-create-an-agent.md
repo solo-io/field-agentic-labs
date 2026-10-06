@@ -1,17 +1,21 @@
 # Create an Agent
 
-Create one substrate-backed agent. Three objects matter:
+Create one substrate-backed agent. Four objects matter:
 
 1. `ModelConfig` is the LLM the Actor uses.
-2. `AgentTemplate` is the golden image for Actors. When you create an Actor, you specify the template.
-3. `Harness` is where the agent runs as an Actor.
+2. `AgentTemplate` is what the agent is: model, prompt, tools. It is reusable across harnesses.
+3. `Harness` is what runs it: the runtime, image, worker pool, and snapshot location.
+4. `Agent` pairs one `AgentTemplate` with one `Harness`. It is the runnable object, and it carries the `Ready` condition.
 
-The apply below creates the `Harness` and the `AgentTemplate`. It references a `ModelConfig` named `default-model-config`.
+The apply below creates the `Harness`, the `AgentTemplate`, and the `Agent`. It references a `ModelConfig` named `default-model-config`.
+
+> **API group.** These objects are `api.kagent.dev/v1alpha3`. The older `kagent.dev` group, label matching through `Harness.spec.allowedAgentTemplates`, and the `AgentInstance` conversation object are gone. A `Harness` admits nothing on its own; the `Agent` does the pairing, and each conversation is a `Session`.
 
 ## Lab Objectives
 
 - Apply a `Harness` on the `kagent-default` worker pool
-- Apply an `AgentTemplate` that the harness is allowed to run
+- Apply an `AgentTemplate`
+- Apply an `Agent` that pairs them
 - See how an Actor is named, how a request wakes it, and where snapshots go
 
 ## Prerequisites
@@ -20,11 +24,11 @@ The apply below creates the `Harness` and the `AgentTemplate`. It references a `
 - A container image `ate-api` can pull. You will substitute it for `YOUR_IMAGE_PATH`.
 - For Google Cloud Storage snapshots: `gcloud`, a project, and a bucket. The install's default snapshot bucket is the one created with the Substrate install (S3/RustFS). Use the GCS steps only when snapshots should go to Cloud Storage instead.
 
-## 1. Create the Harness and AgentTemplate
+## 1. Create the Harness, AgentTemplate, and Agent
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: kagent.dev/v1alpha3
+apiVersion: api.kagent.dev/v1alpha3
 kind: Harness
 metadata:
   name: kagent
@@ -38,41 +42,49 @@ spec:
       name: kagent-default
     snapshotPolicy:
       location: gs://ate-snapshots/kagent/
-  allowedAgentTemplates:
-    selector:
-      matchLabels:
-        kagent.dev/harness: kagent
 ---
-apiVersion: kagent.dev/v1alpha3
+apiVersion: api.kagent.dev/v1alpha3
 kind: AgentTemplate
 metadata:
   name: assistant
   namespace: kagent
-  labels:
-    kagent.dev/harness: kagent
 spec:
   modelConfig:
     name: default-model-config
   description: A substrate-backed assistant used to verify this main build.
   systemPrompt: You are a helpful assistant running on kagent.
+---
+apiVersion: api.kagent.dev/v1alpha3
+kind: Agent
+metadata:
+  name: assistant
+  namespace: kagent
+spec:
+  templateRef:
+    name: assistant
+  harnessRef:
+    name: kagent
 EOF
 ```
 
-Replace `YOUR_IMAGE_PATH` before you apply. The rest of the manifest stays as written.
+Replace `YOUR_IMAGE_PATH` before you apply. It must be pinned by digest (`repository@sha256:<digest>`); the `Harness` CRD rejects a tag. The rest of the manifest stays as written.
 
 > **`ate-api` has to pull the Harness image.** If it cannot, `ate-api-server` reports that the golden actor fails at `CallAteletRestore`. The underlying error is an unauthenticated pull.
 
-Confirm both objects exist:
+> **References or inline specs.** `templateRef` and `harnessRef` point at objects in the `Agent`'s namespace. An `Agent` can instead carry the full spec inline under `template` and `harness`. Each side takes exactly one of the two.
+
+Confirm the objects exist, and wait for the `Agent` to report `Ready`:
 
 ```bash
-kubectl get harness,agenttemplate -n kagent
+kubectl get harness,agenttemplate,agent -n kagent
+kubectl wait agent/assistant -n kagent --for=condition=Ready --timeout=300s
 ```
 
-You should see `kagent` and `assistant`.
+You should see the `kagent` Harness, the `assistant` AgentTemplate, and the `assistant` Agent. `Ready` means the golden snapshot is prepared and a conversation can start.
 
 ## Actor Identity
 
-The identity of an Actor is (`atespace`, name). An `atespace` is Substrate's own isolation boundary, not a Kubernetes namespace. In kagent the `atespace` is the instance's namespace, and the actor name is derived from the `AgentInstance` id (`ai-` plus the lowercased id).
+The identity of an Actor is (`atespace`, name). An `atespace` is Substrate's own isolation boundary, not a Kubernetes namespace. In kagent the `atespace` is the agent's namespace, and the actor name is derived from the `Session` id (`session-` plus the lowercased id). A `Session` is one conversation. It lives in the controller's database, not as a Kubernetes object.
 
 ## 2. Grant the Snapshot Bucket
 
@@ -121,6 +133,7 @@ Substrate access logs and metrics flow into ClickHouse. Enterprise handlers expo
 Removes the objects this lab created. The [002](002-install.md) baseline stays.
 
 ```bash
+kubectl delete agent assistant -n kagent --ignore-not-found
 kubectl delete harness kagent -n kagent --ignore-not-found
 kubectl delete agenttemplate assistant -n kagent --ignore-not-found
 ```
