@@ -20,7 +20,7 @@ The lab ends with four demos you can show on the finished install.
 - Create Substrate's identity material and the ate-ca compatibility material
 - Install `substrate-crds`, `substrate-podcert`, and `substrate`, then kagent Enterprise in compatibility mode with Postgres-only telemetry
 - Run an Agent whose golden snapshot lands in S3
-- Run the demos: Kubernetes 1.36 support, Aurora-backed state, traces in Postgres, and an agent as a terminal
+- Run the demos: Kubernetes 1.36 support, Aurora-backed state, traces in Postgres, and an agent that works in a separate sandbox
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ The lab ends with four demos you can show on the finished install.
 - Solo kagent license key
 - Enterprise agentgateway license key. The Substrate Enterprise chart runs the enterprise agentgateway and refuses to render without one.
 - `OPENAI_API_KEY`
-- For the agent-as-a-terminal demo: `ANTHROPIC_API_KEY`, Docker with `buildx`, and a **public** container repository you can push to
+- For the sandbox demo: Docker with `buildx`, and a **public** container repository you can push to
 
 ## What This Lab Does **Not** Do
 
@@ -54,7 +54,8 @@ The lab ends with four demos you can show on the finished install.
 | Agent Substrate Enterprise charts (`substrate-crds`, `substrate-podcert`, `substrate`) | `0.5.0-alpha3-e492046` |
 | `kubectl-ate` | `v0.5.0-alpha2` |
 | Worker image | `us-docker.pkg.dev/solo-public/substrate-enterprise/ateom-gvisor:v0.5.0-alpha3-e492046` |
-| Harness runtimes | `ghcr.io/kagent-dev/kagent/golang-adk:1.0.0-alpha13`, `ghcr.io/kagent-dev/kagent/claude-harness:1.0.0-alpha13` |
+| Harness runtime | `ghcr.io/kagent-dev/kagent/golang-adk:1.0.0-alpha13` |
+| Sandbox guest image | `ghcr.io/kagent-dev/kagent/sandbox-guest:1.0.0-alpha13` |
 
 ## 1. Set the Environment Variables
 
@@ -639,6 +640,7 @@ The values set:
 - the `kagent-default` WorkerPool on the matching gVisor worker image. Each Agent keeps a golden Actor on a worker, plus room for conversations. 4 workers fit 3 `m7i.2xlarge` nodes.
 - Postgres-only telemetry ("observability lite"). Traces land in Aurora, in the `enterprise` schema. ClickHouse and agentevals must be off.
 - OpenAI, which creates the `default-model-config` ModelConfig
+- sandboxes, for the demo in step 19: the sandbox guest image that matches kagent 1.0.0-alpha13, and token propagation so an agent can create sandboxes as the user chatting with it. The chart ships `config.sandboxes.guestImage` empty, and no `SandboxTemplate` can be prepared without it.
 
 The Postgres connection uses the chart's defaults (the `kagent-postgres` Secret, the `kagent_owner` role, and the `kagent` and `enterprise` schemas), which match step 6. `enterprise.oidc` is unset, which uses the bundled demo login.
 
@@ -688,6 +690,10 @@ config:
     telemetry:
       traces:
         endpoint: http://solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317
+    tokenPropagation:
+      enabled: true
+  sandboxes:
+    guestImage: ghcr.io/kagent-dev/kagent/sandbox-guest:1.0.0-alpha13@sha256:2b76d59be60e2b2bd0313a2c8460c83f4d301fe3e43dd52ac52101794683f225
 
 providers:
   default: openAI
@@ -1026,25 +1032,24 @@ Delete the client pod:
 kubectl delete pod pg-client
 ```
 
-## 19. Demo: Agent as a Terminal
+## 19. Demo: An Agent With Its Own Sandbox
 
-Build a Claude Code Harness image with CLIs pre-installed. Claude Code runs with its built-in tools, including the shell, inside the gVisor sandbox, so the agent works as a terminal: "check this repo", "parse this JSON", "run this script".
+The agent does its shell work in a **separate sandbox**, not in its own environment. The platform team builds the sandbox image on the distro and toolset they choose and publishes it as a `SandboxTemplate`. The agent creates a sandbox from that template, runs commands in it ("check this repo", "parse this JSON", "run this script"), and deletes it when done. The agent itself stays on the stock `kagent` Harness from step 15.
 
-The tools are baked in because an Actor can only reach the destinations kagent compiles from its AgentTemplate: the model, its MCP servers, and telemetry. Package mirrors, `git clone` from the internet, and `curl` to arbitrary hosts are blocked, and Actors get no Kubernetes token. So the image ships local tools (`bash`, `git`, `jq`, `yq`, `python3`, `ripgrep`, `tree`) and a small git repo at `/opt/demo-workspace` to work on.
+A sandbox is its own Actor in the gVisor pool, with its own snapshot and a TTL. The agent drives it through the `kagent-api` MCP server that the kagent-enterprise chart installs, using tools such as `create_sandbox`, `start_sandbox_process`, `read_sandbox_file`, and `delete_sandbox`. Step 13 already enabled sandboxes.
 
-The image must be in a **public** registry. `atelet` pulls Actor images itself, without the kubelet's credentials, so a private registry needs extra Substrate configuration. Set `TERMINAL_REPO` to a public repository you can push to, such as `public.ecr.aws/<alias>/agent-terminal` or `ghcr.io/<user>/agent-terminal`.
+The image must be in a **public** registry. `atelet` pulls Actor images itself, without the kubelet's credentials. Set `SANDBOX_REPO` to a public repository you can push to, such as `public.ecr.aws/<alias>/agent-sandbox` or `ghcr.io/<user>/agent-sandbox`.
 
 ```bash
-export ANTHROPIC_API_KEY=
-export TERMINAL_REPO=
+export SANDBOX_REPO=
 ```
 
 Create the demo workspace:
 
 ```bash
-mkdir -p agent-terminal/demo-workspace
+mkdir -p agent-sandbox/demo-workspace
 
-cat > agent-terminal/demo-workspace/services.json <<'EOF'
+cat > agent-sandbox/demo-workspace/services.json <<'EOF'
 {
   "services": [
     { "name": "checkout", "namespace": "shop", "replicas": 3, "ready": 3, "image": "shop/checkout:2.4.1" },
@@ -1056,7 +1061,7 @@ cat > agent-terminal/demo-workspace/services.json <<'EOF'
 }
 EOF
 
-cat > agent-terminal/demo-workspace/check_services.py <<'EOF'
+cat > agent-sandbox/demo-workspace/check_services.py <<'EOF'
 """Report services that are not fully ready, from services.json."""
 import json
 import sys
@@ -1075,7 +1080,7 @@ if __name__ == "__main__":
     sys.exit(main())
 EOF
 
-cat > agent-terminal/demo-workspace/deploy.yaml <<'EOF'
+cat > agent-sandbox/demo-workspace/deploy.yaml <<'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1097,125 +1102,136 @@ spec:
 EOF
 ```
 
-Create the Dockerfile. The base is the `claude-harness` kagent Enterprise `1.0.0-alpha10` pairs with: Alpine, running as UID 65532.
+Create the Dockerfile. The base is Ubuntu 24.04, pinned by digest. The package lists are removed after the install, so a later `apt-get install` has to fetch them and hits the network policy. The demo repo lives under `/opt`, because `/data` is a durable mount that hides anything baked under it.
 
 ```bash
-cat > agent-terminal/Dockerfile <<'EOF'
-FROM ghcr.io/kagent-dev/kagent/claude-harness:1.0.0-alpha13@sha256:ceaf7caa7366b96c11cb85ad0bad435a35fcd2704c657b895ee3e73978045db8
+cat > agent-sandbox/Dockerfile <<'EOF'
+FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55
 
-USER root
-# bash, git, and ripgrep already ship in the base image.
-RUN apk add --no-cache jq yq python3 tree
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       bash ca-certificates curl git jq python3 ripgrep tree \
+    && rm -rf /var/lib/apt/lists/*
 
-# A git identity for commits the agent makes inside the sandbox.
-RUN git config --system user.name "agent-terminal" \
-    && git config --system user.email "agent-terminal@example.com"
+RUN echo 'APT::Sandbox::User "root";' > /etc/apt/apt.conf.d/99sandbox-root
 
-# The demo repo lives in the image, because the sandbox cannot clone from the internet.
+RUN git config --system user.name "agent-sandbox" \
+    && git config --system user.email "agent-sandbox@example.com"
+
 COPY demo-workspace/ /opt/demo-workspace/
 RUN cd /opt/demo-workspace \
     && git init -q -b main \
     && git -c user.name=platform -c user.email=platform@example.com add . \
-    && git -c user.name=platform -c user.email=platform@example.com commit -q -m "Initial demo workspace" \
-    && chown -R 65532:65532 /opt/demo-workspace
-
-USER 65532:65532
+    && git -c user.name=platform -c user.email=platform@example.com commit -q -m "Initial demo workspace"
 EOF
 ```
 
 Build and push. The nodes are `amd64`, so build for that platform:
 
 ```bash
-docker buildx build --platform linux/amd64 -t $TERMINAL_REPO:v1 --push agent-terminal
+docker buildx build --platform linux/amd64 -t $SANDBOX_REPO:v1 --push agent-sandbox
 ```
 
-Pin the image by digest. `echo $TERMINAL_IMAGE` prints `<repo>@sha256:...`.
+Pin the image by digest. `SandboxTemplate` only accepts an image pinned by digest. `echo $SANDBOX_IMAGE` prints `<repo>@sha256:...`.
 
 ```bash
-export TERMINAL_IMAGE=$TERMINAL_REPO@$(docker buildx imagetools inspect $TERMINAL_REPO:v1 | awk '/^Digest:/{print $2; exit}')
-echo $TERMINAL_IMAGE
+export SANDBOX_IMAGE=$SANDBOX_REPO@$(docker buildx imagetools inspect $SANDBOX_REPO:v1 | awk '/^Digest:/{print $2; exit}')
+echo $SANDBOX_IMAGE
 ```
 
-Create the Anthropic key Secret. The egress gateway injects the key on the way out, so the sandbox never holds it. This works because the Secret is in the `kagent` namespace, which the Substrate credential grant from step 12 allows.
-
-```bash
-kubectl -n kagent create secret generic anthropic-api-key \
-  --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY}"
-```
-
-Create the ModelConfig, the Claude Harness on the shared `kagent-default` WorkerPool, the AgentTemplate, and the Agent:
+Create the `dev-tools` SandboxTemplate on the shared `kagent-default` WorkerPool, and the `sandbox-operator` AgentTemplate and Agent. The AgentTemplate uses the OpenAI `default-model-config` and binds the sandbox tools of the `kagent-api` MCP server. The Agent runs on the `kagent` Harness from step 15.
 
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: api.kagent.dev/v1alpha3
-kind: ModelConfig
+kind: SandboxTemplate
 metadata:
-  name: claude-model-config
+  name: dev-tools
   namespace: kagent
 spec:
-  provider: Anthropic
-  model: claude-haiku-4-5
-  apiKeySecret: anthropic-api-key
-  apiKeySecretKey: ANTHROPIC_API_KEY
----
-apiVersion: api.kagent.dev/v1alpha3
-kind: Harness
-metadata:
-  name: agent-terminal
-  namespace: kagent
-spec:
-  claude: {}
   workload:
-    image: ${TERMINAL_IMAGE}
+    image: ${SANDBOX_IMAGE}
   substrate:
     workerPoolRef:
       name: kagent-default
     snapshotPolicy:
-      location: s3://${BUCKET}/kagent/agent-terminal/
+      location: s3://${BUCKET}/kagent/sandboxes/
 ---
 apiVersion: api.kagent.dev/v1alpha3
 kind: AgentTemplate
 metadata:
-  name: agent-terminal
+  name: sandbox-operator
   namespace: kagent
 spec:
   modelConfig:
-    name: claude-model-config
-  description: A terminal-style agent with a platform-approved toolset, running in a gVisor sandbox.
+    name: default-model-config
+  description: Runs shell work in a separate, disposable sandbox built by the platform team.
   systemPrompt: |
-    You are a terminal assistant working in a sandbox. Use your shell tool to run
-    commands. The project is a git repository at /opt/demo-workspace.
-    Available tools: bash, git, jq, yq, python3, ripgrep, tree.
-    You have no internet access and cannot install packages. If a task needs
-    something that is not installed, say so instead of trying to install it.
+    You do shell work in a separate sandbox, never in your own environment.
+
+    1. Call list_sandbox_templates with namespace "kagent". Use the dev-tools template.
+    2. Call create_sandbox with namespace "kagent", template "dev-tools", a new
+       request_id, and ttl_seconds 900. Keep the returned id. If you retry, reuse the
+       same request_id and inputs.
+    3. Call get_sandbox until state is RUNTIME_STATE_READY and operation is
+       RUNTIME_OPERATION_NONE.
+    4. Run each command with start_sandbox_process as
+       ["sh", "-c", "<command> > /data/workspace/out.txt 2>&1"]. Call
+       get_sandbox_process until it is COMPLETED or FAILED, then read
+       /data/workspace/out.txt with read_sandbox_file. Report the exit code.
+    5. Reuse the same sandbox for later requests in this conversation. Call
+       delete_sandbox when the user says they are done.
+
+    The project is a git repository at /opt/demo-workspace. The sandbox has bash,
+    git, jq, python3, ripgrep, tree, and curl. It has no network access, so
+    nothing can be installed. If a task needs a missing tool, try it once, show
+    the error, and say the platform team must add it to the sandbox image.
+  tools:
+    - mcp:
+        server:
+          kind: RemoteMCPServer
+          name: kagent-api
+        tools:
+          - list_sandbox_templates
+          - create_sandbox
+          - get_sandbox
+          - list_sandboxes
+          - delete_sandbox
+          - start_sandbox_process
+          - get_sandbox_process
+          - read_sandbox_outputs
+          - read_sandbox_file
+          - write_sandbox_file
 ---
 apiVersion: api.kagent.dev/v1alpha3
 kind: Agent
 metadata:
-  name: agent-terminal
+  name: sandbox-operator
   namespace: kagent
 spec:
   template:
     ref:
-      name: agent-terminal
+      name: sandbox-operator
   harnessRef:
-    name: agent-terminal
+    name: kagent
 EOF
 
-kubectl wait agent/agent-terminal -n kagent --for=condition=Ready --timeout=600s
+kubectl wait sandboxtemplate/dev-tools -n kagent --for=condition=Ready --timeout=600s
+kubectl wait agent/sandbox-operator -n kagent --for=condition=Ready --timeout=600s
 ```
 
-In the UI, select `agent-terminal` and try these in order:
+The SandboxTemplate is `Ready` once Substrate has prepared a reusable snapshot of it. That does not create a sandbox; the agent does that. The pool's 4 workers cover the `assistant` and `sandbox-operator` golden Actors, the chat session, and the sandbox.
+
+In the UI, select `sandbox-operator` and try these in order:
 
 | Prompt | What it shows |
 |---|---|
-| "Show me what's in /opt/demo-workspace and its git history." | Real shell commands (`tree`, `git log`) inside the sandbox |
-| "Which services in services.json are not fully ready? Use jq." | Parsing data with a baked-in CLI |
-| "Run check_services.py and explain the output." | Running a script. It flags `payments` (1/2) and `notifier` (0/1). |
+| "Create a sandbox and show me what's in /opt/demo-workspace and its git history." | The agent creates a sandbox from `dev-tools` and runs `tree` and `git log` in it, not in its own environment |
+| "Which services in services.json are not fully ready? Use jq." | Parsing data with a CLI the platform team baked in |
+| "Run check_services.py and explain the output." | Running a script. It flags `payments` (1/2) and `notifier` (0/1) and exits 1. |
 | "deploy.yaml uses an unpinned :latest image. Change it to ops/notifier:1.4.0 and commit the change." | Editing a file and committing with `git`, inside the sandbox |
-| "Install htop for me." | It can't. The agent runs as a non-root user, so the package manager refuses, and no package mirror is reachable from the sandbox. The platform team decides what's in the sandbox. |
-
-Between prompts, the agent's Actor suspends and resumes from its snapshot. Changes made earlier in the same conversation, like the commit, should still be there in the next turn. Confirm it in rehearsal by asking for `git log` after the commit prompt.
+| "Install htop with apt." | It can't. `apt-get update` fails with `Temporary failure resolving 'archive.ubuntu.com'` because sandboxes have no network egress. The platform team decides what's in the sandbox. |
+| "I'm done. Delete the sandbox." | `delete_sandbox` removes the sandbox Actor and its files. Otherwise it expires after its 900-second TTL. |
 
 ## What's in Place After This Lab
 
@@ -1232,19 +1248,18 @@ Between prompts, the agent's Actor suspends and resumes from its snapshot. Chang
 | `substrate-podcert` Helm release | `podcertificate-controller-system` | Certificate controller with the ate-ca issuer |
 | `substrate` Helm release | `ate-system` | Substrate control plane and `atelet` |
 | `kagent` Helm release | `kagent` | kagent Enterprise, gVisor pool `kagent-default`, Postgres-only telemetry |
-| `assistant` and `agent-terminal` Agents | `kagent` | Demo agents |
-| `kubectl-ate`, values files, certificates, `agent-terminal/` | local working directory | CLI and install inputs |
+| `assistant` and `sandbox-operator` Agents, `dev-tools` SandboxTemplate | `kagent` | Demo agents and the sandbox definition |
+| `kubectl-ate`, values files, certificates, `agent-sandbox/` | local working directory | CLI and install inputs |
 
 ## Cleanup
 
-Remove the demo agents first. Deleting the releases first leaves those objects behind without a controller.
+Remove the demo agents and the SandboxTemplate first. Deleting the releases first leaves those objects behind without a controller. Sandboxes the agent created are deleted by the agent or expire on their TTL.
 
 ```bash
-kubectl delete agent assistant agent-terminal -n kagent --ignore-not-found
-kubectl delete agenttemplate assistant agent-terminal -n kagent --ignore-not-found
-kubectl delete harness kagent agent-terminal -n kagent --ignore-not-found
-kubectl delete modelconfig claude-model-config -n kagent --ignore-not-found
-kubectl delete secret anthropic-api-key -n kagent --ignore-not-found
+kubectl delete agent assistant sandbox-operator -n kagent --ignore-not-found
+kubectl delete agenttemplate assistant sandbox-operator -n kagent --ignore-not-found
+kubectl delete sandboxtemplate dev-tools -n kagent --ignore-not-found
+kubectl delete harness kagent -n kagent --ignore-not-found
 kubectl delete pod pg-client --ignore-not-found
 ```
 
@@ -1303,9 +1318,9 @@ Remove the local files. Several hold keys or passwords.
 ```bash
 rm -rf kubectl-ate substrate-values.yaml kagent-values.yaml authentication.yaml substrate-setup.sql \
   actor-id-ca.crt ate-ca-tls.crt ate-ca-tls.key podidentity-trust.pem servicedns-trust.pem \
-  substrate-snapshots-policy.json substrate-snapshots-trust.json agent-terminal
+  substrate-snapshots-policy.json substrate-snapshots-trust.json agent-sandbox
 
-unset KAGENT_LICENSE_KEY AGENTGATEWAY_LICENSE_KEY OPENAI_API_KEY ANTHROPIC_API_KEY \
+unset KAGENT_LICENSE_KEY AGENTGATEWAY_LICENSE_KEY OPENAI_API_KEY \
   PG_MASTER_PASSWORD KAGENT_DB_PASSWORD SUBSTRATE_OWNER_PASSWORD SUBSTRATE_READWRITE_PASSWORD
 ```
 
@@ -1323,6 +1338,9 @@ unset KAGENT_LICENSE_KEY AGENTGATEWAY_LICENSE_KEY OPENAI_API_KEY ANTHROPIC_API_K
 | `./kubectl-ate get ...` fails with `neither v1 nor v1beta1 ClusterTrustBundle is served` | The public `kubectl-ate` `v0.5.0-alpha2` has no compatibility-mode fallback for these commands. Use `kubectl` to inspect the install. The `admin make-*-pool` commands in step 9 are not affected. |
 | `atelet` has no `AWS_CONTAINER_CREDENTIALS_FULL_URI` | The Pod Identity association was created after the `atelet` pods. Run `kubectl rollout restart ds/atelet -n ate-system`. |
 | The Actor image fails to pull | The repository is private. `atelet` pulls without the kubelet's credentials, so use a public repository. |
+| `dev-tools` never becomes `Ready`, or its conditions mention the guest image | `config.sandboxes.guestImage` is empty or not pinned by digest. Set it as in step 13 and upgrade the kagent release. |
+| The agent's `create_sandbox` call fails as unauthenticated or forbidden | `config.runtimeDefaults.tokenPropagation.enabled` is off, so the agent calls `kagent-api` without the user's identity. Set it as in step 13 and upgrade the kagent release. |
+| `apt-get` in the sandbox fails with `Failed to setgroups` | The image doesn't set `APT::Sandbox::User "root"`. Substrate runs commands as UID 0 without `CAP_SETGID`. |
 | The Substrate install notes print blank `credentials:` lines | Cosmetic. The chart's notes template is out of date. The install is not affected. |
 
 ## Next
