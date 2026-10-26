@@ -21,10 +21,20 @@ The apply below creates the `Harness`, the `AgentTemplate`, and the `Agent`. It 
 ## Prerequisites
 
 - Baseline setup complete: [001](001-where-it-works.md) → [002](002-install.md)
-- A container image `ate-api` can pull. You will substitute it for `YOUR_IMAGE_PATH`.
+- Docker with `buildx`, or another tool that can print an image digest
 - For Google Cloud Storage snapshots: `gcloud`, a project, and a bucket. The install's default snapshot bucket is the one created with the Substrate install (S3/RustFS). Use the GCS steps only when snapshots should go to Cloud Storage instead.
 
 ## 1. Create the Harness, AgentTemplate, and Agent
+
+The Harness runs the kagent Go ADK runtime that kagent Enterprise `1.0.0-alpha11` is built on, `golang-adk:1.0.0-alpha14`. Substrate refuses a Harness image that is not pinned by digest, so resolve it first:
+
+```bash
+export RUNTIME_IMAGE=ghcr.io/kagent-dev/kagent/golang-adk@$(docker buildx imagetools inspect \
+  ghcr.io/kagent-dev/kagent/golang-adk:1.0.0-alpha14 | awk '/^Digest:/ {print $2; exit}')
+echo $RUNTIME_IMAGE
+```
+
+`echo` prints `ghcr.io/kagent-dev/kagent/golang-adk@sha256:...`.
 
 ```bash
 kubectl apply -f - <<EOF
@@ -36,7 +46,7 @@ metadata:
 spec:
   kagent: {}
   workload:
-    image: YOUR_IMAGE_PATH
+    image: ${RUNTIME_IMAGE}
   substrate:
     workerPoolRef:
       name: kagent-default
@@ -60,18 +70,19 @@ metadata:
   name: assistant
   namespace: kagent
 spec:
-  templateRef:
-    name: assistant
+  template:
+    ref:
+      name: assistant
   harnessRef:
     name: kagent
 EOF
 ```
 
-Replace `YOUR_IMAGE_PATH` before you apply. It must be pinned by digest (`repository@sha256:<digest>`); the `Harness` CRD rejects a tag. The rest of the manifest stays as written.
+To run your own runtime image instead, replace `${RUNTIME_IMAGE}` with it. It must be pinned by digest (`repository@sha256:<digest>`); the `Harness` CRD rejects a tag. The image must also be built against the same kagent release: a runtime built for an older alpha exits before it serves its readiness check, and the Agent reports `GoldenActorCrashed`.
 
-> **`ate-api` has to pull the Harness image.** If it cannot, `ate-api-server` reports that the golden actor fails at `CallAteletRestore`. The underlying error is an unauthenticated pull.
+> **`atelet` has to pull the Harness image.** Workers pull Actor images themselves, so pod `imagePullSecrets` do not apply. If the pull fails, the golden actor fails at `CallAteletRestore` with an unauthenticated pull.
 
-> **References or inline specs.** `templateRef` and `harnessRef` point at objects in the `Agent`'s namespace. An `Agent` can instead carry the full spec inline under `template` and `harness`. Each side takes exactly one of the two.
+> **Inline or referenced template.** `spec.template` takes exactly one of `ref` (an `AgentTemplate` in the `Agent`'s namespace) or `inline` (the full template spec). The Harness is always referenced through `harnessRef`; it cannot be inlined, so platform owners manage runtime policy separately from agent authors. Older alphas used `spec.templateRef`, which this release rejects.
 
 Confirm the objects exist, and wait for the `Agent` to report `Ready`:
 
@@ -90,33 +101,36 @@ The identity of an Actor is (`atespace`, name). An `atespace` is Substrate's own
 
 Snapshots go to the default bucket created during the Substrate install (S3/RustFS) unless you point `atelet` at Google Cloud Storage.
 
-For Cloud Storage, add this IAM binding. `YOUR_PROJECT`, `YOURPROJECT`, and `YOUR_BUCKET` are yours to fill in. The principal path is otherwise fixed: the `ate-api-server` Kubernetes service account in `ate-system`.
+For Cloud Storage, both `atelet` and `ate-api-server` open the snapshot store, so both need the bucket. Add these IAM bindings. `YOUR_PROJECT_NUMBER`, `YOUR_PROJECT_ID`, and `YOUR_BUCKET` are yours to fill in. The principal paths are otherwise fixed: the `atelet` and `ate-api-server` Kubernetes service accounts in `ate-system`.
 
 ```bash
-API="principal://iam.googleapis.com/projects/YOUR_PROJECT/locations/global/workloadIdentityPools/YOURPROJECT.svc.id.goog/subject/ns/ate-system/sa/ate-api-server"
+WI="principal://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/YOUR_PROJECT_ID.svc.id.goog/subject/ns/ate-system/sa"
 BUCKET="gs://YOUR_BUCKET"
 
-gcloud storage buckets add-iam-policy-binding "$BUCKET" \
-  --member="$API" --role=roles/storage.objectAdmin
-
-gcloud storage buckets add-iam-policy-binding "$BUCKET" \
-  --member="$API" --role=roles/storage.bucketViewer
+for sa in atelet ate-api-server; do
+  gcloud storage buckets add-iam-policy-binding "$BUCKET" \
+    --member="$WI/$sa" --role=roles/storage.objectAdmin
+  gcloud storage buckets add-iam-policy-binding "$BUCKET" \
+    --member="$WI/$sa" --role=roles/storage.bucketViewer
+done
 ```
 
-> **Switching the snapshot backend to GCS.** Upgrade the existing Substrate Helm install with `--set atelet.storageBackend=gcs`. In `substrate-values.yaml` that looks like:
+> **Switching the snapshot backend to GCS.** Any `atelet.storageBackend` other than `s3` selects Cloud Storage for both `atelet` and `ate-api-server`, authenticated through Workload Identity. Add this to the `substrate-values.yaml` from [002 step 10](002-install.md#10-install-agent-substrate), then upgrade the release:
 
-```bash
-cat > substrate-values.yaml <<'EOF'
-credentialProvider:
-  namespacePolicies:
-    - atespace: kagent
-      allowedNamespaces: [kagent]
+```yaml
+rustfs:
+  enabled: false                   # snapshots go to Cloud Storage
 
 atelet:
-  gcpAuthForImagePulls: true
   storageBackend: gcs
-EOF
 ```
+
+```bash
+helm upgrade substrate oci://us-docker.pkg.dev/solo-public/enterprise-substrate-helm/substrate \
+  --version $SUBSTRATE_VERSION --namespace ate-system -f substrate-values.yaml
+```
+
+The Harness `snapshotPolicy.location` then names your bucket, for example `gs://YOUR_BUCKET/kagent/`.
 
 ## How a Request Reaches an Actor
 
@@ -138,17 +152,18 @@ kubectl delete harness kagent -n kagent --ignore-not-found
 kubectl delete agenttemplate assistant -n kagent --ignore-not-found
 ```
 
-If you added the Cloud Storage binding, remove the same two roles:
+If you added the Cloud Storage bindings, remove the same roles:
 
 ```bash
-gcloud storage buckets remove-iam-policy-binding "$BUCKET" \
-  --member="$API" --role=roles/storage.objectAdmin
-
-gcloud storage buckets remove-iam-policy-binding "$BUCKET" \
-  --member="$API" --role=roles/storage.bucketViewer
+for sa in atelet ate-api-server; do
+  gcloud storage buckets remove-iam-policy-binding "$BUCKET" \
+    --member="$WI/$sa" --role=roles/storage.objectAdmin
+  gcloud storage buckets remove-iam-policy-binding "$BUCKET" \
+    --member="$WI/$sa" --role=roles/storage.bucketViewer
+done
 ```
 
-`$API` and `$BUCKET` are the variables from step 2. A GCS backend change on the Substrate release is removed with the Substrate uninstall in [099](099-cleanup.md).
+`$WI` and `$BUCKET` are the variables from step 2. A GCS backend change on the Substrate release is removed with the Substrate uninstall in [099](099-cleanup.md).
 
 ## Next
 

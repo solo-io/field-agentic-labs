@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -12,11 +11,9 @@ func TestAddNumbers(t *testing.T) {
 	}
 }
 
-func TestRunRequiresTraceConfiguration(t *testing.T) {
-	t.Setenv("KAGENT_NAME", "adk-trace-enabled-adk-trace-enabled")
-	t.Setenv("KAGENT_NAMESPACE", "kagent")
-	t.Setenv("OTEL_TRACING_ENABLED", "false")
-	if err := run(); err == nil || !strings.Contains(err.Error(), "OTEL_TRACING_ENABLED") {
-		t.Fatalf("run() error = %v; want missing trace configuration", err)
+func TestRunRequiresCompiledConfig(t *testing.T) {
+	t.Setenv("KAGENT_CONFIG_JSON", "")
+	if err := run(t.TempDir()); err == nil {
+		t.Fatal("run() without KAGENT_CONFIG_JSON succeeded; want an error")
 	}
 }

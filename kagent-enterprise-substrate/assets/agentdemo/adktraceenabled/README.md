@@ -13,54 +13,74 @@ flowchart LR
     T --> CH[ClickHouse and Tracing UI]
 ```
 
-The Harness image serves A2A gRPC on port 80 and `GET /readyz` on port 8081. The `AgentTemplate` references `default-model-config`, which lets the controller authorize OpenAI egress and inject the referenced Secret as a destination-scoped header. The agent's model name in `MODEL_NAME` must match that ModelConfig. The `kagent` compiler also supplies OTLP configuration, the collector hostname in the actor's egress policy, and pre-response flushing. This custom image constructs the ADK agent itself rather than reading the compiled prompt from `KAGENT_CONFIG_JSON`.
+The controller compiles the `AgentTemplate` and the runtime settings into the actor's `KAGENT_CONFIG_JSON`: the model, system prompt and MCP tools, plus the agent's name and namespace, the control-plane URL, the listen port and the telemetry endpoint. `main.go` reads that config, builds the ADK agent itself so it can add the `add_numbers` tool, and serves private A2A on the compiled port with `GET /readyz` on port 8081.
+
+The `AgentTemplate` references `default-model-config`, which lets the controller authorize OpenAI egress and inject the referenced Secret as a destination-scoped header. `MODEL_NAME` in the Harness must match that ModelConfig. ADK sessions live in the actor's durable directory, so they survive suspend, resume and actor replacement.
 
 ## Prerequisites
 
-- A Kubernetes cluster with `kagent-enterprise` `1.0.0-alpha3`, the pinned `v1.0.0-alpha2` kagent Go API, Substrate `0.2.0-beta5`, and a ready `kagent/kagent-default` WorkerPool.
-- The kagent collector and traces pipeline enabled, with OTLP gRPC reachable at `solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317`.
-- A working Substrate snapshot bucket. `agent.yaml` uses `gs://ate-snapshots/kagent/adk-trace-enabled/`, which resolves to the bundled RustFS/S3 backend on this demo cluster; the `gs://` URI alone does not switch Substrate to GCS.
-- `kagent/default-model-config` using OpenAI `gpt-4.1-mini`, referencing a populated Secret. The Secret value is not passed in the Harness environment. The registry must be reachable by `atelet`, which pulls actor images rather than relying on pod `imagePullSecrets`.
-- Go 1.27, Docker with buildx, `gcloud`, `envsubst`, and `kubectl`. Configure Docker's registry authentication before pushing.
+- A Kubernetes cluster with `kagent-enterprise` `1.0.0-alpha11`, substrate-enterprise `0.5.0-alpha4-da3c2e5`, and a ready `kagent/kagent-default` WorkerPool. The Go module pins the matching kagent `v1.0.0-alpha14` API.
+- The kagent telemetry collector enabled, and the runtime trace endpoint set on the kagent-enterprise chart. The agent refuses to start without it:
+
+  ```yaml
+  telemetry:
+    enabled: true
+  config:
+    runtimeDefaults:
+      telemetry:
+        traces:
+          endpoint: http://solo-enterprise-telemetry-collector.kagent.svc.cluster.local:4317
+  ```
+
+- A Substrate snapshot location. `agent.yaml` uses `gs://ate-snapshots/kagent/adk-trace-enabled/`. Substrate writes snapshots to the storage backend it was installed with, which is the bundled RustFS (S3) by default; the `gs://` scheme does not switch it to GCS.
+- `kagent/default-model-config` using OpenAI `gpt-4.1-mini`, referencing a populated Secret. The Secret value is not passed in the Harness environment.
+- A container registry that the Substrate workers (`atelet`) can pull from. They pull actor images themselves, so pod `imagePullSecrets` do not apply.
+- Go 1.27, Docker with buildx, `envsubst`, and `kubectl`. Log Docker in to your registry before pushing.
 
 ## Quickstart
 
-From this directory:
+From this directory, set your registry and build:
 
 ```sh
-go mod tidy
+export IMAGE_REPOSITORY=<your-registry>/<your-repo>/adktraceenabled
 make test
 make build
 make push
 ```
 
-The default image repository is the demo registry in `field-engineering-us`; override `IMAGE_REPOSITORY` and `IMAGE_TAG` when using another registry. A copy of the image is already pushed under the digest in `agent.yaml`. To deploy it yourself:
+`make push` prints the pushed digest. Substrate requires a digest-pinned image, so set `spec.workload.image` in `agent.yaml` to `${IMAGE_REPOSITORY}@sha256:<digest>`, replacing `YOUR_IMAGE_NAME_AND_REGISTRY_URL`. Alternatively, render a manifest from the template:
 
 ```sh
-kubectl apply --dry-run=server -f agent.yaml
-kubectl apply -f agent.yaml
-kubectl get agenttemplate adk-trace-enabled -n kagent -o yaml
+make render IMAGE=${IMAGE_REPOSITORY}@sha256:<digest> \
+  SNAPSHOT_LOCATION=gs://ate-snapshots/kagent/adk-trace-enabled/ > agent.yaml
 ```
 
-If you build and push a different image, update the digest in `agent.yaml` before applying it. `agent.yaml.tmpl` and `make render` are optional tools for generating another manifest from `IMAGE`, `SNAPSHOT_LOCATION`, and `MODEL_NAME`.
+Deploy and wait for the golden snapshot:
+
+```sh
+make deploy
+kubectl wait agents.api.kagent.dev/adk-trace-enabled -n kagent --for=condition=Ready --timeout=10m
+```
 
 The `Ready` condition must say `ActorTemplate golden snapshot is ready`. Open `adk-trace-enabled` in the UI and ask **"Add 17 and 25 using add_numbers."** The trace should contain the agent invocation, model calls and a tool execution. Check the stored span names if the UI does not show them:
 
 ```sh
 kubectl exec -n kagent kagent-clickhouse-shard0-0 -- clickhouse-client --query \
-  "SELECT SpanName, count() FROM kagent.otel_traces_json WHERE ServiceName = 'adk-trace-enabled-adk-trace-enabled' AND Timestamp > now() - INTERVAL 30 MINUTE GROUP BY SpanName ORDER BY SpanName"
+  "SELECT SpanName, count() FROM kagent.otel_traces_json WHERE ServiceName = 'adk-trace-enabled' AND Timestamp > now() - INTERVAL 30 MINUTE GROUP BY SpanName ORDER BY SpanName"
 ```
 
-A live turn on this cluster returned 42 and stored `invoke_agent`, `invocation`, two `generate_content` model spans and `execute_tool add_numbers`. The collector can only display spans the ADK runtime emits; the store query separates an exporter problem from a UI problem.
+A successful turn returns 42 and stores `invoke_agent adk_trace_enabled`, two `generate_content gpt-4.1-mini` model spans and `execute_tool add_numbers`. The collector can only display spans the ADK runtime emits; the store query separates an exporter problem from a UI problem.
 
-Sensitive-content capture is off by default. To opt into storing prompts and responses in telemetry, set `otel.captureSensitiveContent: true` on the kagent-enterprise chart after a privacy review, then run a new turn. The controller compiles that decision into this Harness; do not duplicate its `OTEL_*` settings in `Harness.spec.env`. The Go ADK emits its own GenAI spans, so the tracing page's turn-level Input/Output fields depend on the span data it actually records.
+If the Agent reports `GoldenActorCrashed`, the runtime exited before serving `/readyz`. The usual causes are a missing runtime trace endpoint (see Prerequisites) or an image built against a different kagent release than the cluster runs.
+
+Prompt and response capture is off by default. To store them in telemetry after a privacy review, set `config.runtimeDefaults.telemetry.captureContent: true` on the kagent-enterprise chart, then run a new turn. The controller compiles that decision into this Harness; do not duplicate its `OTEL_*` settings in `Harness.spec.env`.
 
 ## Project Structure
 
-- `main.go`: Go ADK model, tool, A2A server, tracing initialization and pre-response flush.
-- `agent.yaml`: deployable, digest-pinned kagent Harness and AgentTemplate.
-- `agent.yaml.tmpl`: optional source for rendering alternate image and bucket values.
+- `main.go`: reads the compiled config, then wires the Go ADK model, the `add_numbers` tool, the A2A server, tracing initialization and pre-response flush.
+- `agent.yaml`: deployable Harness, AgentTemplate and Agent. Replace the image placeholder with your digest-pinned image.
+- `agent.yaml.tmpl`: source for `make render`, with `IMAGE`, `SNAPSHOT_LOCATION` and `MODEL_NAME` placeholders.
 - `Dockerfile`: static Linux image built with Go 1.27.
 - `Makefile`: `setup`, `test`, `build`, `push`, `render`, `deploy`, and `clean` targets.
 
-`make clean` removes this demo's Harness and AgentTemplate. It does not remove the image, shared ModelConfig, WorkerPool, or Substrate release. kagent can garbage-collect snapshots after the resources are removed; check for conversations that still use this runtime before cleaning up. The agent uses an in-memory ADK session service for this tracing demonstration; do not use it as a durable conversation store across actor replacement.
+`make clean` removes this demo's Harness, AgentTemplate and Agent. It does not remove the image, shared ModelConfig, WorkerPool, or Substrate release. kagent can garbage-collect snapshots after the resources are removed; check for conversations that still use this runtime before cleaning up.

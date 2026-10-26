@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -euo pipefail -c
 
 IMAGE_REPOSITORY ?= YOUR_IMAGE_NAME_AND_REGISTRY_URL
-IMAGE_TAG ?= $(IMAGE_REPOSITORY):v1.0.0-alpha2-demo1
+IMAGE_TAG ?= $(IMAGE_REPOSITORY):v1.0.0-alpha14-demo1
 MODEL_NAME ?= gpt-4.1-mini
 
 .PHONY: setup test build push render deploy clean

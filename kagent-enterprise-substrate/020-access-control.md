@@ -15,9 +15,9 @@ This lab applies nothing. The certificates it names are the pools created in [00
 
 ## 1. Control Plane
 
-The atenet router calls ate-api on port 443 with a pod-identity client certificate, and ate-api checks that certificate against the pod-identity CA. ate-api uses the same kind of client certificate to connect to Postgres. Postgres is configured with `ssl = on` and `hostssl ... clientcert=verify-ca`, so a client without a certificate is rejected.
+The atenet router calls ate-api on port 443 with a pod-identity client certificate, and ate-api checks that certificate against the pod-identity CA. That CA is `pod-identity-ca-pool` from [002 step 4](002-install.md#4-create-the-cryptographic-pools).
 
-That CA is `pod-identity-ca-pool` from [002 step 4](002-install.md#4-create-the-cryptographic-pools).
+PostgreSQL works the same way. Both ate-api and the kagent controller log in with a client certificate signed by `postgres-ca-pool`, and PostgreSQL authenticates the login with `hostssl ... cert`: the certificate is the credential, and no database password exists. PostgreSQL serves TLS with a service-DNS certificate, which the clients verify. The pod-certificate controller only issues a login certificate to the service accounts mapped to that login in [002 step 7](002-install.md#7-install-the-certificate-controller).
 
 ## 2. Path to an Actor
 

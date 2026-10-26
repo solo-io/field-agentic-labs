@@ -1,24 +1,28 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	a2atype "github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/kagent-dev/kagent/go/adk/pkg/a2a"
+	kagentagent "github.com/kagent-dev/kagent/go/adk/pkg/agent"
 	"github.com/kagent-dev/kagent/go/adk/pkg/app"
-	"github.com/kagent-dev/kagent/go/adk/pkg/models"
+	"github.com/kagent-dev/kagent/go/adk/pkg/auth"
+	"github.com/kagent-dev/kagent/go/adk/pkg/config"
+	"github.com/kagent-dev/kagent/go/adk/pkg/controllerclient"
+	"github.com/kagent-dev/kagent/go/adk/pkg/session"
 	"github.com/kagent-dev/kagent/go/adk/pkg/telemetry"
+	processconfig "github.com/kagent-dev/kagent/go/core/pkg/config"
 	"github.com/kagent-dev/kagent/go/pkg/logging"
 	"github.com/kagent-dev/kagent/go/pkg/tracing"
 	adkagent "google.golang.org/adk/v2/agent"
-	"google.golang.org/adk/v2/agent/llmagent"
 	"google.golang.org/adk/v2/runner"
-	adksession "google.golang.org/adk/v2/session"
-	"google.golang.org/adk/v2/tool"
 	"google.golang.org/adk/v2/tool/functiontool"
 )
 
@@ -36,83 +40,125 @@ func addNumbers(_ adkagent.Context, in addInput) (addOutput, error) {
 }
 
 func main() {
-	if err := run(); err != nil {
+	// A temp dir is writable in distroless.
+	if err := run(filepath.Join(os.TempDir(), "kagent-config")); err != nil {
 		slog.Error("agent stopped", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+func run(configDir string) error {
+	// The controller compiles the AgentTemplate (model, system prompt, MCP servers) and the
+	// runtime settings (identity, control-plane URL, listen port, telemetry) into the
+	// KAGENT_CONFIG_JSON env var. MaterializeFromEnv writes it to config.json and
+	// LoadAgentConfigs parses it. Nothing connects to an MCP server yet.
+	if err := config.MaterializeFromEnv(configDir); err != nil {
+		return fmt.Errorf("materialize agent config: %w", err)
+	}
+	compiled, agentCard, err := config.LoadAgentConfigs(configDir)
+	if err != nil {
+		return fmt.Errorf("load agent config from %s: %w", configDir, err)
+	}
+	runtime := config.ProcessConfig(compiled)
+
+	logger, err := logging.New(os.Stderr, cmp.Or(runtime.LogLevel, "info"))
+	if err != nil {
+		return err
+	}
 	slog.SetDefault(logger)
 	ctx := logging.IntoContext(context.Background(), logger)
 
-	name := os.Getenv("KAGENT_NAME")
-	namespace := os.Getenv("KAGENT_NAMESPACE")
+	name, namespace := runtime.Name, runtime.Namespace
 	if name == "" || namespace == "" {
-		return fmt.Errorf("KAGENT_NAME and KAGENT_NAMESPACE are required for trace attribution")
+		return fmt.Errorf("runtime.name and runtime.namespace are required for trace attribution")
 	}
-	if os.Getenv("OTEL_TRACING_ENABLED") != "true" || os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") == "" {
-		return fmt.Errorf("OTEL_TRACING_ENABLED=true and OTEL_EXPORTER_OTLP_TRACES_ENDPOINT are required")
+	if runtime.ControlPlaneUrl == "" {
+		return fmt.Errorf("runtime.control_plane_url is required: the controller stores this runtime's tasks")
 	}
+	if agentCard == nil {
+		return fmt.Errorf("the compiled config carries no agent card")
+	}
+	// Same app identity the stock golang-adk runtime derives, so the controller
+	// attributes tasks and tokens to this Agent.
+	appName := strings.ReplaceAll(namespace, "-", "_") + "__NS__" + strings.ReplaceAll(name, "-", "_")
 
-	identity := tracing.RuntimeTelemetry{
-		Runtime: tracing.RuntimeADKGo, AgentName: name, AgentNamespace: namespace,
-		Provider: "openai", Model: os.Getenv("MODEL_NAME"),
-	}
-	shutdown, enabled, err := telemetry.Init(ctx, identity)
+	// The controller compiles the collector endpoint into runtime.telemetry; the standard
+	// OTEL_* SDK variables still override it.
+	identity := processconfig.RuntimeTelemetry(runtime.GetTelemetry()).WithEnvironment(os.Environ())
+	identity.Runtime = tracing.RuntimeADKGo
+	identity.AgentName = name
+	identity.AgentNamespace = namespace
+	providers, err := telemetry.Init(ctx, identity)
 	if err != nil {
 		return fmt.Errorf("initialize tracing: %w", err)
 	}
-	if !enabled {
-		return fmt.Errorf("ADK tracing did not initialize")
+	if !providers.TracesEnabled() {
+		return fmt.Errorf("ADK tracing did not initialize: set config.runtimeDefaults.telemetry.traces.endpoint on the kagent-enterprise chart")
 	}
 	defer func() {
 		flushCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := shutdown(flushCtx); err != nil {
+		if err := providers.Shutdown(flushCtx); err != nil {
 			logger.Error("flush telemetry on shutdown", "error", err)
 		}
 	}()
 
-	modelName := os.Getenv("MODEL_NAME")
-	if modelName == "" {
-		return fmt.Errorf("MODEL_NAME is required")
+	// One authenticated controller channel. The A2A task store writes each task
+	// through it, so the controller can read the turn's result when the stream ends.
+	tokenService := auth.NewKAgentTokenService(appName)
+	if err := tokenService.Start(ctx); err != nil {
+		logger.Error("start token service", "error", err)
 	}
-	model, err := models.NewOpenAIModel(ctx, &models.OpenAIConfig{Model: modelName})
+	defer tokenService.Stop()
+	controller, err := controllerclient.New(controllerclient.Config{
+		APIURL: runtime.ControlPlaneUrl, AgentName: appName, TokenProvider: tokenService,
+	})
 	if err != nil {
-		return fmt.Errorf("create OpenAI model: %w", err)
+		return fmt.Errorf("create controller client for %s: %w", runtime.ControlPlaneUrl, err)
 	}
+	defer func() {
+		if err := controller.Close(); err != nil {
+			logger.Error("close controller client", "error", err)
+		}
+	}()
+
 	addition, err := functiontool.New(functiontool.Config{
 		Name: "add_numbers", Description: "Add two integers and return their sum.",
 	}, addNumbers)
 	if err != nil {
 		return fmt.Errorf("create addition tool: %w", err)
 	}
-	agent, err := llmagent.New(llmagent.Config{
-		Name: "adk_trace_enabled", Description: "An agent that demonstrates model and tool spans.",
-		Instruction: "Answer briefly. When asked to add two integers, call add_numbers before answering. Report the tool's result.",
-		Model:       model, Tools: []tool.Tool{addition},
-	})
+	// Build the agent from the template. CreateGoogleADKAgent applies the model and
+	// prompt, connects to each MCP server, and exposes its allowed tools. add_numbers
+	// is passed as an extra tool, so the agent has both.
+	agent, err := kagentagent.CreateGoogleADKAgent(ctx, compiled, strings.ReplaceAll(name, "-", "_"), nil, addition)
 	if err != nil {
-		return fmt.Errorf("create ADK agent: %w", err)
+		return fmt.Errorf("create ADK agent from AgentTemplate: %w", err)
 	}
 
-	sessions := adksession.InMemoryService()
-	runnerConfig := runner.Config{AppName: name, Agent: agent, SessionService: sessions}
-	executor := a2a.NewKAgentExecutor(a2a.KAgentExecutorConfig{
-		RunnerConfig: runnerConfig, SessionService: sessions, Stream: true, AppName: name, Logger: logger,
+	// session_db_url points at the actor's DurableDir, so ADK sessions survive
+	// suspend, resume and actor replacement.
+	sessions, err := session.NewService(compiled.Agent.SessionDbUrl)
+	if err != nil {
+		return fmt.Errorf("open session store %s: %w", compiled.Agent.SessionDbUrl, err)
+	}
+	runnerConfig := runner.Config{AppName: appName, Agent: agent, SessionService: sessions}
+	executor, err := a2a.NewKAgentExecutor(a2a.KAgentExecutorConfig{
+		RunnerConfig: runnerConfig, SessionService: sessions, Stream: compiled.Agent.GetStream(),
+		AppName: appName, Logger: logger, Flush: providers.ForceFlush, AgentName: name,
 	})
+	if err != nil {
+		return fmt.Errorf("create A2A executor: %w", err)
+	}
+	// A2A task events stay streamable even when model responses are not.
+	agentCard.Capabilities.Streaming = true
+
+	// app.New serves private A2A on runtime.port and GET /readyz on :8081.
 	application, err := app.New(app.AppConfig{
-		AgentCard: a2atype.AgentCard{
-			Name: name, Description: "Programmatic Go ADK trace demonstration", Version: "1.0.0",
-			SupportedInterfaces: []*a2atype.AgentInterface{
-				a2atype.NewAgentInterface("http://127.0.0.1:80", a2atype.TransportProtocolGRPC),
-			},
-			Capabilities:      a2atype.AgentCapabilities{Streaming: true},
-			DefaultInputModes: []string{"text"}, DefaultOutputModes: []string{"text"},
-		},
-		Port: "80", AppName: name, Logger: logger, Agent: agent, Telemetry: identity,
+		ControllerClient: controller, AgentCard: *agentCard, Host: runtime.Host,
+		Port: fmt.Sprint(runtime.GetPort()), MaxContentLength: runtime.MaxContentLength,
+		AppName: appName, Logger: logger, Agent: agent, Telemetry: identity,
+		Flush: providers.ForceFlush,
 	}, executor)
 	if err != nil {
 		return fmt.Errorf("create A2A server: %w", err)

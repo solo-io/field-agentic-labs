@@ -4,11 +4,11 @@ The full path through this workshop: confirm the cluster can run Substrate, inst
 
 ## Prerequisites
 
-- A Kubernetes cluster at v1.36 or above, or v1.37 or above where `PodCertificateRequest` is already on
-- `kubectl`, `helm` v3, `curl`, `jq`, `openssl`
-- A Solo kagent license key
+- A Kubernetes cluster that serves `PodCertificateRequest` and `ClusterTrustBundle` (see [001](../001-where-it-works.md))
+- `kubectl`, `helm` v3, `curl`, `jq`, `openssl`, `envsubst`
+- A Solo kagent license key and an enterprise agentgateway license key
 - An LLM provider API key
-- A container image `ate-api` can pull, for [010](../010-create-an-agent.md)
+- Docker with `buildx`, to resolve the runtime image digest in [010](../010-create-an-agent.md)
 - On GKE, Workload Identity, if Actor snapshots go to Cloud Storage
 
 ## Order
@@ -19,15 +19,16 @@ The full path through this workshop: confirm the cluster can run Substrate, inst
 4. [020 - Access Control](../020-access-control.md)
 5. [099 - Cleanup](../099-cleanup.md)
 
-The kagent Helm install waits up to 15 minutes (`--timeout 15m`). Substrate is installed with `--wait=false` and only becomes Ready after the cryptographic pools in 002.
+The kagent Helm install waits up to 15 minutes (`--timeout 15m`). Substrate pods wait for their certificates, so its first rollout can take several minutes.
 
 ## What You Will Have at the End
 
 Before cleanup:
 
-- Agent Substrate `0.2.0-beta5` in `ate-system`, with the five CA/JWT pools and `ate-api-authentication`
-- kagent Enterprise `1.0.0-alpha3` in `kagent`, with worker pool `kagent-default` on `ghcr.io/kagent-dev/substrate/ateom-gvisor:v0.2.0-beta5`
-- A `Harness` named `kagent` and an `AgentTemplate` named `assistant`
+- Agent Substrate Enterprise `0.5.0-alpha4-da3c2e5` in `ate-system`, with the six CA/JWT pools and `ate-api-authentication`
+- A PostgreSQL in `kagent` shared by kagent and Substrate, with certificate logins
+- kagent Enterprise `1.0.0-alpha11` in `kagent`, with worker pool `kagent-default` on `us-docker.pkg.dev/solo-public/substrate-enterprise/ateom-gvisor:v0.5.0-alpha4-da3c2e5`
+- A `Harness` named `kagent`, an `AgentTemplate` named `assistant`, and an `Agent` named `assistant`
 - A picture of the three mTLS hops and where model and MCP credentials are injected
 
 ## Next
