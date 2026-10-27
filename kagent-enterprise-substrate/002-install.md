@@ -421,7 +421,7 @@ kubectl wait workerpool/kagent-default -n kagent --for=jsonpath='{.status.readyR
 
 > **`runtimeDefaults` is separate from the controller's own telemetry.** Agent runtimes only export traces when `config.runtimeDefaults.telemetry.traces.endpoint` is set. The controller's `config.telemetry` does not propagate to them.
 
-> **Prompt and response capture is off.** To store prompts and responses in telemetry, add `captureContent: true` under `config.runtimeDefaults.telemetry` (and `config.telemetry` for the controller) only after a privacy review.
+> **Prompt and response capture is off.** To store prompts and responses in telemetry, add `captureContent: true` under `config.runtimeDefaults.telemetry` (and `config.telemetry` for the controller) only after a privacy review. Go ADK agents (`kagent: {}` Harnesses) also need `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY` in the Harness `spec.env`: the Go ADK puts content on its model spans only in that mode, and kagent does not set it. The [trace-enabled demo](assets/agentdemo/adktraceenabled/README.md) does this.
 
 > **Worker image and Substrate chart move together.** The `ateom-gvisor` tag must be the same build as the Substrate charts. A mismatched worker dies on startup and the WorkerPool never registers a worker.
 

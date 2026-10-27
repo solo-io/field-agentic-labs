@@ -11,6 +11,10 @@ spec:
   env:
     - name: MODEL_NAME
       value: ${MODEL_NAME}
+    # Records prompts and responses on the model spans. The Go ADK does this only in
+    # SPAN_ONLY mode, which kagent does not set. Remove it to keep content out of traces.
+    - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
+      value: SPAN_ONLY
   substrate:
     workerPoolRef:
       name: kagent-default

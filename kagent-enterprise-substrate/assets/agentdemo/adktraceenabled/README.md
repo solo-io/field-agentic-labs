@@ -69,11 +69,13 @@ kubectl exec -n kagent kagent-clickhouse-shard0-0 -- clickhouse-client --query \
   "SELECT SpanName, count() FROM kagent.otel_traces_json WHERE ServiceName = 'adk-trace-enabled' AND Timestamp > now() - INTERVAL 30 MINUTE GROUP BY SpanName ORDER BY SpanName"
 ```
 
-A successful turn returns 42 and stores `invoke_agent adk_trace_enabled`, two `generate_content gpt-4.1-mini` model spans and `execute_tool add_numbers`. The collector can only display spans the ADK runtime emits; the store query separates an exporter problem from a UI problem.
+A successful turn returns 42 and stores `invoke_agent adk_trace_enabled`, two `generate_content gpt-4.1-mini` model spans and `execute_tool add_numbers`. The first model span's Output is the `add_numbers` tool call; the second's Input includes the tool result and its Output is the final answer. The collector can only display spans the ADK runtime emits; the store query separates an exporter problem from a UI problem.
 
 If the Agent reports `GoldenActorCrashed`, the runtime exited before serving `/readyz`. The usual causes are a missing runtime trace endpoint (see Prerequisites) or an image built against a different kagent release than the cluster runs.
 
-Prompt and response capture is off by default. To store them in telemetry after a privacy review, set `config.runtimeDefaults.telemetry.captureContent: true` on the kagent-enterprise chart, then run a new turn. The controller compiles that decision into this Harness; do not duplicate its `OTEL_*` settings in `Harness.spec.env`.
+This demo records prompts and responses. The Harness sets `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY`, and the Go ADK then adds `gen_ai.input.messages` and `gen_ai.output.messages` to each `generate_content` span. The tracing UI shows those as the model call's Input and Output. The chart's `config.runtimeDefaults.telemetry.captureContent` alone does not do this for a `kagent: {}` Harness: kagent compiles it into the runtime config but does not set the variable the Go ADK reads, and the ADK reads a plain `true` as log events only.
+
+Content capture stores user and model content in your trace backend. To turn it off, remove that entry from `spec.env` in `agent.yaml` and apply it again. Either way, the change prepares a new revision: conversations started before it keep the old setting. The `invoke_agent` span carries no Input or Output, and the `add_numbers` span records its arguments and result as `gcp.vertex.agent.tool_call_args` and `gcp.vertex.agent.tool_response`. Do not set the controller's other `OTEL_*` settings, such as the exporter endpoint, in `Harness.spec.env`; the controller compiles those itself.
 
 ## Project Structure
 
