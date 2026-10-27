@@ -637,7 +637,7 @@ The values set:
 
 - the license and cluster name
 - Substrate in compatibility mode, with the ate-ca agent image from the same Substrate release
-- the `kagent-default` WorkerPool on the matching gVisor worker image. Each Agent keeps a golden Actor on a worker, plus room for conversations. 4 workers fit 3 `m7i.2xlarge` nodes.
+- the `kagent-default` WorkerPool on the matching gVisor worker image. A Worker hosts many Actors at once, each in its own sandbox: up to 1,000 by default, or fewer if the Actors' declared CPU and memory fill the Worker first. One Worker can host every Actor in this lab; 4 replicas spread them across the 3 `m7i.2xlarge` nodes.
 - Postgres-only telemetry ("observability lite"). Traces land in Aurora, in the `enterprise` schema. ClickHouse and agentevals must be off.
 - OpenAI, which creates the `default-model-config` ModelConfig
 - sandboxes, for the demo in step 19: the sandbox guest image that matches kagent 1.0.0-alpha13, and token propagation so an agent can create sandboxes as the user chatting with it. The chart ships `config.sandboxes.guestImage` empty, and no `SandboxTemplate` can be prepared without it.
@@ -1220,7 +1220,7 @@ kubectl wait sandboxtemplate/dev-tools -n kagent --for=condition=Ready --timeout
 kubectl wait agent/sandbox-operator -n kagent --for=condition=Ready --timeout=600s
 ```
 
-The SandboxTemplate is `Ready` once Substrate has prepared a reusable snapshot of it. That does not create a sandbox; the agent does that. The pool's 4 workers cover the `assistant` and `sandbox-operator` golden Actors, the chat session, and the sandbox.
+The SandboxTemplate is `Ready` once Substrate has prepared a reusable snapshot of it. That does not create a sandbox; the agent does that. The `assistant` and `sandbox-operator` golden Actors, the chat session, and the sandbox are each an Actor in its own sandbox, and the pool's workers have room for all of them.
 
 In the UI, select `sandbox-operator` and try these in order:
 

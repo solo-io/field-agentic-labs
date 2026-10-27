@@ -2,7 +2,7 @@
 
 The second mandatory setup lab. Agent Substrate is the sandbox runtime kagent runs agents in. Those agents are called Actors.
 
-Substrate multiplexes a large set of idle Actors onto a set of warm Workers. Workers are Pods. An Actor is one sandboxed process: an agent, a coding harness, or an MCP server. A Worker is a long-running pod that hosts at most one RUNNING Actor at a time. When the Actor is idle, Substrate suspends it and frees the Worker. The next request resumes it, often on a different Worker, from a snapshot rather than a cold boot. Sandbox options are gVisor (software-level isolation) and microVM (hardware-level isolation). This lab installs the gVisor pool.
+Substrate multiplexes a large set of idle Actors onto a set of warm Workers. Workers are Pods. An Actor is one sandboxed process: an agent, a coding harness, or an MCP server. A Worker is a long-running pod that hosts many Actors at once, each in its own sandbox: up to 1,000 by default, or fewer if the Actors' declared CPU and memory fill the Worker first. When an Actor is idle, Substrate suspends it to a snapshot and releases its place on the Worker. The next request resumes it, often on a different Worker, from that snapshot rather than a cold boot. Sandbox options are gVisor (software-level isolation) and microVM (hardware-level isolation). This lab installs the gVisor pool.
 
 Kubernetes owns the Pods. Substrate owns Actor scheduling, snapshots, and routing. The `ateapi` server (Substrate's API server) exists because those workloads change too fast for the Kubernetes API.
 
@@ -144,10 +144,30 @@ This tells `ate-api-server` which JWTs to trust. The command creates a ConfigMap
 |---|---|
 | `actorIdentityJWTProvider: kubernetes` | Selects the named JWT provider that may call Substrate's actor-identity JWT minting operation. |
 | `jwtProviders[].name: kubernetes` | Names that provider. It must match the field above. |
-| `issuer` | The exact `iss` claim Substrate expects in a bearer token. It also uses this URL to discover signing keys. |
+| `issuer` | The exact `iss` claim Substrate expects in a bearer token: your cluster's service-account token issuer. It also uses this URL to discover signing keys. |
 | `audiences: [api.ate-system.svc]` | Accepts tokens issued for ate-api, rather than accepting any valid service-account token. |
-| `certificateAuthorityFile` | A CA bundle used by `ate-api-server` when it makes HTTPS requests for issuer discovery and signing keys. It is not the actor-id CA from the previous step. |
-| `discoveryTokenFile` | The server pod's mounted service-account token, sent when the Kubernetes discovery or key endpoint requires authentication. It is not a token clients present to ate-api. |
+| `certificateAuthorityFile` | In-cluster issuers only. A CA bundle used by `ate-api-server` when it makes HTTPS requests for issuer discovery and signing keys. It is not the actor-id CA from the previous step. |
+| `discoveryTokenFile` | In-cluster issuers only. The server pod's mounted service-account token, sent when the Kubernetes discovery or key endpoint requires authentication. It is not a token clients present to ate-api. |
+
+Read your cluster's issuer:
+
+```bash
+export ISSUER=$(kubectl get --raw /.well-known/openid-configuration | jq -r .issuer)
+echo $ISSUER
+```
+
+On GKE, `echo` prints `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. On EKS it prints `https://oidc.eks.<region>.amazonaws.com/id/...`. Both publish their discovery document and signing keys publicly, so no CA file or discovery token is needed:
+
+```bash
+kubectl create configmap ate-api-authentication -n ate-system --from-literal=authentication.yaml="actorIdentityJWTProvider: kubernetes
+jwtProviders:
+- name: kubernetes
+  issuer: ${ISSUER}
+  audiences: [api.ate-system.svc]
+"
+```
+
+On kind, kubeadm, and other clusters where `echo` prints `https://kubernetes.default.svc`, the discovery endpoint is the API server itself, so `ate-api-server` needs the cluster CA and its own token to reach it. Use this instead:
 
 ```bash
 kubectl create configmap ate-api-authentication -n ate-system --from-literal=authentication.yaml='actorIdentityJWTProvider: kubernetes
@@ -160,7 +180,7 @@ jwtProviders:
 '
 ```
 
-> **Issuer on managed control planes.** `https://kubernetes.default.svc` is the issuer on GKE, kind, and kubeadm clusters. Confirm yours with `kubectl get --raw /.well-known/openid-configuration | jq -r .issuer`. On EKS it is the cluster's OIDC URL; see [the EKS lab](aws/001-substrate-on-eks.md).
+> **A wrong issuer does not stop agents.** kagent reaches ate-api with certificates, so agents and chats still work. Token-authenticated calls fail instead, including `kubectl-ate`, with `token issuer "..." not trusted`. Step 11 checks this. To fix it later, recreate the ConfigMap and run `kubectl rollout restart deploy/ate-api-server -n ate-system`.
 
 ## 7. Install the Certificate Controller
 
@@ -347,7 +367,7 @@ The values set:
 - the cluster name, and the license Secret from step 9
 - certificate logins to the PostgreSQL from step 8. The chart's default Secret names match what step 8 created.
 - the controller's connection to Substrate
-- the `kagent-default` WorkerPool on the matching gVisor worker image. Each Agent keeps a golden Actor on a worker, plus room for conversations.
+- the `kagent-default` WorkerPool on the matching gVisor worker image. One Worker can host every Actor in this workshop; 3 replicas spread them across nodes.
 - the telemetry collector, and trace export for both the controller and the agent runtimes
 - OpenAI, which creates the `default-model-config` ModelConfig from the `kagent-openai` Secret
 
@@ -411,11 +431,14 @@ providers:
     apiKeySecretKey: ANTHROPIC_API_KEY
 ```
 
-Wait for the workers:
+Wait for the workers, then list them through ate-api. This also confirms the token issuer from step 6:
 
 ```bash
 kubectl wait workerpool/kagent-default -n kagent --for=jsonpath='{.status.readyReplicas}'=3 --timeout=600s
+./kubectl-ate get workers
 ```
+
+Expected: three `WORKER_STATE_ACTIVE` workers in pool `kagent-default`, each with capacity for `1000` actors. The `ACTORS` column counts the Actors a Worker hosts; `CPU` and `MEMORY` show its budget, which the Actors' declared limits draw down. If the command fails with `token issuer "..." not trusted`, the issuer in step 6 does not match your cluster.
 
 > **Keep the `http://` prefix on the OTLP endpoints.** Without it, the exporter attempts TLS against the collector's plaintext port and traces do not arrive.
 
@@ -484,6 +507,7 @@ If the install failed partway, run [099](099-cleanup.md) and start again at step
 | Substrate pods stay in `ContainerCreating` | A pool or Secret from steps 4 to 9 is missing. `kubectl get events -n ate-system --field-selector type=Warning` names it. |
 | `kagent-postgresql` stays in `ContainerCreating` | `substrate-podcert` is not running, or `postgres-ca-pool` is missing. |
 | kagent controller exits with `create schema enterprise: permission denied` | The `enterprise` schema from step 8 was not created. |
+| `kubectl-ate` fails with `token issuer "..." not trusted` | The issuer in `ate-api-authentication` does not match your cluster. Redo step 6 with the issuer `kubectl get --raw /.well-known/openid-configuration` reports, then restart `ate-api-server`. |
 | Agent stays at `ActorTemplatePending` after the control plane is healthy | `ate-controller` backed off during the install. Restart it: `kubectl rollout restart deploy/ate-controller -n ate-system`. |
 | Agent turns fail with a generic runtime error | The `credentialProvider` grant in step 10 is missing, so the egress gateway cannot read the API key Secret and model calls go out without a key. |
 | Agent traces never show up | `config.runtimeDefaults.telemetry.traces.endpoint` is unset, or an endpoint is missing the `http://` prefix. |
