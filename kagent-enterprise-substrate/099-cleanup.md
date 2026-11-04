@@ -2,17 +2,18 @@
 
 Tear down everything the workshop installed. Run this when you're done.
 
-[010](010-create-an-agent.md) and [030](030-oauth-models-mcp-agents.md) each have their own Cleanup section, which removes that lab's objects and returns the cluster to the post-baseline state. This lab tears down the baseline itself: the kagent and Substrate Helm releases from [002](002-install.md), the database, the pool Secrets, the trust bundles, and the namespaces.
+[010](010-create-an-agent.md), [030](030-oauth-models-mcp-agents.md), and [040](040-policy-enforcement.md) each have their own Cleanup section, which removes that lab's objects and returns the cluster to the post-baseline state. This lab tears down the baseline itself: the kagent and Substrate Helm releases from [002](002-install.md), the database, the pool Secrets, the trust bundles, and the namespaces.
 
 [001](001-where-it-works.md) and [020](020-access-control.md) create nothing.
 
-> **Run 010's and 030's cleanups first** if you ran those labs. Deleting the CRD release first leaves those objects behind without a controller.
+> **Run 010's, 040's, and 030's cleanups first** if you ran those labs. Deleting the CRD release first leaves those objects behind without a controller.
 
 ## Recommended Order
 
 1. [010 Cleanup](010-create-an-agent.md#cleanup), if you ran that lab.
-2. [030 Cleanup](030-oauth-models-mcp-agents.md#cleanup), if you ran that lab.
-3. This lab. Uninstall Helm in reverse install order, then delete the namespaces and the cluster-scoped trust bundles, then the local files.
+2. [040 Cleanup](040-policy-enforcement.md#cleanup), if you ran that lab. It uses 030's Keycloak, so run it before 030's.
+3. [030 Cleanup](030-oauth-models-mcp-agents.md#cleanup), if you ran that lab.
+4. This lab. Uninstall Helm in reverse install order, then delete the namespaces and the cluster-scoped trust bundles, then the local files.
 
 ## 1. Remove the Agent from 010
 
@@ -24,7 +25,41 @@ kubectl delete agenttemplate assistant -n kagent --ignore-not-found
 
 If you added the Cloud Storage IAM bindings in 010, remove them with that lab's cleanup before you drop the local shell variables.
 
-## 2. Remove the Objects from 030
+## 2. Remove the Objects from 040
+
+The agent, its model, and the egress grant go first. Then the RBAC policies, user grants before the admin grant:
+
+```bash
+kubectl delete agent policy-assistant -n kagent --ignore-not-found
+kubectl delete agenttemplate policy-assistant -n kagent --ignore-not-found
+kubectl delete harness kagent-policy -n kagent --ignore-not-found
+kubectl delete modelconfig policy-gateway-model -n kagent --ignore-not-found
+kubectl delete egresspolicy policy-demo-target -n kagent --ignore-not-found
+kubectl delete enterprisekagentrbacpolicy policy-lab-viewers policy-lab-writers -n kagent --ignore-not-found
+kubectl delete enterprisekagentrbacpolicy policy-lab-admins -n kagent --ignore-not-found
+```
+
+Delete the gateway objects while their controller still runs, then the controller, its CRDs, and the lab namespaces:
+
+```bash
+kubectl delete enterpriseagentgatewaypolicy policy-llm-guard -n agentgateway-system --ignore-not-found
+kubectl delete httproute policy-llm-openai -n agentgateway-system --ignore-not-found
+kubectl delete enterpriseagentgatewaybackend policy-llm-openai -n agentgateway-system --ignore-not-found
+kubectl delete gateway policy-llm -n agentgateway-system --ignore-not-found
+kubectl delete enterpriseagentgatewayparameters policy-llm -n agentgateway-system --ignore-not-found
+
+helm uninstall enterprise-agentgateway -n agentgateway-system --wait 2>/dev/null || true
+helm uninstall enterprise-agentgateway-crds -n agentgateway-system --wait 2>/dev/null || true
+kubectl delete namespace agentgateway-system policy-demo --ignore-not-found
+```
+
+The Keycloak users and groups from 040 go with the `keycloak` namespace in step 3. The Gateway API CRDs stay. Remove them only if you installed them in 040 and nothing else in the cluster uses them:
+
+```bash
+kubectl delete -f https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION:-v1.6.1}/standard-install.yaml
+```
+
+## 3. Remove the Objects from 030
 
 The agents, models, and MCP servers go first, while their controller still runs:
 
@@ -42,13 +77,13 @@ Keycloak and agentgateway live in their own namespaces:
 kubectl delete namespace keycloak agentgateway --ignore-not-found
 ```
 
-The egress trust patch, the `lab-upstream-ca` ConfigMap, and the OIDC Secret go with the Substrate and kagent namespaces in steps 3 and 4. If you added the Keycloak line to `/etc/hosts` in 030, remove it:
+The egress trust patch, the `lab-upstream-ca` ConfigMap, and the OIDC Secret go with the Substrate and kagent namespaces in steps 4 and 5. If you added the Keycloak line to `/etc/hosts` in 030, remove it:
 
 ```bash
 sudo sed -i.bak '/keycloak.keycloak.svc.cluster.local/d' /etc/hosts
 ```
 
-## 3. Uninstall the Helm Releases
+## 4. Uninstall the Helm Releases
 
 Uninstall kagent before Substrate, and each chart before its CRDs.
 
@@ -62,7 +97,7 @@ helm uninstall substrate-crds -n ate-system --wait 2>/dev/null || true
 
 Uninstalling a CRD release deletes its CRDs, and every remaining object of those kinds with them.
 
-## 4. Delete the Namespaces
+## 5. Delete the Namespaces
 
 Helm uninstall does not delete the namespaces. These live in them and go with them:
 
@@ -75,7 +110,7 @@ kubectl delete namespace kagent ate-system podcertificate-controller-system --ig
 kubectl wait --for=delete namespace/kagent namespace/ate-system namespace/podcertificate-controller-system --timeout=300s
 ```
 
-## 5. Delete the Trust Bundles
+## 6. Delete the Trust Bundles
 
 The pod-certificate controller publishes its CA roots as cluster-scoped `ClusterTrustBundle` objects. They outlive the namespaces. Leave them behind and a reinstall's new pools are distrusted by pods that still read the old bundles, so delete them:
 
@@ -85,7 +120,7 @@ kubectl get clustertrustbundles -o name | grep 'ate\.dev' | while read -r bundle
 
 Only the bundles whose names contain `ate.dev` belong to Substrate (`egress-mitm.ate.dev`, `podidentity.podcert.ate.dev`, `postgres.podcert.ate.dev`, `servicedns.podcert.ate.dev`). Leave the others; Kubernetes manages them.
 
-## 6. Remove Local Files
+## 7. Remove Local Files
 
 These are the files [002](002-install.md) writes into the working directory:
 
@@ -105,6 +140,7 @@ No other file holds a key: the license, provider, and OIDC values went straight 
 ```bash
 unset KAGENT_LICENSE_KEY AGENTGATEWAY_LICENSE_KEY OPENAI_API_KEY ANTHROPIC_API_KEY OIDC_CLIENT_SECRET
 unset DEMO_USER DEMO_PASSWORD KEYCLOAK_ADMIN_PASSWORD TOKEN
+unset POLICY_PASSWORD AGW_VERSION GATEWAY_API_VERSION T_ADMIN T_WRITER T_READER T_NOROLE T_ALICE
 ```
 
 ## What's Gone
@@ -112,11 +148,12 @@ unset DEMO_USER DEMO_PASSWORD KEYCLOAK_ADMIN_PASSWORD TOKEN
 | Component | Removed by |
 |---|---|
 | `Agent` / `Harness` / `AgentTemplate` from 010 | Step 1 |
-| 030's agents, ModelConfigs, RemoteMCPServers, Keycloak, agentgateway, and `/etc/hosts` line | Step 2 |
-| `kagent`, `substrate`, `substrate-podcert`, `kagent-crds`, `substrate-crds` releases, and their CRDs | Step 3 |
-| PostgreSQL and its data, all Secrets, pools, authentication ConfigMap, 030's egress trust patch | Step 4 |
-| Substrate's `ClusterTrustBundle` objects | Step 5 |
-| `kubectl-ate`, the downloaded manifest and setup scripts, the values files, 030's CA and certificate files | Step 6 |
+| 040's agent, ModelConfig, EgressPolicy, RBAC policies, Enterprise agentgateway releases and gateway objects, `agentgateway-system` and `policy-demo` namespaces | Step 2 |
+| 030's agents, ModelConfigs, RemoteMCPServers, Keycloak, agentgateway, and `/etc/hosts` line | Step 3 |
+| `kagent`, `substrate`, `substrate-podcert`, `kagent-crds`, `substrate-crds` releases, and their CRDs | Step 4 |
+| PostgreSQL and its data, all Secrets, pools, authentication ConfigMap, 030's egress trust patch | Step 5 |
+| Substrate's `ClusterTrustBundle` objects | Step 6 |
+| `kubectl-ate`, the downloaded manifest and setup scripts, the values files, 030's CA and certificate files | Step 7 |
 
 ## Next
 

@@ -6,7 +6,7 @@ The workshop is built around two ideas:
 
 1. **Two setup labs, soup to nuts.** [001](001-where-it-works.md) → [002](002-install.md) tells you whether your cluster can run Substrate, then installs Substrate and kagent Enterprise. You only run setup once.
 
-2. **Independent unit-of-value labs.** Every lab numbered 010 and up states what it needs from the baseline. [010](010-create-an-agent.md) creates one `Harness`, one `AgentTemplate`, and the `Agent` that pairs them, and has its own `## Cleanup` that removes those objects. [020](020-access-control.md) walks the mTLS path the install already uses. It applies nothing. [030](030-oauth-models-mcp-agents.md) adds Keycloak, OIDC, and token propagation, and also has its own `## Cleanup`.
+2. **Independent unit-of-value labs.** Every lab numbered 010 and up states what it needs from the baseline. [010](010-create-an-agent.md) creates one `Harness`, one `AgentTemplate`, and the `Agent` that pairs them, and has its own `## Cleanup` that removes those objects. [020](020-access-control.md) walks the mTLS path the install already uses. It applies nothing. [030](030-oauth-models-mcp-agents.md) adds Keycloak, OIDC, and token propagation, and also has its own `## Cleanup`. [040](040-policy-enforcement.md) builds on 030's Keycloak to apply RBAC, egress, and LLM guardrail policies to one agent, with its own `## Cleanup`.
 
 Every Helm value, manifest, and command is inline in the lab that uses it. [outcomes.md](outcomes.md) is the POC test plan: the jobs to be done, the evaluation matrix, and what to watch for in the room. That page has no commands.
 
@@ -48,12 +48,13 @@ Every Helm value, manifest, and command is inline in the lab that uses it. [outc
 
 - [020 - Access Control](020-access-control.md) - the three mTLS hops, and where model and MCP credentials are injected
 - [030 - OAuth for Models, MCP Servers, and Agents](030-oauth-models-mcp-agents.md) - Keycloak OIDC on the A2A endpoint, `actorJwt` and `tokenPassthrough` for models and MCP, validated by an agentgateway in front of OpenAI and an MCP server. Runs on the rc2 baseline it describes.
+- [040 - Policy Enforcement](040-policy-enforcement.md) - `EnterpriseKagentRBACPolicy` by Keycloak group, `EgressPolicy` grant and revoke on a running Actor, and a `promptGuard` on a dedicated Enterprise agentgateway LLM gateway. Requires 030 through step 4.
 
 ---
 
 ## Cleanup
 
-- [099 - Cleanup](099-cleanup.md) - tear down the baseline (010 has its own cleanup too)
+- [099 - Cleanup](099-cleanup.md) - tear down the baseline (010, 030, and 040 have their own cleanups too)
 
 ---
 
@@ -73,6 +74,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 - Run an agent as an Actor on the gVisor worker pool
 - See how Actor traffic is authenticated, and where credentials are injected on the way out
 - Require OIDC tokens to call agents, and send models and MCP servers either the Actor's identity or the caller's
+- Control who can call an agent, where its Actor can connect, and what prompts reach its model
 
 ## Validated On
 
@@ -86,7 +88,7 @@ Curated paths through subsets of the labs. See [`tracks/`](tracks/):
 | Harness runtime | `ghcr.io/kagent-dev/kagent/golang-adk:1.0.0-alpha14` |
 | PostgreSQL | `docker.io/library/postgres:18.6-alpine3.23` |
 
-The [EKS lab](aws/001-substrate-on-eks.md) has its own validated versions. [030](030-oauth-models-mcp-agents.md) targets kagent Enterprise `1.0.0-rc2` and Substrate `1.0.0-rc.1-76ace06f`, and lists its changes to 002.
+The [EKS lab](aws/001-substrate-on-eks.md) has its own validated versions. [030](030-oauth-models-mcp-agents.md) targets kagent Enterprise `1.0.0-rc2` and Substrate `1.0.0-rc.1-76ace06f`, and lists its changes to 002. [040](040-policy-enforcement.md) targets the same baseline, plus Enterprise agentgateway `v2026.10.2` and Gateway API `v1.6.1`.
 
 ## Repo Layout
 
@@ -100,6 +102,7 @@ kagent-enterprise-substrate/
 ├── 010-create-an-agent.md         # Harness + AgentTemplate + Agent
 ├── 020-access-control.md          # mTLS hops
 ├── 030-oauth-models-mcp-agents.md # OIDC, actorJwt, tokenPassthrough (rc2)
+├── 040-policy-enforcement.md      # RBAC, EgressPolicy, Enterprise agentgateway guardrail (rc2)
 ├── 099-cleanup.md                 # full teardown
 ├── aws/
 │   └── 001-substrate-on-eks.md    # EKS: ate-ca mode, Aurora, S3

@@ -1118,4 +1118,5 @@ unset -f kc_token jwt_claims mcp_init a2a
 ## Next
 
 - [020 - Access Control](020-access-control.md) - the mTLS hops the egress gateway sits on
+- [040 - Policy Enforcement](040-policy-enforcement.md) - RBAC by Keycloak group, egress grants, and an LLM guardrail. Run it before this lab's cleanup.
 - [099 - Cleanup](099-cleanup.md) - when you are done with the workshop
